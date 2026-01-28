@@ -1,0 +1,16 @@
+{
+    "name": "inventory_ins",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+        "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "xlsx": "^0.18.5"
+    }
+}
