@@ -19,6 +19,7 @@ import {
 } from "../components/ui/dialog";
 import { CustomComboBox } from "../components/CustomCombobox";
 
+
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
@@ -1022,7 +1023,8 @@ const Spares = () => {
         <DialogContent
           className="w-[95%] max-h-[90%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
           onCloseAutoFocus={() => {
             setInputs({ search: inputs.search });
             setBoxNo([
@@ -1033,6 +1035,13 @@ const Spares = () => {
             ]);
           }}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Add Spare</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -1424,10 +1433,18 @@ const Spares = () => {
         }
       >
         <DialogContent
-          className="w-[95%] h-[90%] overflow-y-auto"
+          className=" w-[95%] h-[90%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Update Spare</DialogTitle>
           <DialogDescription className="hidden" />
           <div>

@@ -71,7 +71,7 @@ async function getLocationStorage(req, res) {
     const [rows] = await pool.query(
       `SELECT attr_1 FROM config WHERE type = 'location_of_storage'`,
     );
-    const data = rows.map((row) => row.attr_1);
+    const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
     res.status(200).json(new ApiResponse(200, data, "All location of storage"));
   } catch (error) {
     console.log(error);

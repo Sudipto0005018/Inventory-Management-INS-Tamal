@@ -972,8 +972,16 @@ const Tools = () => {
         <DialogContent
           className="w-[95%] h-[95%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Add Tools & Accessories</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -1406,8 +1414,16 @@ const Tools = () => {
         <DialogContent
           className="w-[90%] h-screen max-w-none mt-2 overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Update Tools & Accessories</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -1454,8 +1470,8 @@ const Tools = () => {
                 <InputWithPencil
                   name="obs_authorised"
                   value={selectedRow.obs_authorised}
-                  readOnly 
-                  editable={false} 
+                  readOnly
+                  editable={false}
                   onEdit={() => {
                     // ⭐ OPEN DIALOG HERE
                     setObsDialog({
@@ -1872,7 +1888,9 @@ const Tools = () => {
 
             {/* Action */}
             <div>
-              <Label className="pb-2">Action<span className="text-red-500">*</span></Label>
+              <Label className="pb-2">
+                Action<span className="text-red-500">*</span>
+              </Label>
               <select
                 className="w-full border rounded h-9 px-2"
                 value={obsDialog.action}
@@ -1890,7 +1908,9 @@ const Tools = () => {
 
             {/* Quantity */}
             <div>
-              <Label className="pb-2">Qty (Inc/Dec)<span className="text-red-500">*</span></Label>
+              <Label className="pb-2">
+                Qty (Inc/Dec)<span className="text-red-500">*</span>
+              </Label>
               <Input
                 required
                 type="number"
@@ -1906,7 +1926,9 @@ const Tools = () => {
 
             {/* Final Expected Quantity */}
             <div>
-              <Label className="pb-2">Final Expected Qty<span className="text-red-500">*</span></Label>
+              <Label className="pb-2">
+                Final Expected Qty<span className="text-red-500">*</span>
+              </Label>
               <Input
                 disabled
                 value={
@@ -1923,7 +1945,9 @@ const Tools = () => {
           </div>
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
-              <p className="font-medium text-sm mb-2">Quote Authority<span className="text-red-500"> *</span></p>
+              <p className="font-medium text-sm mb-2">
+                Quote Authority<span className="text-red-500"> *</span>
+              </p>
 
               <div>
                 <Label className="pb-2">Letter / Fax / Signal Details </Label>
@@ -1941,7 +1965,10 @@ const Tools = () => {
               </div>
 
               <div className="mt-3">
-                <Label>Confirm Demand Generated<span className="text-red-500">*</span></Label>
+                <Label>
+                  Confirm Demand Generated
+                  <span className="text-red-500">*</span>
+                </Label>
                 <div className="flex gap-6 mt-1">
                   <label className="flex items-center gap-2">
                     <input
@@ -1986,7 +2013,9 @@ const Tools = () => {
               {obsDialog.demandGenerated === "yes" && (
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <div>
-                    <Label className="pb-3">Internal Demand No.<span className="text-red-500">*</span></Label>
+                    <Label className="pb-3">
+                      Internal Demand No.<span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       required
                       placeholder="Enter Demand No."

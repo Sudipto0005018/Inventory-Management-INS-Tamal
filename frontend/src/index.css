@@ -319,3 +319,13 @@ div[data-slot="scroll-area-viewport"] {
     font-size: 18px;
     font-weight: bold;
 }
+
+
+/* Only expand ComboBox inside Location of Storage */
+.box-no-table .location-combobox button[role="combobox"] {
+    width: 100% !important;
+}
+
+.box-no-table .location-combobox [data-radix-popper-content-wrapper]>div {
+    width: 100% !important;
+}

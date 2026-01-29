@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { CustomComboBox } from "./CustomCombobox";
+// import { CustomComboBox } from "./CustomCombobox";
+import ComboBox from "./ComboBox";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +24,33 @@ import { Context } from "../utils/Context";
 function BoxNoInputs({
   value,
   onChange,
-  isLooseSpare = false, // 🔥 NEW PROP
+  isLooseSpare = false, 
   isBoxnumberDisable = false,
   isAddRow = true,
-  addToDropdown = async () => {},
+  // addToDropdown = async () => {},
+   addToDropdown = async (type, value) => {
+    try {
+      const data = {
+        type: [type],
+        attr: [value],
+      };
+
+      const response = await apiService.post("/config/add", data);
+
+      if (response.success) {
+        toaster("success", "Data Added");
+
+        if (type === "location") {
+          await fetchStorageLocation();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to add");
+    }
+  }
 }) {
+    const { storageLocation, fetchStorageLocation } = useContext(Context);
   const handleInputChange = (index, fieldName, fieldValue) => {
     const newRows = [...value];
     newRows[index] = {
@@ -36,7 +59,6 @@ function BoxNoInputs({
     };
     onChange(newRows);
   };
-  const { storageLocation } = useContext(Context);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newValue, setNewValue] = useState(null);
@@ -137,16 +159,7 @@ function BoxNoInputs({
               </TableCell>
 
               <TableCell>
-                {/* <Input
-                  required
-                  placeholder="Location"
-                  type="text"
-                  value={row.location}
-                  onChange={(e) =>
-                    handleInputChange(index, "location", e.target.value)
-                  }
-                /> */}
-                <CustomComboBox
+                {/* <CustomComboBox
                   options={storageLocation}
                   placeholder="Select location"
                   onSelect={(value) => {
@@ -158,7 +171,29 @@ function BoxNoInputs({
                     setNewValue(value);
                   }}
                   className="w-full"
-                />
+                /> */}
+                <div className="location-combobox w-full">
+                  <ComboBox
+                    options={storageLocation}
+                    placeholder="Select location"
+                    onSelect={(value) => {
+                      handleInputChange(index, "location", value.name);
+                    }}
+                    onCustomAdd={(value) => {
+                      setOpen(true);
+                      setNewValue(value.name);
+                    }}
+                    onDelete={async (value) => {
+                      try {
+                        await apiService.delete(`/config/${value.id}`);
+                        await fetchStorageLocation();
+                        toaster("success", "Deleted Successfully");
+                      } catch {
+                        toaster("error", "Failed to delete the item");
+                      }
+                    }}
+                  />
+                </div>
               </TableCell>
 
               {value.length > 1 && isAddRow && (
@@ -217,7 +252,7 @@ function BoxNoInputs({
               loadingText="Adding..."
               onClick={async () => {
                 setLoading(true);
-                await addToDropdown(newValue);
+                await addToDropdown("location", newValue);
                 setOpen(false);
                 setLoading(false);
               }}

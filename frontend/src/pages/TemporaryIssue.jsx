@@ -163,77 +163,76 @@ const PendingTempLoan = () => {
       toaster("error", error.message);
     }
   };
-const handleReceive = async () => {
-  if (actionType === "returned") {
-    if (!inputs.quantity_received) {
-      toaster("error", "Quantity is required");
-      return;
-    } else if (inputs.quantity_received <= 0) {
-      toaster("error", "Quantity cannot be less than one");
-      return;
-    } else if (inputs.quantity_received > selectedRow.quantity) {
-      toaster("error", "Quantity cannot be greater than issued quantity");
-      return;
-    } else if (!inputs.receive_date) {
-      toaster("error", "Receive date is required");
-      return;
-    }
-  }
-
-  setIsLoading((prev) => ({ ...prev, receive: true }));
-
-  try {
-    let response;
+  const handleReceive = async () => {
     if (actionType === "returned") {
-      response = await apiService.post("/loan/temp-loans-receive", {
-        loan_id: selectedRow.id,
-        quantity: inputs.quantity_received,
-        date: formatSimpleDate(inputs.receive_date),
-        issued_quantity: selectedRow.quantity,
-        box_no: boxNo, 
-      });
-    } else {
-      const nextStatus = ["P", "R"].includes(selectedRow.category)
-        ? "PENDING_SURVEY"
-        : "PENDING_DEMAND";
-
-      response = await apiService.post("/loan/temp-loans-utilised", {
-        loan_id: selectedRow.id,
-        status: nextStatus,
-      });
+      if (!inputs.quantity_received) {
+        toaster("error", "Quantity is required");
+        return;
+      } else if (inputs.quantity_received <= 0) {
+        toaster("error", "Quantity cannot be less than one");
+        return;
+      } else if (inputs.quantity_received > selectedRow.quantity) {
+        toaster("error", "Quantity cannot be greater than issued quantity");
+        return;
+      } else if (!inputs.receive_date) {
+        toaster("error", "Receive date is required");
+        return;
+      }
     }
 
-    if (response.success) {
-      toaster(
-        "success",
-        actionType === "returned"
-          ? "Item received successfully"
-          : "Item marked as utilised successfully",
-      );
+    setIsLoading((prev) => ({ ...prev, receive: true }));
 
-      setIsOpen((prev) => ({ ...prev, receive: false }));
+    try {
+      let response;
+      if (actionType === "returned") {
+        response = await apiService.put("/temporaryIssue/issue", {
+          id: selectedRow.id,
+          qty_received: Number(inputs.quantity_received),
+          return_date: formatSimpleDate(inputs.receive_date),
+          box_no: boxNo,
+          approve: true,
+        });
+      } else {
+        const nextStatus = ["P", "R"].includes(selectedRow.category)
+          ? "PENDING_SURVEY"
+          : "PENDING_DEMAND";
 
-      setInputs({
-        quantity_received: "",
-        receive_date: new Date(),
-      });
+        response = await apiService.post("/loan/temp-loans-utilised", {
+          loan_id: selectedRow.id,
+          status: nextStatus,
+        });
+      }
 
-      setActionType("returned");
-      setBoxNo([]);
+      if (response.success) {
+        toaster(
+          "success",
+          actionType === "returned"
+            ? "Item received successfully"
+            : "Item marked as utilised successfully",
+        );
 
-      fetchdata();
-    } else {
-      toaster("error", response.message);
+        setIsOpen((prev) => ({ ...prev, receive: false }));
+
+        setInputs({
+          quantity_received: "",
+          receive_date: new Date(),
+        });
+
+        setActionType("returned");
+        setBoxNo([]);
+
+        fetchdata();
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      const errMsg =
+        error.response?.data?.message || error.message || "Operation failed";
+      toaster("error", errMsg);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, receive: false }));
     }
-  } catch (error) {
-    const errMsg =
-      error.response?.data?.message || error.message || "Operation failed";
-    toaster("error", errMsg);
-  } finally {
-    setIsLoading((prev) => ({ ...prev, receive: false }));
-  }
-};
-
+  };
 
   useEffect(() => {
     fetchdata();
@@ -440,6 +439,7 @@ const handleReceive = async () => {
                     <FormattedDatePicker
                       label="Returned Date"
                       className="w-full"
+                      value={inputs.receive_date}
                       onChange={(date) => {
                         setInputs((prev) => ({
                           ...prev,
@@ -488,11 +488,11 @@ const handleReceive = async () => {
           {actionType === "utilised" && (
             <div className="mt-4 p-3 bg-gray-50 rounded-md text-sm">
               <p>
-                This item will be marked as <b>Utilised</b>.
+                This item has been marked as <b>Utilised</b>.
               </p>
 
               <p className="mt-2">
-                Status will be moved to:
+                Item will move to:
                 <b className="ml-1">
                   {["P", "R"].includes(selectedRow?.category)
                     ? "Pending for Survey"

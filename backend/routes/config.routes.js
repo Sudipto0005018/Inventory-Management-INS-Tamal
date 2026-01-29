@@ -12,7 +12,7 @@ const {
 
 router.post("/add", addConfig);
 router.get("/location-storage", getLocationStorage);
-router.get("/issue", getIssueTo);
+router.get("/issue", getIssueTo); 
 router.get("/concurred_by", getConcurredBy);
 router.get("/service-no/:service_no", getUserByServiceNo);
 router.delete("/:id", deleteConfig);

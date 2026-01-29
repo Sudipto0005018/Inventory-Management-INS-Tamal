@@ -207,50 +207,83 @@ async function getTemporaryIssueList(req, res) {
 async function updateTemporaryIssue(req, res) {
   const { id: userId } = req.user;
 
-  const {
-    id,
-    qty_received,
-    return_date,
-    loan_duration,
-    issue_to,
-    service_no,
-    approve, // boolean
-  } = req.body;
+  const { id, qty_received, return_date, box_no, approve = true } = req.body;
 
   try {
-    const query = `
+    const [[issue]] = await pool.query(
+      `SELECT spare_id, tool_id FROM temporary_issue_local WHERE id = ?`,
+      [id],
+    );
+
+    if (!issue) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Issue not found" });
+    }
+
+    const isSpare = !!issue.spare_id;
+    const inventoryTable = isSpare ? "spares" : "tools";
+    const inventoryId = issue.spare_id || issue.tool_id;
+
+    /** 2. Fetch inventory box_no */
+    const [[inventory]] = await pool.query(
+      `SELECT box_no FROM ${inventoryTable} WHERE id = ?`,
+      [inventoryId],
+    );
+
+    let boxes = JSON.parse(inventory.box_no || "[]");
+
+    /** 3. Deposit qty back into inventory */
+    const updatedBoxes = boxes.map((box) => {
+      const match = box_no.find((b) => b.no === box.no);
+      if (match) {
+        return {
+          ...box,
+          qtyHeld: (
+            parseInt(box.qtyHeld || 0) + parseInt(match.deposit || 0)
+          ).toString(),
+        };
+      }
+      return box;
+    });
+
+    /** 4. Update inventory */
+    await pool.query(`UPDATE ${inventoryTable} SET box_no = ? WHERE id = ?`, [
+      JSON.stringify(updatedBoxes),
+      inventoryId,
+    ]);
+
+    /** 5. Update temporary issue */
+    await pool.query(
+      `
       UPDATE temporary_issue_local
       SET
         qty_received = ?,
         return_date = ?,
-        loan_duration = ?,
-        issue_to = ?,
-        service_no = ?,
-        approved_by = CASE WHEN ? = true THEN ? ELSE approved_by END,
-        approved_at = CASE WHEN ? = true THEN NOW() ELSE approved_at END
+        approved_by = ?,
+        box_no = ?,
+        approved_at = NOW()
       WHERE id = ?
-    `;
+      `,
+      [
+        qty_received,
+        return_date,
+        approve ? userId : null,
+        JSON.stringify(updatedBoxes),
+        id,
+      ],
+    );
 
-    await pool.query(query, [
-      qty_received ?? null,
-      return_date ?? null,
-      loan_duration ?? null,
-      issue_to ?? null,
-      service_no ?? null,
-      approve,
-      userId,
-      approve,
-      id,
-    ]);
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, "Temporary issue updated successfully"));
+    return res.json({
+      success: true,
+      message: "Item returned and inventory updated successfully",
+    });
   } catch (error) {
-    console.error("UPDATE TEMPORARY ISSUE ERROR =>", error);
-    return res
-      .status(500)
-      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+    console.error("UPDATE TEMP ISSUE ERROR =>", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
 

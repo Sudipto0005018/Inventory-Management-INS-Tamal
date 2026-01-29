@@ -11,6 +11,6 @@ const {
 
 router.post("/temporary", authMiddleware, createTemporaryIssue);
 router.get("/issue", getTemporaryIssueList);
-router.put("/issue/:id", authMiddleware, updateTemporaryIssue);
+router.put("/issue", authMiddleware, updateTemporaryIssue); 
 
 module.exports = router;
