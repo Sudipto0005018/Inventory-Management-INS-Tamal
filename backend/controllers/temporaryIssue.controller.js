@@ -2,92 +2,103 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
-async function createTemporaryIssue(req, res) {
-  const { id: userId } = req.user;
+// async function createTemporaryIssue(req, res) {
+//   const { id: userId } = req.user;
 
-  try {
-    const {
-      spare_id,
-      tool_id,
-      qty_withdrawn,
-      service_no,
-      issue_to,
-      issue_date,
-      loan_duration,
-      return_date,
-      qty_received,
-      box_no,
-      a, // "spare" or "tool"
-    } = req.body;
+//   try {
+//     const {
+//       spare_id,
+//       tool_id,
+//       qty_withdrawn,
+//       service_no,
+//       issue_to,
+//       issue_date,
+//       loan_duration,
+//       return_date,
+//       qty_received,
+//       box_no,
+//       a, // "spare" or "tool"
+//     } = req.body;
 
-    const query = `
-      INSERT INTO temporary_issue_local (
-        spare_id,
-        tool_id,
-        qty_withdrawn,
-        service_no,
-        issue_to,
-        issue_date,
-        loan_duration,
-        return_date,
-        qty_received,
-        created_by,
-        created_at,
-        approved_by,
-        approved_at,
-        box_no
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?)
-    `;
+//     const transactionId = "TI-" + Date.now();
 
-    const [[row]] = await pool.query(
-      `SELECT box_no FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
-      [spare_id || tool_id],
-    );
-    const spares = JSON.parse(row.box_no);
+//     const query = `
+//       INSERT INTO temporary_issue_local (
+//         transaction_id,
+//         spare_id,
+//         tool_id,
+//         qty_withdrawn,
+//         service_no,
+//         issue_to,
+//         issue_date,
+//         loan_duration,
+//         return_date,
+//         qty_received,
+//         created_by,
+//         created_at,
+//         approved_by,
+//         approved_at,
+//         box_no,
+//         status
+//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+//     `;
 
-    const updated = spares.map((spare) => {
-      const match = box_no.find((item) => item.no == spare.no);
-      if (match) {
-        return {
-          ...spare,
-          qtyHeld: (
-            parseInt(spare.qtyHeld) - parseInt(match.withdraw)
-          ).toString(),
-        };
-      }
-    });
+//     const [[row]] = await pool.query(
+//       `SELECT box_no, obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+//       [spare_id || tool_id],
+//     );
+//     const spares = JSON.parse(row.box_no || "[]");
+//     let totalWithdrawQty = 0;
 
-    await pool.query(
-      `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ? WHERE id = ?`,
-      [JSON.stringify(updated), spare_id || tool_id],
-    );
+//     const updated = spares.map((spare) => {
+//       const match = box_no.find((item) => item.no == spare.no);
+//       if (!match) return spare;
 
-    await pool.query(query, [
-      a === "spare" ? spare_id : null,
-      a === "tool" ? tool_id : null,
-      qty_withdrawn,
-      service_no,
-      issue_to || null,
-      issue_date || null,
-      loan_duration || null,
-      return_date || null,
-      qty_received || null,
-      userId,
-      JSON.stringify(updated),
-    ]);
+//       const withdrawQty = parseInt(match.withdraw || 0);
+//       totalWithdrawQty += withdrawQty;
 
-    res.json({
-      success: true,
-      message: "Temporary Issue created successfully",
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-}
+//       return {
+//         ...spare,
+//         qtyHeld: (parseInt(spare.qtyHeld) - withdrawQty).toString(),
+//       };
+//     });
+
+//     await pool.query(
+//       `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ?,  obs_held = obs_held - ? WHERE id = ?`,
+//       [JSON.stringify(updated), totalWithdrawQty, spare_id || tool_id],
+//     );
+//     await pool.query(query, [
+//       transactionId,
+//       a === "spare" ? spare_id : null,
+//       a === "tool" ? tool_id : null,
+//       qty_withdrawn,
+//       service_no,
+//       issue_to || null,
+//       issue_date || null,
+//       loan_duration || null,
+//       return_date || null,
+//       qty_received || null,
+//       userId,
+//       JSON.stringify(updated),
+//     ]);
+
+//     // detect
+
+//     // TI-17...., null, 3, null, Rabc123, 30, -5, '2026-01-31 10:59:59'
+
+//     res.json({
+//       success: true,
+//       transactionId,
+//       message: "Temporary Issue created successfully",
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// }
 
 async function getTemporaryIssueList(req, res) {
   const page = parseInt(req.query?.page) || 1;
@@ -97,7 +108,7 @@ async function getTemporaryIssueList(req, res) {
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
-      `SELECT COUNT(*) AS count FROM temporary_issue_local`,
+      `SELECT COUNT(*) AS count FROM temporary_issue_local WHERE status = 'pending'`,
     );
 
     const total = countResult[0].count;
@@ -176,7 +187,7 @@ async function getTemporaryIssueList(req, res) {
       LEFT JOIN tools t ON t.id = til.tool_id
       LEFT JOIN users u1 ON u1.id = til.created_by
       LEFT JOIN users u2 ON u2.id = til.approved_by
-
+      WHERE til.status = 'pending'
       ORDER BY til.created_at DESC
       LIMIT ? OFFSET ?
     `;
@@ -204,14 +215,381 @@ async function getTemporaryIssueList(req, res) {
   }
 }
 
-async function updateTemporaryIssue(req, res) {
+// async function updateTemporaryIssue(req, res) {
+//   const { id: userId } = req.user;
+
+//   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+
+//   try {
+//     const [[issue]] = await pool.query(
+//       `SELECT spare_id, tool_id FROM temporary_issue_local WHERE id = ?`,
+//       [id],
+//     );
+
+//     if (!issue) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Issue not found" });
+//     }
+
+//     const { transaction_id } = issue;
+
+//     const isSpare = !!issue.spare_id;
+//     const inventoryTable = isSpare ? "spares" : "tools";
+//     const inventoryId = issue.spare_id || issue.tool_id;
+
+//     /** 2. Fetch inventory box_no */
+//     const [[inventory]] = await pool.query(
+//       `SELECT box_no FROM ${inventoryTable} WHERE id = ?`,
+//       [inventoryId],
+//     );
+
+//     let boxes = JSON.parse(inventory.box_no || "[]");
+//     let totalDepositedQty = 0;
+
+//     /** 3. Deposit qty back into inventory */
+//     const updatedBoxes = boxes.map((box) => {
+//       const match = box_no.find((b) => b.no === box.no);
+//       if (!match) return box;
+
+//       const depositQty = parseInt(match.deposit || 0);
+//       totalDepositedQty += depositQty;
+
+//       return {
+//         ...box,
+//         qtyHeld: (parseInt(box.qtyHeld || 0) + depositQty).toString(),
+//       };
+//     });
+
+//     /** 4. Update inventory */
+//     await pool.query(
+//       `UPDATE ${inventoryTable} SET box_no = ?, obs_held = obs_held + ? WHERE id = ?`,
+//       [JSON.stringify(updatedBoxes), totalDepositedQty, inventoryId],
+//     );
+
+//     /** 5. Update temporary issue */
+//     await pool.query(
+//       `
+//       UPDATE temporary_issue_local
+//       SET
+//         qty_received = ?,
+//         return_date = ?,
+//         approved_by = ?,
+//         box_no = ?,
+//         status = 'complete',
+//         approved_at = NOW()
+//       WHERE id = ?
+//       `,
+//       [
+//         qty_received,
+//         return_date,
+//         approve ? userId : null,
+//         JSON.stringify(updatedBoxes),
+//         id,
+//       ],
+//     );
+
+//     return res.json({
+//       success: true,
+//       transactionId: transaction_id,
+//       message: "Item returned and inventory updated successfully",
+//     });
+//   } catch (error) {
+//     console.error("UPDATE TEMP ISSUE ERROR =>", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   }
+// }
+
+async function categoryWiseUpdate(req, res) {
   const { id: userId } = req.user;
 
+  // if (!req.user || !req.user.id) {
+  //   return res.status(401).json({
+  //     success: false,
+  //     message: "Unauthorized",
+  //   });
+  // }
+  // const userId = req.user.id;
+
+  const { id } = req.body; // temporary_issue_local.id
+
+  try {
+    /** 1. Fetch temporary issue */
+    const [[issue]] = await pool.query(
+      `
+      SELECT *
+      FROM temporary_issue_local
+      WHERE id = ?
+      `,
+      [id],
+    );
+
+    if (!issue) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Temporary issue not found" });
+    }
+
+    const isSpare = !!issue.spare_id;
+    const inventoryTable = isSpare ? "spares" : "tools";
+    const inventoryId = issue.spare_id || issue.tool_id;
+
+    /** 2. Fetch item category */
+    const [[item]] = await pool.query(
+      `SELECT category FROM ${inventoryTable} WHERE id = ?`,
+      [inventoryId],
+    );
+
+    if (!item) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found in inventory" });
+    }
+
+    const category = item.category;
+
+    /** 3. Generate transaction id */
+    const transactionId = `TMP-${Date.now()}`;
+
+    /** 4. CATEGORY → DEMAND */
+    if (["C", "LP"].includes(category)) {
+      await pool.query(
+        `
+        INSERT INTO demand (
+          transaction_id,
+          spare_id,
+          tool_id,
+          issue_to,
+          withdrawl_qty,
+          withdrawl_date,
+          box_no,
+          service_no,
+          created_by,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+        `,
+        [
+          transactionId,
+          issue.spare_id,
+          issue.tool_id,
+          issue.issue_to,
+          issue.qty_withdrawn,
+          issue.issue_date,
+          JSON.stringify(issue.box_no),
+          issue.service_no,
+          userId,
+        ],
+      );
+    }
+
+    /** 5. CATEGORY → SURVEY */
+    if (["P", "R"].includes(category)) {
+      await pool.query(
+        `
+        INSERT INTO survey (
+          transaction_id,
+          spare_id,
+          tool_id,
+          issue_to,
+          withdrawl_qty,
+          withdrawl_date,
+          box_no,
+          service_no,
+          created_by,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+        `,
+        [
+          transactionId,
+          issue.spare_id,
+          issue.tool_id,
+          issue.issue_to,
+          issue.qty_withdrawn,
+          issue.issue_date,
+          JSON.stringify(issue.box_no),
+          issue.service_no,
+          userId,
+        ],
+      );
+    }
+
+    /** 6. Mark temporary issue as utilised */
+    await pool.query(
+      `
+      UPDATE temporary_issue_local
+      SET
+        approved_by = ?,
+        approved_at = NOW()
+      WHERE id = ?
+      `,
+      [userId, id],
+    );
+
+    return res.json({
+      success: true,
+      message: "Item utilised and processed successfully",
+    });
+  } catch (error) {
+    console.error("UTILISE TEMP ISSUE ERROR =>", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+async function getCategory(req, res) {
+  const { spare_id, tool_id } = req.body;
+  try {
+    const [[row]] = await pool.query(
+      `SELECT * from ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+      [spare_id || tool_id],
+    );
+    res.json({ success: true, category: row.category });
+  } catch (error) {}
+}
+
+async function createTemporaryIssue(req, res) {
+  const { id: userId } = req.user;
+
+  try {
+    const {
+      spare_id,
+      tool_id,
+      qty_withdrawn,
+      service_no,
+      issue_to,
+      issue_date,
+      loan_duration,
+      return_date,
+      qty_received,
+      box_no,
+      a,
+    } = req.body;
+
+    const transactionId = "TI-" + Date.now();
+    const now = new Date();
+
+    /** 1. Fetch inventory */
+    const [[row]] = await pool.query(
+      `SELECT box_no, obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+      [spare_id || tool_id],
+    );
+
+    const previousOBS = parseInt(row.obs_held);
+    const spares = JSON.parse(row.box_no || "[]");
+
+    let totalWithdrawQty = 0;
+    const boxTransactions = [];
+
+    /** 2. Box-wise update */
+    const updatedBoxes = spares.map((spare) => {
+      const match = box_no.find((item) => item.no == spare.no);
+      if (!match) return spare;
+
+      const prevQty = parseInt(spare.qtyHeld);
+      const withdrawQty = parseInt(match.withdraw || 0);
+
+      totalWithdrawQty += withdrawQty;
+
+      boxTransactions.push([
+        transactionId,
+        null,
+        a === "spare" ? spare_id : null,
+        a === "tool" ? tool_id : null,
+        spare.no,
+        prevQty,
+        -withdrawQty,
+        now,
+      ]);
+
+      return {
+        ...spare,
+        qtyHeld: (prevQty - withdrawQty).toString(),
+      };
+    });
+
+    const newOBS = previousOBS - totalWithdrawQty;
+
+    /** 3. Update inventory */
+    await pool.query(
+      `UPDATE ${spare_id ? "spares" : "tools"}
+       SET box_no = ?, obs_held = ?
+       WHERE id = ?`,
+      [JSON.stringify(updatedBoxes), newOBS, spare_id || tool_id],
+    );
+
+    /** 4. Insert temp issue */
+    await pool.query(
+      `
+      INSERT INTO temporary_issue_local (
+        transaction_id, spare_id, tool_id, qty_withdrawn,
+        service_no, issue_to, issue_date, loan_duration,
+        return_date, qty_received, created_by, created_at,
+        approved_by, approved_at, box_no, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+      `,
+      [
+        transactionId,
+        a === "spare" ? spare_id : null,
+        a === "tool" ? tool_id : null,
+        qty_withdrawn,
+        service_no,
+        issue_to || null,
+        issue_date || null,
+        loan_duration || null,
+        return_date || null,
+        qty_received || null,
+        userId,
+        JSON.stringify(updatedBoxes),
+      ],
+    );
+
+    /** 5. Insert box transactions */
+    if (boxTransactions.length) {
+      await pool.query(
+        `
+        INSERT INTO box_transaction (
+          transaction_id, demand_transaction, spare_id, tool_id,
+          box_no, prev_qty, withdrawl_qty, transaction_date
+        ) VALUES ?
+        `,
+        [boxTransactions],
+      );
+    }
+
+    /** 6. Insert OBS audit */
+    await pool.query(
+      `
+      INSERT INTO obs_audit (
+        transaction_id, previous_obs, new_obs
+      ) VALUES (?, ?, ?)
+      `,
+      [transactionId, previousOBS, newOBS],
+    );
+
+    res.json({
+      success: true,
+      transactionId,
+      message: "Temporary Issue created successfully",
+    });
+  } catch (err) {
+    console.error("CREATE TEMP ISSUE ERROR =>", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+async function updateTemporaryIssue(req, res) {
+  const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
 
   try {
+    /** 1. Fetch issue */
     const [[issue]] = await pool.query(
-      `SELECT spare_id, tool_id FROM temporary_issue_local WHERE id = ?`,
+      `SELECT spare_id, tool_id, transaction_id FROM temporary_issue_local WHERE id = ?`,
       [id],
     );
 
@@ -221,48 +599,67 @@ async function updateTemporaryIssue(req, res) {
         .json({ success: false, message: "Issue not found" });
     }
 
+    const { transaction_id } = issue;
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = issue.spare_id || issue.tool_id;
 
-    /** 2. Fetch inventory box_no */
+    /** 2. Fetch inventory */
     const [[inventory]] = await pool.query(
-      `SELECT box_no FROM ${inventoryTable} WHERE id = ?`,
+      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ?`,
       [inventoryId],
     );
 
+    const previousOBS = parseInt(inventory.obs_held);
     let boxes = JSON.parse(inventory.box_no || "[]");
 
-    /** 3. Deposit qty back into inventory */
+    let totalDepositedQty = 0;
+    const boxTransactions = [];
+    const now = new Date();
+
+    /** 3. Deposit logic */
     const updatedBoxes = boxes.map((box) => {
       const match = box_no.find((b) => b.no === box.no);
-      if (match) {
-        return {
-          ...box,
-          qtyHeld: (
-            parseInt(box.qtyHeld || 0) + parseInt(match.deposit || 0)
-          ).toString(),
-        };
-      }
-      return box;
+      if (!match) return box;
+
+      const prevQty = parseInt(box.qtyHeld);
+      const depositQty = parseInt(match.deposit || 0);
+
+      totalDepositedQty += depositQty;
+
+      boxTransactions.push([
+        transaction_id,
+        null,
+        isSpare ? issue.spare_id : null,
+        !isSpare ? issue.tool_id : null,
+        box.no,
+        prevQty,
+        depositQty,
+        now,
+      ]);
+
+      return {
+        ...box,
+        qtyHeld: (prevQty + depositQty).toString(),
+      };
     });
 
-    /** 4. Update inventory */
-    await pool.query(`UPDATE ${inventoryTable} SET box_no = ? WHERE id = ?`, [
-      JSON.stringify(updatedBoxes),
-      inventoryId,
-    ]);
+    const newOBS = previousOBS + totalDepositedQty;
 
-    /** 5. Update temporary issue */
+    /** 4. Update inventory */
+    await pool.query(
+      `UPDATE ${inventoryTable}
+       SET box_no = ?, obs_held = ?
+       WHERE id = ?`,
+      [JSON.stringify(updatedBoxes), newOBS, inventoryId],
+    );
+
+    /** 5. Update temp issue */
     await pool.query(
       `
       UPDATE temporary_issue_local
-      SET
-        qty_received = ?,
-        return_date = ?,
-        approved_by = ?,
-        box_no = ?,
-        approved_at = NOW()
+      SET qty_received = ?, return_date = ?, approved_by = ?,
+          box_no = ?, status = 'complete', approved_at = NOW()
       WHERE id = ?
       `,
       [
@@ -274,16 +671,37 @@ async function updateTemporaryIssue(req, res) {
       ],
     );
 
-    return res.json({
+    /** 6. Insert box transactions */
+    if (boxTransactions.length) {
+      await pool.query(
+        `
+        INSERT INTO box_transaction (
+          transaction_id, demand_transaction, spare_id, tool_id,
+          box_no, prev_qty, withdrawl_qty, transaction_date
+        ) VALUES ?
+        `,
+        [boxTransactions],
+      );
+    }
+
+    /** 7. Insert OBS audit */
+    await pool.query(
+      `
+      INSERT INTO obs_audit (
+        transaction_id, previous_obs, new_obs
+      ) VALUES (?, ?, ?)
+      `,
+      [transaction_id, previousOBS, newOBS],
+    );
+
+    res.json({
       success: true,
+      transactionId: transaction_id,
       message: "Item returned and inventory updated successfully",
     });
   } catch (error) {
     console.error("UPDATE TEMP ISSUE ERROR =>", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
 
@@ -291,4 +709,6 @@ module.exports = {
   createTemporaryIssue,
   getTemporaryIssueList,
   updateTemporaryIssue,
+  getCategory,
+  categoryWiseUpdate,
 };

@@ -3,7 +3,9 @@ import { Context } from "../utils/Context";
 import PaginationTable from "../components/PaginationTableTwo";
 import apiService from "../utils/apiService";
 import { Button } from "../components/ui/button";
-import { FaChevronRight } from "react-icons/fa6";
+import { IoMdRefresh } from "react-icons/io";
+import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
+import Chip from "../components/Chip";
 import {
   addDate,
   formatSimpleDate,
@@ -11,6 +13,7 @@ import {
   getFormatedDate,
 } from "../utils/helperFunctions";
 import BoxNoDeposit from "../components/BoxNoDeposit";
+import { MultiSelect } from "../components/ui/multi-select";
 
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import {
@@ -21,14 +24,6 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../components/ui/table";
 import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
@@ -44,18 +39,44 @@ const PendingTempLoan = () => {
         </span>
       ),
     },
-    { key: "equipment_system", header: "Equipment/ System" },
+    { key: "equipment_system", header: "Equipment / System" },
     { key: "qty_withdrawn", header: "Issued Qty" },
     { key: "service_no", header: "Service No." },
     { key: "issue_to", header: "Issued to" },
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
-    { key: "received_quantity", header: "Qty returned" },
-    { key: "returned_date_formatted", header: "Returned Date" },
+    // { key: "received_quantity", header: "Qty returned" },
+    // { key: "returned_date_formatted", header: "Returned Date" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
   ]);
+
+  const options = [
+    {
+      value: "description",
+      label: "Item Description",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "vue",
+      label: (
+        <p>
+          <i>IN</i> Part No.
+        </p>
+      ),
+      width: "min-w-[40px]",
+    },
+    { value: "category", label: "Category", width: "min-w-[40px]" },
+    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
+    {
+      value: "survey_quantity",
+      label: "Surveyed Quantity",
+      width: "min-w-[40px]",
+    },
+    { value: "status", label: "Status", width: "min-w-[40px]" },
+  ];
+  const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
   // "returned" | "utilised"
 
@@ -80,7 +101,6 @@ const PendingTempLoan = () => {
   const [isLoading, setIsLoading] = useState({
     receive: false,
   });
-  const [receiveHistory, setReceiveHistory] = useState([]);
   const fetchdata = async () => {
     try {
       const response = await apiService.get("/temporaryIssue/issue", {
@@ -91,7 +111,6 @@ const PendingTempLoan = () => {
       });
 
       if (response.success) {
-        // Always normalize to array
         const items = Array.isArray(response.data)
           ? response.data
           : response.data?.items || [];
@@ -106,6 +125,42 @@ const PendingTempLoan = () => {
     } catch (error) {
       toaster("error", error.message);
     }
+  };
+
+  const handleSearch = async (e) => {
+    const searchTerm = inputs.search.trim();
+    if (searchTerm === actualSearch) {
+      return;
+    } else {
+      setActualSearch(searchTerm);
+    }
+    setIsLoading((prev) => ({ ...prev, search: true }));
+    await fetchdata();
+    setIsLoading((prev) => ({ ...prev, search: false }));
+  };
+
+  const getDepositQty = () => {
+    if (!Array.isArray(boxNo)) return 0;
+
+    return boxNo.reduce((sum, row) => {
+      const depositQty = Number(row?.deposit || 0);
+      return sum + depositQty;
+    }, 0);
+  };
+
+
+  const handleRefresh = () => {
+    setInputs((prev) => ({
+      ...prev,
+      search: "",
+    }));
+
+    setSelectedSearchFields([]);
+    setCurrentPage(1);
+    setActualSearch("");
+    // setSelectedRowIndex(null);
+    setPanelProduct({ critical_spare: "no" });
+    fetchdata("", 1);
   };
 
   useEffect(() => {
@@ -131,6 +186,12 @@ const PendingTempLoan = () => {
 
       received_quantity: row.qty_received ?? 0,
 
+      status:
+        row.status?.toLowerCase() == "pending" ? (
+          <Chip text="Pending" varient="info" />
+        ) : (
+          <Chip text="Completed" varient="success" />
+        ),
       receive: (
         <Button
           size="icon"
@@ -148,43 +209,48 @@ const PendingTempLoan = () => {
     setTableData(t);
   }, [fetchedData]);
 
-  const fetchLoanReceiveHistory = async () => {
-    try {
-      const response = await apiService.get(
-        "/loan/temp-loans-history/" + selectedRow.id,
-      );
-      if (response.success) {
-        setReceiveHistory(response.data);
-        console.log(response.data);
-      } else {
-        setReceiveHistory([]);
-      }
-    } catch (error) {
-      toaster("error", error.message);
-    }
-  };
   const handleReceive = async () => {
     if (actionType === "returned") {
-      if (!inputs.quantity_received) {
+      const returnedQty = Number(inputs.quantity_received);
+      const depositQty = getDepositQty();
+      console.log("deposit qty==>", depositQty);
+      if (!returnedQty) {
         toaster("error", "Quantity is required");
         return;
-      } else if (inputs.quantity_received <= 0) {
-        toaster("error", "Quantity cannot be less than one");
+      }
+      if (returnedQty < 0) {
+        toaster("error", "Quantity cannot be less than zero");
         return;
-      } else if (inputs.quantity_received > selectedRow.quantity) {
+      }
+      if (returnedQty > selectedRow.quantity) {
         toaster("error", "Quantity cannot be greater than issued quantity");
         return;
-      } else if (!inputs.receive_date) {
+      }
+      if (!returnedQty) {
         toaster("error", "Receive date is required");
         return;
       }
+       if (depositQty < 0) {
+         toaster("error", "Deposit quantity cannot be less than 0");
+         return;
+       }
+
+       if (depositQty !== returnedQty) {
+         toaster(
+           "error",
+           `Deposit quantity must be equal to returned quantity`,
+         );
+         return;
+       }
     }
 
     setIsLoading((prev) => ({ ...prev, receive: true }));
 
     try {
       let response;
+
       if (actionType === "returned") {
+        /** ITEM RETURNED */
         response = await apiService.put("/temporaryIssue/issue", {
           id: selectedRow.id,
           qty_received: Number(inputs.quantity_received),
@@ -193,13 +259,9 @@ const PendingTempLoan = () => {
           approve: true,
         });
       } else {
-        const nextStatus = ["P", "R"].includes(selectedRow.category)
-          ? "PENDING_SURVEY"
-          : "PENDING_DEMAND";
-
-        response = await apiService.post("/loan/temp-loans-utilised", {
-          loan_id: selectedRow.id,
-          status: nextStatus,
+        /** ITEM UTILISED */
+        response = await apiService.post("/temporaryIssue/category-update", {
+          id: selectedRow.id,
         });
       }
 
@@ -212,23 +274,21 @@ const PendingTempLoan = () => {
         );
 
         setIsOpen((prev) => ({ ...prev, receive: false }));
-
         setInputs({
           quantity_received: "",
           receive_date: new Date(),
         });
-
         setActionType("returned");
         setBoxNo([]);
-
         fetchdata();
       } else {
         toaster("error", response.message);
       }
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message || error.message || "Operation failed";
-      toaster("error", errMsg);
+      toaster(
+        "error",
+        error.response?.data?.message || error.message || "Operation failed",
+      );
     } finally {
       setIsLoading((prev) => ({ ...prev, receive: false }));
     }
@@ -237,11 +297,6 @@ const PendingTempLoan = () => {
   useEffect(() => {
     fetchdata();
   }, [currentPage]);
-  useEffect(() => {
-    if (isOpen.receive) {
-      fetchLoanReceiveHistory();
-    }
-  }, [isOpen.receive]);
 
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
@@ -257,6 +312,7 @@ const PendingTempLoan = () => {
         issue_to: row.issue_to?.toUpperCase() || "-",
 
         loan_duration: row.loan_duration ?? "-",
+        returned_date_formatted: getFormatedDate(row.return_date),
 
         loan_status:
           Number(row.qty_received || 0) >= issuedQty ? "Completed" : "Pending",
@@ -275,6 +331,12 @@ const PendingTempLoan = () => {
 
         received_quantity: row.qty_received ?? 0,
 
+        status:
+          row.status?.toLowerCase() == "pending" ? (
+            <Chip text="Completed" varient="success" />
+          ) : (
+            <Chip text="Pending" varient="info" />
+          ),
         receive: (
           <Button
             size="icon"
@@ -327,7 +389,61 @@ const PendingTempLoan = () => {
 
   return (
     <>
-      <div className="w-full h-full rounded-md bg-white">
+      <div className="w-table-2 pt-2 h-full rounded-md bg-white">
+        <div className="mb-2 px-3">
+          <MultiSelect
+            className="bg-white hover:bg-blue-50"
+            options={options}
+            placeholder="Select Fields"
+            onValueChange={setSelectedValues}
+            defaultValue={selectedValues}
+            singleLine
+            maxCount={6}
+          />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
+          <Input
+            type="text"
+            placeholder="Search items"
+            className="bg-white "
+            value={inputs.search}
+            onChange={(e) =>
+              setInputs((prev) => ({ ...prev, search: e.target.value }))
+            }
+          />
+          <SpinnerButton
+            className="cursor-pointer hover:bg-primary/85"
+            onClick={handleSearch}
+            loading={isLoading.search}
+            disabled={isLoading.search}
+            loadingText="Searching..."
+          >
+            <FaMagnifyingGlass className="size-3.5" />
+            Search
+          </SpinnerButton>
+
+          <Button
+            variant="outline"
+            className="cursor-pointer flex items-center gap-1 
+            hover:bg-gray-200 font-extrabold
+            hover:scale-105 
+            transition-all duration-200"
+            onClick={handleRefresh}
+            title="Reset Search"
+          >
+            <IoMdRefresh
+              className="size-7
+              hover:rotate-180 
+              transition-transform duration-300"
+              style={{
+                color: "#109240",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            />
+            <span className="text-md font-bold text-green-700"></span>
+          </Button>
+        </div>
         <PaginationTable
           data={tableData}
           columns={columns}
@@ -392,7 +508,6 @@ const PendingTempLoan = () => {
           {actionType === "returned" && (
             <>
               <div className="grid grid-cols-3 gap-4"></div>
-              {/* {receiveHistory.length > 0 && <ReturnHistoryTable />} */}
 
               <DialogDescription className="hidden" />
               <div className="">
@@ -462,27 +577,6 @@ const PendingTempLoan = () => {
                   }}
                 />
               </div>
-              {/* {receiveHistory.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-semibold">Return History</p>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Returned Quantity</TableHead>
-                        <TableHead>Returned Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {receiveHistory.map((row, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>{row.quantity}</TableCell>
-                          <TableCell>{getDate(row.date)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )} */}
             </>
           )}
           {actionType === "utilised" && (

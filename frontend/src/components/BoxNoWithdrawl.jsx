@@ -1,6 +1,4 @@
-import { AiOutlineMinusCircle, AiOutlinePlusCircle } from "react-icons/ai";
 import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import {
   Table,
   TableBody,

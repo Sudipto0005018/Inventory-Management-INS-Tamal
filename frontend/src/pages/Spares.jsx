@@ -19,7 +19,6 @@ import {
 } from "../components/ui/dialog";
 import { CustomComboBox } from "../components/CustomCombobox";
 
-
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
@@ -245,7 +244,8 @@ const Spares = () => {
   const [selectedOem, setSelectedOem] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
 
-  const [isOpenOem, setIsOpenOem] = useState(false);
+  const [isOpenOem, setIsOpenOem] = useState({ add: false, edit: false });
+  const [selectedOEM, setSelectedOEM] = useState(null);
   const [isOpenSupplier, setIsOpenSupplier] = useState(false);
   const [newValue, setNewValue] = useState(null);
   const [dropdownType, setDropdownType] = useState(null); // "issue" | "concurred_by"
@@ -1322,36 +1322,37 @@ const Spares = () => {
             </div>
             <div className="w-full mt-6">
               <Label className="ms-2 mb-1">OEM Details</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
-                onChange={(e) => {
-                  const oemId = e.target.value;
-                  if (oemId === "ADD_NEW") {
-                    setIsOpenOem(true);
-                    return;
+              <ComboBox
+                dialogContent={
+                  <OEMFirm
+                    open={isOpenOem.add}
+                    onOpenChange={(value) =>
+                      setIsOpenOem((prev) => ({ ...prev, add: value }))
+                    }
+                  />
+                }
+                dialogOpen={isOpenOem.add}
+                setDialogOpen={(value) =>
+                  setIsOpenOem((prev) => ({ ...prev, add: value }))
+                }
+                options={oemList}
+                onSelect={(value) => {
+                  if (value) {
+                    setInputs((prev) => ({
+                      ...prev,
+                      oem: value.name,
+                    }));
                   }
-                  const oem = oemList.find((o) => o._id === Number(oemId));
-                  setSelectedOem(oemId);
-
-                  if (!oem) return;
-                  setInputs((prev) => ({
-                    ...prev,
-                    oem: oem.name,
-                  }));
                 }}
-              >
-                <option value="">Select OEM</option>
-
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.name}, {oem.id}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New OEM</option>
-              </select>
+                onDelete={async(value) => {
+                  
+                }}
+                onView={(value) => {
+                  setSelectedOEM(value);
+                  setIsOpenOem((prev) => ({ ...prev, edit: true }));
+                }}
+                className="w-1/2"
+              />
             </div>
             <div className="w-full mt-6">
               <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
@@ -1645,6 +1646,7 @@ const Spares = () => {
                   </div>
                 )}
               </div>
+
               {/* critical-special-price_unit-sub_component */}
               {/* <div>
                 <Label className="ms-2 mb-1">Critical Spare</Label>
@@ -2736,26 +2738,6 @@ const Spares = () => {
                   return;
                 }
 
-                for (const row of boxNo) {
-                  if (Number(row.qtyHeld) <= 0) {
-                    toaster("error", "Qty Held must be greater than 0");
-                    return;
-                  }
-
-                  if (Number(row.withdraw) <= 0) {
-                    toaster("error", "Withdrawal Qty must be greater than 0");
-                    return;
-                  }
-                }
-
-                // Validate Service No
-                for (const user of users) {
-                  // if (!user.service_no?.trim()) {
-                  //   toaster("error", "Service No. is required");
-                  //   return;
-                  // }
-                }
-
                 const expectedQty =
                   selectedRow.withdraw_type === "single"
                     ? 1
@@ -2765,6 +2747,13 @@ const Spares = () => {
                   return sum + Number(row.withdraw || 0);
                 }, 0);
 
+                if (totalWithdraw <= 0) {
+                  toaster(
+                    "error",
+                    "Total Withdrawal Quantity must be greater than 0",
+                  );
+                  return;
+                }
                 if (expectedQty !== totalWithdraw) {
                   toaster("error", "Withdrawal Quantity Mismatch", {
                     description: `Total distributed withdrawal (${totalWithdraw}) must be equal to ${
@@ -3228,19 +3217,6 @@ const Spares = () => {
           </div>
         </DialogContent>
       </Dialog>
-      <OEMFirm
-        open={isOpenOem}
-        onOpenChange={setIsOpenOem}
-        value={newVendor}
-        setValue={setNewVendor}
-        onSubmit={async () => {
-          const res = await apiService.post("/oems", newVendor);
-          setOemList((prev) => [...prev, res.data]);
-          setSelectedOem(res.data._id);
-          setInputs((prev) => ({ ...prev, oem: res.data.vendor }));
-          setIsOpenOem(false);
-        }}
-      />
 
       <SupplierFirm
         open={isOpenSupplier}
@@ -3254,6 +3230,15 @@ const Spares = () => {
           setInputs((prev) => ({ ...prev, supplier: res.data.supplier }));
           setIsOpenSupplier(false);
         }}
+      />
+      <OEMFirm
+        open={isOpenOem.edit}
+        onOpenChange={(value) => {
+          setIsOpenOem((prev) => ({ ...prev, edit: value }));
+        }}
+        val={selectedOEM}
+        isEditable={false}
+        setValue={setNewVendor}
       />
     </div>
   );

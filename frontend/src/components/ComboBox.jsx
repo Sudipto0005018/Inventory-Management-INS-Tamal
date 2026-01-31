@@ -31,6 +31,10 @@ const ComboBox = ({
   onDelete,
   placeholder = "Select option...",
   placeholderOne = "Enter Custom Option",
+  dialogContent,
+  dialogOpen,
+  setDialogOpen,
+  className = "",
 }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
@@ -47,7 +51,13 @@ const ComboBox = ({
 
   const handleSelect = (currentValue) => {
     if (currentValue === "other_custom_option") {
-      setDialogs((prev) => ({ ...prev, other: true }));
+      if (dialogContent) {
+        if (setDialogOpen) {
+          setDialogOpen(true);
+        }
+      } else {
+        setDialogs((prev) => ({ ...prev, other: true }));
+      }
       setOpen(false);
     } else {
       const isDeselecting = currentValue === value;
@@ -106,7 +116,10 @@ const ComboBox = ({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[200px] justify-between text-left font-normal"
+            className={cn(
+              "w-[200px] justify-between text-left font-normal",
+              className,
+            )}
           >
             <span className="truncate">
               {value
@@ -160,7 +173,10 @@ const ComboBox = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedOption(option);
-                            setDialogs((prev) => ({ ...prev, delete: true }));
+                            setDialogs((prev) => ({
+                              ...prev,
+                              delete: true,
+                            }));
                           }}
                         >
                           <FaTrash className="size-3" />
@@ -185,31 +201,43 @@ const ComboBox = ({
 
       {/* Dialog for entering custom value */}
       <Dialog
-        open={dialogs.other}
+        open={dialogContent ? dialogOpen : dialogs.other}
         onOpenChange={(isOpen) =>
-          setDialogs((prev) => ({ ...prev, other: isOpen }))
+          dialogContent
+            ? setDialogOpen && setDialogOpen(isOpen)
+            : setDialogs((prev) => ({ ...prev, other: isOpen }))
         }
       >
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-left">{placeholderOne}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={customInputValue}
-              onChange={(e) => setCustomInputValue(e.target.value)}
-              placeholder="Type here..."
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setDialogs((prev) => ({ ...prev, other: false }))}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleOtherDialogOk}>OK</Button>
-          </DialogFooter>
+          {dialogContent ? (
+            dialogContent
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-left">
+                  {placeholderOne}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <Input
+                  value={customInputValue}
+                  onChange={(e) => setCustomInputValue(e.target.value)}
+                  placeholder="Type here..."
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    setDialogs((prev) => ({ ...prev, other: false }))
+                  }
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleOtherDialogOk}>OK</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

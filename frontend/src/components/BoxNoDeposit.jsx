@@ -114,7 +114,8 @@ function BoxNoDeposit({
               <TableCell>
                 <Input
                   placeholder="Deposit Qty"
-                  type="text"
+                  type="number"
+                  min="0"
                   value={row.deposit}
                   onChange={(e) =>
                     handleInputChange(index, "deposit", e.target.value)

@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
+import { IoMdRefresh } from "react-icons/io";
 
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -18,11 +19,7 @@ import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
 import {
-  formatDate,
-  formatSimpleDate,
-  getDate,
   getFormatedDate,
-  getISTTimestamp,
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
@@ -130,6 +127,21 @@ const PendingSpecial = () => {
       toaster("error", error.message);
     }
   };
+
+  const handleRefresh = () => {
+    setInputs((prev) => ({
+      ...prev,
+      search: "",
+    }));
+
+    setSelectedSearchFields([]);
+    setCurrentPage(1);
+    setActualSearch("");
+    // setSelectedRowIndex(null);
+    setPanelProduct({ critical_spare: "no" });
+    fetchdata("", 1);
+  };
+  
   const handleSubmitSpecialDemand = async () => {
     const payload = {
       id: selectedRow.id,
@@ -235,10 +247,10 @@ const PendingSpecial = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
 
-      // ✅ Qty increased from spares
+      // Qty increased from spares
       quantity: row.obs_increase_qty || "--",
 
-      // ✅ Final expected OBS qty
+      // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",
 
       demandno: row.internal_demand_no || "--",
@@ -310,7 +322,7 @@ const PendingSpecial = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search survey items"
+            placeholder="Search items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
@@ -327,6 +339,27 @@ const PendingSpecial = () => {
             <FaMagnifyingGlass className="size-3.5" />
             Search
           </SpinnerButton>
+          <Button
+            variant="outline"
+            className="cursor-pointer flex items-center gap-1 bg-white
+            hover:bg-gray-200 
+            hover:scale-105 
+            transition-all duration-200"
+            onClick={handleRefresh}
+            title="Reset Search"
+          >
+            <IoMdRefresh
+              className="size-7 font-bold
+              hover:rotate-180 
+              transition-transform duration-300"
+              style={{
+                color: "#109240",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            />
+            <span className="text-md font-extrabold text-green-700"></span>
+          </Button>
         </div>
         <PaginationTable
           data={tableData}

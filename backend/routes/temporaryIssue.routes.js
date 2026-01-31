@@ -7,10 +7,14 @@ const {
   createTemporaryIssue,
   getTemporaryIssueList,
   updateTemporaryIssue,
+  getCategory,
+  categoryWiseUpdate,
 } = require("../controllers/temporaryIssue.controller");
 
 router.post("/temporary", authMiddleware, createTemporaryIssue);
 router.get("/issue", getTemporaryIssueList);
-router.put("/issue", authMiddleware, updateTemporaryIssue); 
+router.put("/issue", authMiddleware, updateTemporaryIssue);
+router.post("/category", getCategory);
+router.post("/category-update",authMiddleware, categoryWiseUpdate);
 
 module.exports = router;

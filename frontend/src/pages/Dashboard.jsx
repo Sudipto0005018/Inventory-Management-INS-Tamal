@@ -47,43 +47,21 @@ import { Context } from "../utils/Context";
 // oem details
 // add new option for adding vendor(vendor, address, contact, contact person with designation(multiple))
 
-//OEM, vendor/3rd party supplier, remarks under oem vendor (done)
-//add new option for adding vendor(vendor, address, contact, contact person with designation(multiple)) (done)
-//spare-> critical & special (done)
-//tools and accesories-> critical & special (done)
+
 //support details click korle gbt tech asbe
-//reload button (done)
-//right pannel full height (done)
-//user manual button below pagination table (done)
 //image dynamic
-//OEM dropdown list for existing user
-//row select highlight (done)
-//box details radio button loose spare yes-> rack no, no -> box no, rack no-> alpha numeric, box no-> numeric only (done)
-//beside edit withdrawl, print QR-> icons
-//page reloading issue fix (done)
 
 //MENU SIDEBAR CHANGE SOUGATA(SIDEBAR, HOMELAYOUT, HEADER(onsidebaropen button, lg: hidden))
 
 // excel popup will come, which will ask for which fields to be there
-// substitute IN pattern Number not Name (done)
-// plus sign before the substitute IN pattern no local terminology
-// remove special spare (done)
 // sub components before price (done)
-// Qty only no dot (done)
-// OEM name, instead of OEM vendor (done)
-// contacts rename it to office/ form contacts (done)
-// contacts person individual details, name,designation, phone, save vendor will be renamed as submit (done)
 // officer approval, equipment, obs authorised, in pattern no, substitute in pattern no cattegory easily changed by store keeper officer approval before reflecting in IMS database
 // authorised/ maintained qty
 // if lp item then not ask for authorization
 // authorised, window will pop up for c,p,r authorization
-// qr code item name, description,box no, in pattern no, printed
 // ims will ask konse box me danle wale ho, accordingly i will mention the specific box no in the qr code box tally konsa stoerd hai
-// export to excel top, reset,search,select, add spare (done)
 // photo, sub component || empty or dash, substitute pattern no, local terminology, price, oem detail, vendor/3rd party supplier, remarks
 // full database in caps
-// critical/special tool (done)
-// loose tool accessories (done)
 // select multiple things option before search
 // critical spares only, citical/special tools, store keeper ,successor board->officer incharge, storekeeper incharge (done)
 
