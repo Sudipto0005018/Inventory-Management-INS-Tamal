@@ -775,6 +775,7 @@ async function generateQRCode(req, res) {
   //     "box_no" :"001"
   // }
   const { tool_id, spare_id, copy_count, box_no } = req.body;
+  console.log("req.body", req.body);
   const PDFDocument = require("pdfkit");
   const qr = require("qrcode");
 

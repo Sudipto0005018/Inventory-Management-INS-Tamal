@@ -25,13 +25,16 @@ import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
 import { ChevronDownIcon, Plus } from "lucide-react";
-import { formatDate, getFormatedDate } from "../utils/helperFunctions";
+import {
+  formatDate,
+  formatSimpleDate,
+  getDate,
+  getFormatedDate,
+} from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
 import Chip from "../components/Chip";
-// substitute in pattern name (non men)
-// oem/vendor details (non men)
-// local terminology (non men)
-const PendingSurvey = () => {
+
+const PendingDemand = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
@@ -46,17 +49,16 @@ const PendingSurvey = () => {
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
     {
-      key: "withdrawl_date_str",
-      header: "Withdrawal Date",
+      key: "survey_voucher_no",
+      header: "Survey Voucher No.",
       width: "min-w-[40px]",
     },
-    { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
-    { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
     {
-      key: "survey_quantity",
-      header: "Surveyed Qty",
-      width: "max-w-[40px]",
+      key: "survey_qty",
+      header: "Surveyed / Utilised Qty",
+      width: "max-w-[100px]",
     },
+    { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
     { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
@@ -66,7 +68,7 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "vue",
+      value: "indian_pattern",
       label: (
         <p>
           <i>IN</i> Part No.
@@ -75,13 +77,17 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
+    { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
     {
       value: "survey_quantity",
-      label: "Surveyed Quantity",
+      label: "Surveyed / Consumable / Local Perchase Qty",
       width: "min-w-[40px]",
     },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    {
+      value: "survey_voucher_no",
+      label: "Survey Voucher No",
+      width: "min-w-[40px]",
+    },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -95,32 +101,32 @@ const PendingSurvey = () => {
   const [isLoading, setIsLoading] = useState({
     table: false,
     search: false,
-    survey: false,
+    submit: false,
   });
   const [actualSearch, setActualSearch] = useState("");
   const [inputs, setInputs] = useState({
     search: "",
-    voucher_no: "",
-    survey_calender: new Date(),
-    quantity: "",
+    demand_no: "",
+    demand_date: new Date(),
   });
   const [isOpen, setIsOpen] = useState({
-    survey: false,
-    survey_calender: false,
+    demand: false,
+    demand_date: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
+  // Placeholder fetch function as requested
   const fetchdata = async () => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
-      const response = await apiService.get("/survey", {
+      const response = await apiService.get("/demand", {
         params: {
           page: currentPage,
           search: inputs.search,
           limit: config.row_per_page,
-          status: "pending",
         },
       });
+
       setFetchedData(response.data);
     } catch (error) {
       console.log(error);
@@ -130,11 +136,12 @@ const PendingSurvey = () => {
         totalPages: 1,
         currentPage: 1,
       });
-      toaster.error(error.response.data.message);
+      // toaster.error(error.response?.data?.message || "Error fetching data");
     } finally {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
     if (searchTerm === actualSearch) {
@@ -161,32 +168,30 @@ const PendingSurvey = () => {
     fetchdata("", 1);
   };
 
-  const handleServay = async () => {
+  const handleProceed = async (row) => {
+    setSelectedRow(row);
+    setIsOpen((prev) => ({ ...prev, demand: true }));
+  };
+
+  const handleDemandSubmit = async () => {
     try {
-      setIsLoading((prev) => ({ ...prev, survey: true }));
-      const result = await apiService.post("/demand/create", {
-        spare_id: selectedRow.spare_id,
-        tool_id: selectedRow.tool_id,
-        survey_qty: inputs.quantity,
-        survey_voucher_no: inputs.voucher_no,
-        survey_date: formatDate(inputs.survey_calender),
-        transaction_id: selectedRow.transaction_id,
+      setIsLoading((prev) => ({ ...prev, submit: true }));
+      const response = await apiService.post("/demand/create-pending-issue", {
+        id: selectedRow.id,
+        demand_no: inputs.demand_no,
+        demand_date: formatDate(inputs.demand_date),
       });
-      if (result.success) {
-        toaster("success", "Survey completed successfully");
-        setIsOpen((prev) => ({ ...prev, survey: false }));
-        fetchdata();
-        setInputs({
-          search: "",
-          voucher_no: "",
-          survey_calender: new Date(),
-          quantity: "",
-        });
-      }
+      toaster("success", response.message);
+      setIsOpen((prev) => ({ ...prev, demand: false }));
+      fetchdata();
     } catch (error) {
-      toaster("error", error.response.data.message);
+      console.log(error);
+      toaster(
+        "error",
+        error.response?.data?.message || "Error submitting demand",
+      );
     } finally {
-      setIsLoading((prev) => ({ ...prev, survey: false }));
+      setIsLoading((prev) => ({ ...prev, submit: false }));
     }
   };
 
@@ -197,24 +202,12 @@ const PendingSurvey = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-      survey_quantity: row.survey_quantity || "0",
-      issue_date: getFormatedDate(row.issue_date),
-      withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-      status:
-        row.status?.toLowerCase() == "pending" ? (
-          <Chip text="Pending" varient="info" />
-        ) : (
-          <Chip text="Completed" varient="success" />
-        ),
+      survey_date: getFormatedDate(row.survey_date), // Assuming date format
       processed: (
-        // row.status?.toLowerCase() == "pending" ? (
         <Button
           size="icon"
           className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, survey: true }));
-          }}
+          onClick={() => handleProceed(row)}
         >
           <FaChevronRight />
         </Button>
@@ -243,7 +236,7 @@ const PendingSurvey = () => {
       <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
-          placeholder="Search survey items"
+          placeholder="Search..."
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>
@@ -295,17 +288,16 @@ const PendingSurvey = () => {
       </div>
 
       <Dialog
-        open={isOpen.survey}
+        open={isOpen.demand}
         onOpenChange={(set) =>
           setIsOpen((prev) => {
             if (!set) {
               setInputs((prev) => ({
                 ...prev,
-                servay_number: "",
-                voucher_no: "",
+                demand_no: "",
               }));
             }
-            return { ...prev, survey: set };
+            return { ...prev, demand: set };
           })
         }
       >
@@ -316,59 +308,47 @@ const PendingSurvey = () => {
           onCloseAutoFocus={() => {
             setInputs((prev) => ({
               ...prev,
-              servay_number: "",
-              voucher_no: "",
-              survey_calender: new Date(),
+              demand_no: "",
+              demand_date: new Date(),
             }));
           }}
         >
           <DialogTitle className="capitalize">
-            Survey {selectedRow.spare_id ? "spare" : "tool"}
+            Create Demand for {selectedRow.description}
           </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
-            <Label htmlFor="servay_quantity" className="mb-2 gap-1">
-              Survey Quantity<span className="text-red-500">*</span>
+            <Label htmlFor="demand_no" className="mb-2 gap-1">
+              Demand No.<span className="text-red-500">*</span>
             </Label>
             <Input
-              id="servay_quantity"
+              id="demand_no"
               type="text"
-              placeholder="Survey Quantity"
-              name="quantity"
-              value={inputs.quantity}
+              placeholder="Enter Demand No."
+              name="demand_no"
+              value={inputs.demand_no}
               onChange={(e) =>
-                setInputs((prev) => ({ ...prev, quantity: e.target.value }))
+                setInputs((prev) => ({ ...prev, demand_no: e.target.value }))
               }
             />
-            <Label htmlFor="voucher_no" className="mt-4 mb-2 gap-1">
-              Survey Voucher No.<span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="text"
-              placeholder="Enter Survey Voucher No."
-              name="voucher_no"
-              value={inputs.voucher_no}
-              onChange={(e) =>
-                setInputs((prev) => ({ ...prev, voucher_no: e.target.value }))
-              }
-            />
-            <Label htmlFor="servay_number" className="mb-2 mt-4 gap-1">
-              Survey Date<span className="text-red-500">*</span>
+
+            <Label htmlFor="demand_date" className="mb-2 mt-4 gap-1">
+              Demand Date<span className="text-red-500">*</span>
             </Label>
             <Popover
-              open={isOpen.survey_calender}
+              open={isOpen.demand_date}
               onOpenChange={(set) => {
-                setIsOpen((prev) => ({ ...prev, survey_calender: set }));
+                setIsOpen((prev) => ({ ...prev, demand_date: set }));
               }}
             >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  id="date"
+                  id="demand_date"
                   className="w-full justify-between font-normal"
                 >
-                  {inputs.survey_calender
-                    ? getFormatedDate(inputs.survey_calender)
+                  {inputs.demand_date
+                    ? getFormatedDate(inputs.demand_date)
                     : "Select date"}
                   <ChevronDownIcon />
                 </Button>
@@ -379,37 +359,38 @@ const PendingSurvey = () => {
               >
                 <Calendar
                   mode="single"
-                  selected={inputs.survey_calender}
+                  selected={inputs.demand_date}
                   captionLayout="dropdown"
                   onSelect={(date) => {
                     setInputs((prev) => ({
                       ...prev,
-                      survey_calender: date,
+                      demand_date: date,
                     }));
                     setIsOpen((prev) => ({
                       ...prev,
-                      survey_calender: false,
+                      demand_date: false,
                     }));
                   }}
                 />
               </PopoverContent>
             </Popover>
+
             <div>
               <div className="flex items-center mt-4 gap-4 justify-end">
                 <Button
                   variant="destructive"
                   onClick={() =>
-                    setIsOpen((prev) => ({ ...prev, survey: false }))
+                    setIsOpen((prev) => ({ ...prev, demand: false }))
                   }
                 >
                   Cancel
                 </Button>
                 <SpinnerButton
-                  loading={isLoading.servay}
-                  disabled={isLoading.survey}
+                  loading={isLoading.submit}
+                  disabled={isLoading.submit || !inputs.demand_no}
                   loadingText="Submitting..."
                   className="text-white hover:bg-primary/85 cursor-pointer"
-                  onClick={handleServay}
+                  onClick={handleDemandSubmit}
                 >
                   Submit
                 </SpinnerButton>
@@ -422,4 +403,4 @@ const PendingSurvey = () => {
   );
 };
 
-export default PendingSurvey;
+export default PendingDemand;

@@ -79,7 +79,9 @@ function BoxNoInputsSimple({
 
             {/* Authorised Qty */}
             <div>
-              <label className="text-sm font-medium">Authorised Qty</label>
+              <label className="text-sm font-medium">
+                Authorised Qty <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 className=""
@@ -90,7 +92,9 @@ function BoxNoInputsSimple({
 
             {/* Qty Held */}
             <div>
-              <label className="text-sm font-medium">Qty Held</label>
+              <label className="text-sm font-medium">
+                Qty Held <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 className=""
@@ -103,7 +107,9 @@ function BoxNoInputsSimple({
 
             {/* Location */}
             <div>
-              <label className="text-sm font-medium">Location</label>
+              <label className="text-sm font-medium">
+                Location <span className="text-red-500">*</span>
+              </label>
               <Input
                 className=""
                 value={row.location}

@@ -352,7 +352,7 @@ async function categoryWiseUpdate(req, res) {
     const category = item.category;
 
     /** 3. Generate transaction id */
-    const transactionId = `TMP-${Date.now()}`;
+    // const transactionId = `TMP-${Date.now()}`;
 
     /** 4. CATEGORY → DEMAND */
     if (["C", "LP"].includes(category)) {
@@ -372,7 +372,8 @@ async function categoryWiseUpdate(req, res) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
         `,
         [
-          transactionId,
+          // transactionId,
+          issue.transaction_id,
           issue.spare_id,
           issue.tool_id,
           issue.issue_to,
@@ -403,7 +404,8 @@ async function categoryWiseUpdate(req, res) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
         `,
         [
-          transactionId,
+          // transactionId,
+          issue.transaction_id,
           issue.spare_id,
           issue.tool_id,
           issue.issue_to,
@@ -705,10 +707,99 @@ async function updateTemporaryIssue(req, res) {
   }
 }
 
+
+async function generateQRCode(req, res) {
+  const { tool_id, spare_id, copy_count, box_no } = req.body;
+  console.log("req.body", req.body);
+
+  const PDFDocument = require("pdfkit");
+  const qr = require("qrcode");
+
+  try {
+    const doc = new PDFDocument({
+      size: [50 * 2.83465, 25 * 2.83465], // 50mm x 25mm
+      margins: { top: 0, left: 0, right: 0, bottom: 0 },
+    });
+
+    const buffers = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => {
+      const pdfData = Buffer.concat(buffers);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="qrcodes_${Date.now()}.pdf"`,
+      );
+      res.send(pdfData);
+    });
+
+    let data;
+
+    if (tool_id) {
+      const [rows] = await pool.query(
+        "SELECT description, indian_pattern, uid, equipment_system FROM tools WHERE id = ?",
+        [tool_id],
+      );
+
+      if (!rows.length) {
+        return res
+          .status(404)
+          .json(
+            new ApiErrorResponse(404, {}, "Tool not found for QR generation"),
+          );
+      }
+
+      data = rows[0];
+    } else if (spare_id) {
+      const [rows] = await pool.query(
+        "SELECT description, indian_pattern, uid, equipment_system FROM spares WHERE id = ?",
+        [spare_id],
+      );
+
+      if (!rows.length) {
+        return res
+          .status(404)
+          .json(
+            new ApiErrorResponse(404, {}, "Spare not found for QR generation"),
+          );
+      }
+
+      data = rows[0];
+    } else {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Invalid QR generation request"));
+    }
+
+    // ✅ Safe to use data now
+    const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+    const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
+
+    for (let i = 0; i < Number(copy_count); i++) {
+      if (i > 0) doc.addPage();
+
+      doc.image(qrURL, 5, 5, { width: 50, height: 50 });
+      doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
+      doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
+      doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
+      doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
+      doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+    }
+
+    doc.end();
+  } catch (error) {
+    console.log("Error while generating QR code:", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   createTemporaryIssue,
   getTemporaryIssueList,
   updateTemporaryIssue,
   getCategory,
   categoryWiseUpdate,
+  generateQRCode,
 };

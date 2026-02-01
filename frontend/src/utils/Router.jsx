@@ -24,7 +24,6 @@ import PendingTYLoan from "../pages/PendingTYLoan";
 import CompletedTYLoan from "../pages/CompletedTYLoan";
 import PendingTempLoan from "../pages/PendingTempLoan";
 import CompletedTempLoan from "../pages/CompletedTempLoan";
-import PermanentPendings from "../pages/PermanentPendings";
 import PendingIssue from "../pages/PendingIssue";
 import PendingStock from "../pages/PendingStock";
 import CompletedServays from "../pages/CompletedServays";
@@ -33,269 +32,266 @@ import CriticalSpares from "../pages/CriticalSpares";
 import CriticalTools from "../pages/CriticalTools";
 import DocumentsCorner from "../pages/DocumentsCorner";
 import TemporaryIssue from "../pages/TemporaryIssue";
+import PendingDemand from "../pages/PendingDemand";
 
 const Router = () => {
-    const navigate = useNavigate();
-    const { user, setUser } = useContext(Context);
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(Context);
 
-    useEffect(() => {
-        setNavigate(navigate);
-    }, [navigate]);
-    useEffect(() => {
-        setUserContext(setUser);
-    }, [setUser]);
+  useEffect(() => {
+    setNavigate(navigate);
+  }, [navigate]);
+  useEffect(() => {
+    setUserContext(setUser);
+  }, [setUser]);
 
-    return (
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Signin />} />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                {user?.role != "superadmin" ? (
-                  <Dashboard />
-                ) : (
-                  <DashboardSuper />
-                )}
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/spares"
-            element={
-              <ProtectedRoute>
-                <Spares />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/spares/critical"
-            element={
-              <ProtectedRoute>
-                <CriticalSpares />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/departments"
-            element={
-              <ProtectedRoute>
-                <Departments />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/approvals"
-            element={
-              <ProtectedRoute>
-                <Approvals />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/documents"
-            element={
-              <ProtectedRoute>
-                <DocumentsCorner />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/lp"
-            element={
-              <ProtectedRoute>
-                <LP />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/tools"
-            element={
-              <ProtectedRoute>
-                <Tools />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/tools/critical"
-            element={
-              <ProtectedRoute>
-                <CriticalTools />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/temporary/temporary-issue"
-            element={
-              <ProtectedRoute>
-                <TemporaryIssue />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/pending-survey"
-            element={
-              <ProtectedRoute>
-                <Pending />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/pending-demand"
-            element={
-              <ProtectedRoute>
-                <PermanentPendings />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/pending-issue"
-            element={
-              <ProtectedRoute>
-                <PendingIssue />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/stock-update"
-            element={
-              <ProtectedRoute>
-                <PendingStock />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/special-demand"
-            element={
-              <ProtectedRoute>
-                <PendingSpecial />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/permanent/complete"
-            element={
-              <ProtectedRoute>
-                <CompletedServays />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/search"
-            element={
-              <ProtectedRoute>
-                <Search />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/handheld"
-            element={
-              <ProtectedRoute>
-                <Handheld />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/loan/pending"
-            element={
-              <ProtectedRoute>
-                <PendingTYLoan />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/loan/complete"
-            element={
-              <ProtectedRoute>
-                <CompletedTYLoan />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/temp-loan/pending"
-            element={
-              <ProtectedRoute>
-                <PendingTempLoan />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-        <Route element={<HomeLayout />}>
-          <Route
-            path="/temp-loan/complete"
-            element={
-              <ProtectedRoute>
-                <CompletedTempLoan />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-      </Routes>
-    );
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Signin />} />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              {user?.role != "superadmin" ? <Dashboard /> : <DashboardSuper />}
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/spares"
+          element={
+            <ProtectedRoute>
+              <Spares />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/spares/critical"
+          element={
+            <ProtectedRoute>
+              <CriticalSpares />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <Departments />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/approvals"
+          element={
+            <ProtectedRoute>
+              <Approvals />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute>
+              <DocumentsCorner />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/lp"
+          element={
+            <ProtectedRoute>
+              <LP />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/tools"
+          element={
+            <ProtectedRoute>
+              <Tools />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/tools/critical"
+          element={
+            <ProtectedRoute>
+              <CriticalTools />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temporary/temporary-issue"
+          element={
+            <ProtectedRoute>
+              <TemporaryIssue />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/pending-survey"
+          element={
+            <ProtectedRoute>
+              <Pending />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/pending-demand"
+          element={
+            <ProtectedRoute>
+              <PendingDemand />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/pending-issue"
+          element={
+            <ProtectedRoute>
+              <PendingIssue />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/stock-update"
+          element={
+            <ProtectedRoute>
+              <PendingStock />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/special-demand"
+          element={
+            <ProtectedRoute>
+              <PendingSpecial />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/complete"
+          element={
+            <ProtectedRoute>
+              <CompletedServays />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <Search />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/handheld"
+          element={
+            <ProtectedRoute>
+              <Handheld />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/loan/pending"
+          element={
+            <ProtectedRoute>
+              <PendingTYLoan />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/loan/complete"
+          element={
+            <ProtectedRoute>
+              <CompletedTYLoan />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temp-loan/pending"
+          element={
+            <ProtectedRoute>
+              <PendingTempLoan />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temp-loan/complete"
+          element={
+            <ProtectedRoute>
+              <CompletedTempLoan />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+    </Routes>
+  );
 };
 
 export default Router;

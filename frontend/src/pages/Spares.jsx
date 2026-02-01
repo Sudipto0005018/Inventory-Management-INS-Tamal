@@ -20,7 +20,7 @@ import {
 import { CustomComboBox } from "../components/CustomCombobox";
 
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
-import { getISTTimestamp } from "../utils/helperFunctions";
+import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import { CustomComboBoxService } from "../components/CustomComboBoxService";
 
@@ -752,6 +752,28 @@ const Spares = () => {
       toaster("error", "Server error");
     }
   };
+  const submitPermanentIssue = async () => {
+    try {
+      const res = await apiService.post("/survey/create", {
+        box_no: boxNo,
+        spare_id: selectedRow.id,
+        withdrawl_qty: selectedRow.new_val,
+        withdrawl_date: formatDate(),
+        service_no: user.serviceNumber,
+        name: user.name,
+        issue_to: selectedRow.issue_to_text,
+      });
+      if (res.success) {
+        toaster("success", "Survey created successfully");
+        setBoxNo([{ withdraw: "" }]);
+        await fetchdata();
+        setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Server error");
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1320,77 +1342,75 @@ const Spares = () => {
                 }}
               />
             </div>
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">OEM Details</Label>
-              <ComboBox
-                dialogContent={
-                  <OEMFirm
-                    open={isOpenOem.add}
-                    onOpenChange={(value) =>
-                      setIsOpenOem((prev) => ({ ...prev, add: value }))
+            <div className="w-full mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <Label className="ms-2 mb-1">OEM Details</Label>
+                <ComboBox
+                  dialogContent={
+                    <OEMFirm
+                      open={isOpenOem.add}
+                      onOpenChange={(value) =>
+                        setIsOpenOem((prev) => ({ ...prev, add: value }))
+                      }
+                    />
+                  }
+                  dialogOpen={isOpenOem.add}
+                  setDialogOpen={(value) =>
+                    setIsOpenOem((prev) => ({ ...prev, add: value }))
+                  }
+                  options={oemList}
+                  onSelect={(value) => {
+                    if (value) {
+                      setInputs((prev) => ({
+                        ...prev,
+                        oem: value.name,
+                      }));
                     }
-                  />
-                }
-                dialogOpen={isOpenOem.add}
-                setDialogOpen={(value) =>
-                  setIsOpenOem((prev) => ({ ...prev, add: value }))
-                }
-                options={oemList}
-                onSelect={(value) => {
-                  if (value) {
-                    setInputs((prev) => ({
-                      ...prev,
-                      oem: value.name,
-                    }));
+                  }}
+                  onDelete={async (value) => {}}
+                  onView={(value) => {
+                    setSelectedOEM(value);
+                    setIsOpenOem((prev) => ({ ...prev, edit: true }));
+                  }}
+                  className="w-[660px]"
+                />
+              </div>
+
+              <div>
+                <Label className="ms-2 mb-1">
+                  Vendor / Third Party Supplier
+                </Label>
+                <ComboBox
+                  label="Vendor/ Third Party Supplier"
+                  dialogContent={
+                    <SupplierFirm
+                      open={isOpenSupplier.add}
+                      onOpenChange={(value) =>
+                        setIsOpenSupplier((prev) => ({ ...prev, add: value }))
+                      }
+                    />
                   }
-                }}
-                onDelete={async(value) => {
-                  
-                }}
-                onView={(value) => {
-                  setSelectedOEM(value);
-                  setIsOpenOem((prev) => ({ ...prev, edit: true }));
-                }}
-                className="w-1/2"
-              />
-            </div>
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedSupplier}
-                onChange={(e) => {
-                  const supplierId = e.target.value;
-
-                  if (supplierId === "ADD_NEW") {
-                    setIsOpenSupplier(true);
-                    return;
+                  dialogOpen={isOpenSupplier.add}
+                  setDialogOpen={(value) =>
+                    setIsOpenSupplier((prev) => ({ ...prev, add: value }))
                   }
-
-                  setSelectedSupplier(supplierId);
-
-                  const supplier = supplierList.find(
-                    (s) => s.id === Number(supplierId),
-                  );
-                  if (!supplier) return;
-
-                  setInputs((prev) => ({
-                    ...prev,
-                    supplier: supplier.name,
-                  }));
-                }}
-              >
-                <option value="">Select Supplier</option>
-
-                {supplierList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}, {s.id}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New Supplier</option>
-              </select>
+                  options={supplierList}
+                  onSelect={(value) => {
+                    if (value) {
+                      setInputs((prev) => ({
+                        ...prev,
+                        supplier: value.name,
+                      }));
+                    }
+                  }}
+                  onDelete={async (value) => {}}
+                  onView={(value) => {
+                    setSelectedSupplier(value);
+                    setIsOpenSupplier((prev) => ({ ...prev, edit: true }));
+                  }}
+                  className="w-[670px]"
+                />
+              </div>
             </div>
 
             <div className="w-full mt-6">
@@ -1799,76 +1819,74 @@ const Spares = () => {
               />
             </div>
 
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">OEM Details</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
-                onChange={(e) => {
-                  const oemId = e.target.value;
-                  if (oemId === "ADD_NEW") {
-                    setIsOpenOem(true);
-                    return;
+            <div className="w-full mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <Label className="ms-2 mb-1">OEM Details</Label>
+                <ComboBox
+                  dialogContent={
+                    <OEMFirm
+                      open={isOpenOem.add}
+                      onOpenChange={(value) =>
+                        setIsOpenOem((prev) => ({ ...prev, add: value }))
+                      }
+                    />
                   }
-                  const oem = oemList.find((o) => o._id === Number(oemId));
-                  setSelectedOem(oemId);
-
-                  if (!oem) return;
-                  setInputs((prev) => ({
-                    ...prev,
-                    oem: oem.name,
-                  }));
-                }}
-              >
-                <option value="">Select OEM</option>
-
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.name}, {oem.id}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New OEM</option>
-              </select>
-            </div>
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedSupplier}
-                onChange={(e) => {
-                  const supplierId = e.target.value;
-
-                  if (supplierId === "ADD_NEW") {
-                    setIsOpenSupplier(true);
-                    return;
+                  dialogOpen={isOpenOem.add}
+                  setDialogOpen={(value) =>
+                    setIsOpenOem((prev) => ({ ...prev, add: value }))
                   }
-
-                  setSelectedSupplier(supplierId);
-
-                  const supplier = supplierList.find(
-                    (s) => s.id === Number(supplierId),
-                  );
-                  if (!supplier) return;
-
-                  setInputs((prev) => ({
-                    ...prev,
-                    supplier: supplier.name,
-                  }));
-                }}
-              >
-                <option value="">Select Supplier</option>
-
-                {supplierList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}, {s.id}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New Supplier</option>
-              </select>
+                  options={oemList}
+                  onSelect={(value) => {
+                    if (value) {
+                      setInputs((prev) => ({
+                        ...prev,
+                        oem: value.name,
+                      }));
+                    }
+                  }}
+                  onDelete={async (value) => {}}
+                  onView={(value) => {
+                    setSelectedOEM(value);
+                    setIsOpenOem((prev) => ({ ...prev, edit: true }));
+                  }}
+                  className="w-[660px]"
+                />
+              </div>
+              <div>
+                <Label className="ms-2 mb-1">
+                  Vendor / Third Party Supplier
+                </Label>
+                <ComboBox
+                  label="Vendor/ Third Party Supplier"
+                  dialogContent={
+                    <SupplierFirm
+                      open={isOpenSupplier.add}
+                      onOpenChange={(value) =>
+                        setIsOpenSupplier((prev) => ({ ...prev, add: value }))
+                      }
+                    />
+                  }
+                  dialogOpen={isOpenSupplier.add}
+                  setDialogOpen={(value) =>
+                    setIsOpenSupplier((prev) => ({ ...prev, add: value }))
+                  }
+                  options={supplierList}
+                  onSelect={(value) => {
+                    if (value) {
+                      setInputs((prev) => ({
+                        ...prev,
+                        supplier: value.name,
+                      }));
+                    }
+                  }}
+                  onDelete={async (value) => {}}
+                  onView={(value) => {
+                    setSelectedSupplier(value);
+                    setIsOpenSupplier((prev) => ({ ...prev, edit: true }));
+                  }}
+                  className="w-[670px]"
+                />
+              </div>
             </div>
 
             <div className="w-full mt-6">
@@ -2009,23 +2027,6 @@ const Spares = () => {
                         }
                       }}
                     />
-                    {/* <CustomComboBox
-                      options={issueTo}
-                      label="issue to"
-                      placeholder="Select issue"
-                      onSelect={(value) => {
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          issue_to_text: value,
-                        }));
-                      }}
-                      onAdd={(value) => {
-                        setDropdownType("issue");
-                        setNewValue(value);
-                        setOpen(true);
-                      }}
-                      className="w-full"
-                    /> */}
                   </div>
                 </div>
 
@@ -2232,23 +2233,6 @@ const Spares = () => {
                     <label className="text-sm font-medium text-gray-700">
                       Issue to <span className="text-red-500">*</span>
                     </label>
-                    {/* <CustomComboBox
-                      options={issueTo}
-                      label="issue to"
-                      placeholder="Select issue"
-                      onSelect={(value) => {
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          issue_to_text: value,
-                        }));
-                      }}
-                      onAdd={(value) => {
-                        setDropdownType("issue");
-                        setNewValue(value);
-                        setOpen(true);
-                      }}
-                      className="w-full"
-                    /> */}
                     <ComboBox
                       options={issueTo}
                       onCustomAdd={async (value) => {
@@ -2652,23 +2636,6 @@ const Spares = () => {
                     <label className="text-sm font-medium text-gray-700">
                       Concurred By <span className="text-red-500">*</span>
                     </label>
-                    {/* <CustomComboBox
-                      options={concurredBy}
-                      label="Concurred By"
-                      placeholder="Select Concurred By"
-                      onSelect={(value) => {
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          concurred_by: value,
-                        }));
-                      }}
-                      onAdd={(value) => {
-                        setDropdownType("concurred_by");
-                        setNewValue(value);
-                        setOpen(true);
-                      }}
-                      className="w-full"
-                    /> */}
                     <ComboBox
                       options={concurredBy}
                       onCustomAdd={async (value) => {
@@ -2747,6 +2714,16 @@ const Spares = () => {
                   return sum + Number(row.withdraw || 0);
                 }, 0);
 
+                const hasNegativeWithdrawRow = boxNo.some(
+                  (row) => Number(row.withdraw) < 0,
+                );
+                if (hasNegativeWithdrawRow) {
+                  toaster(
+                    "error",
+                    "Withdrawal quantity in any box cannot be less than zero",
+                  );
+                  return;
+                }
                 if (totalWithdraw <= 0) {
                   toaster(
                     "error",
@@ -2798,10 +2775,11 @@ const Spares = () => {
                   box_no: boxNo,
                 };
 
-                submitTemporaryIssue(payload);
-
-                // SUCCESS
-                setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+                if (selectedIssue === "permanent") {
+                  submitPermanentIssue();
+                } else if (selectedIssue === "temporary") {
+                  submitTemporaryIssue(payload);
+                }
               }}
             >
               Submit

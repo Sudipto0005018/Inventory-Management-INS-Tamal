@@ -18,9 +18,7 @@ import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
-import {
-  getFormatedDate,
-} from "../utils/helperFunctions";
+import { formatDate, getFormatedDate } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
 
@@ -141,7 +139,7 @@ const PendingSpecial = () => {
     setPanelProduct({ critical_spare: "no" });
     fetchdata("", 1);
   };
-  
+
   const handleSubmitSpecialDemand = async () => {
     const payload = {
       id: selectedRow.id,
@@ -149,20 +147,19 @@ const PendingSpecial = () => {
 
     if (inputs.internal_demand_no) {
       payload.internal_demand_no = inputs.internal_demand_no;
-      payload.internal_demand_date = getFormatedDate(
-        inputs.internal_demand_date,
-      );
+      payload.internal_demand_date = formatDate(inputs.internal_demand_date);
     }
 
     if (inputs.requisition_no) {
       payload.requisition_no = inputs.requisition_no;
-      payload.requisition_date = getFormatedDate(inputs.requisition_date);
+      payload.requisition_date = formatDate(inputs.requisition_date);
     }
 
     if (inputs.mo_demand_no) {
       payload.mo_demand_no = inputs.mo_demand_no;
-      payload.mo_demand_date = getFormatedDate(inputs.mo_demand_date);
+      payload.mo_demand_date = formatDate(inputs.mo_demand_date);
     }
+    console.log(payload);
 
     try {
       setIsLoading((p) => ({ ...p, issue: true }));

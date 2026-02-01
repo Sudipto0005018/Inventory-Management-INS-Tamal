@@ -47,13 +47,19 @@ function BoxNoDeposit({
         <TableHeader>
           <TableRow>
             <TableHead className="text-center">
-              {isLooseSpare ? "Rack No." : "Box No."}
+              {isLooseSpare ? "Rack No." : "Box No."}{" "}
+              <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
-              Authorised / Maintained Qty
+              Authorised / Maintained Qty{" "}
+              <span className="text-red-500">*</span>
             </TableHead>
-            <TableHead className="text-center">Qty Held</TableHead>
-            <TableHead className="text-center">Deposit Qty</TableHead>
+            <TableHead className="text-center">
+              Qty Held <span className="text-red-500">*</span>
+            </TableHead>
+            <TableHead className="text-center">
+              Deposit Qty <span className="text-red-500">*</span>
+            </TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>

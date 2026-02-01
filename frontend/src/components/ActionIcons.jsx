@@ -1,7 +1,6 @@
 import { FaRegEye } from "react-icons/fa";
 import { PiHandWithdrawLight } from "react-icons/pi";
 import { IoQrCodeSharp } from "react-icons/io5";
-import { MdOutlineQrCodeScanner } from "react-icons/md";
 import { Button } from "../components/ui/button";
 import { useState } from "react";
 import {
@@ -16,9 +15,7 @@ import { Table, TableBody, TableCell, TableRow } from "./ui/table";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -60,7 +57,7 @@ const ActionIcons = ({ row, onEdit, onWithdraw, onShowQR, disabled = {} }) => {
       await apiService.downloadFile("/spares/genarate-qr", payload);
     } catch (error) {
       console.log(error);
-      toaster("error", "dfsdf");
+      toaster("error", "QR generation failed");
     } finally {
       setLoading(false);
     }

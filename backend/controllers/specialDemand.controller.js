@@ -158,8 +158,6 @@ async function getSpecialDemandList(req, res) {
         "Spares retrieved successfully",
       ),
     );
-
-    console.log("response==>", res);
   } catch (err) {
     console.error("GET SPECIAL DEMAND ERROR =>", err);
     res.status(500).json({

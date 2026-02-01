@@ -29,6 +29,7 @@ import {
   formatDate,
   formatSimpleDate,
   getDate,
+  getFormatedDate,
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
@@ -47,14 +48,9 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    //   { key: "issue_date", header: "Issue Date" },
-    //   { key: "survey_date", header: "Survey Date" },
-    //   { key: "voucher_no", header: "Survey Number" },
-    //   { key: "quantity", header: "Surveyed Quantity" },
-    { key: "demand", header: "Demand No." },
-    { key: "issue_date", header: "Demand Date" },
-    { key: "quantity", header: "Demanded Qty" },
-    //   { key: "status", header: "Status" },
+    { key: "demand_no", header: "Demand No." },
+    { key: "demand_date", header: "Demand Date" },
+    { key: "demand_quantity", header: "Demanded Qty" },
     { key: "processed", header: "Proceed" },
   ]);
 
@@ -110,12 +106,14 @@ const PermanentPendings = () => {
 
   const fetchdata = async () => {
     try {
-      const response = await apiService.get("/pending/surveyed", {
+      const response = await apiService.get("/demand/pending-issue", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
         },
       });
+      console.log(response);
+
       if (response.success) {
         setFetchedData(response.data);
       } else {
@@ -260,9 +258,8 @@ const PermanentPendings = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-      survey_quantity: row.survey_quantity || "0",
-      issue_date: getDate(row.issue_date),
-      survey_date: getDate(row.date),
+      demand_quantity: row.demand_quantity || "0",
+      demand_date: getFormatedDate(row.demand_date),
       status:
         row.status == "surveyed"
           ? "Pending for Demand"
@@ -280,18 +277,18 @@ const PermanentPendings = () => {
           onClick={() => {
             setSelectedRow(row);
             setBoxNo(JSON.parse(row.box_no));
-            if (
-              row.category.toLowerCase() == "p" ||
-              row.category.toLowerCase() == "r"
-            ) {
-              if (row.status == "surveyed") {
-                setIsOpen((prev) => ({ ...prev, demand: true }));
-              } else if (row.status == "demanded") {
-                setIsOpen((prev) => ({ ...prev, issue: true }));
-              } else if (row.status == "stocked" || row.status == "naced") {
-                setIsOpen((prev) => ({ ...prev, inventory: true }));
-              }
-            }
+            // if (
+            //     row.category.toLowerCase() == "p" ||
+            //     row.category.toLowerCase() == "r"
+            // ) {
+            //     if (row.status == "surveyed") {
+            //         setIsOpen((prev) => ({ ...prev, demand: true }));
+            //     } else if (row.status == "demanded") {
+            //         setIsOpen((prev) => ({ ...prev, issue: true }));
+            //     } else if (row.status == "stocked" || row.status == "naced") {
+            //         setIsOpen((prev) => ({ ...prev, inventory: true }));
+            //     }
+            // }
           }}
         >
           <FaChevronRight />
@@ -550,7 +547,10 @@ const PermanentPendings = () => {
                       value={inputs.rate}
                       placeholder="Rate"
                       onChange={(e) =>
-                        setInputs((prev) => ({ ...prev, rate: e.target.value }))
+                        setInputs((prev) => ({
+                          ...prev,
+                          rate: e.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -580,7 +580,8 @@ const PermanentPendings = () => {
                 <div className="flex gap-4 w-full">
                   <div className="w-full">
                     <Label htmlFor="mo_no" className="ms-2 mb-2 mt-7">
-                      MO Gate Pass Number<span className="text-red-500">*</span>
+                      MO Gate Pass Number
+                      <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       type="text"

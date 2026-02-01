@@ -13,7 +13,6 @@ function BoxNoWithdrawl({
   onChange,
   isLooseSpare = false, 
   isBoxnumberDisable = false,
-  isAddRow = true,
 }) {
   const handleInputChange = (index, fieldName, fieldValue) => {
     const newRows = [...value];
@@ -48,12 +47,18 @@ function BoxNoWithdrawl({
           <TableRow>
             <TableHead className="text-center">
               {isLooseSpare ? "Rack No." : "Box No."}
+              <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
-              Authorised / Maintained Qty
+              Authorised / Maintained Qty{" "}
+              <span className="text-red-500">*</span>
             </TableHead>
-            <TableHead className="text-center">Qty Held</TableHead>
-            <TableHead className="text-center">Withdrawal Qty</TableHead>
+            <TableHead className="text-center">
+              Qty Held <span className="text-red-500">*</span>
+            </TableHead>
+            <TableHead className="text-center">
+              Withdrawal Qty <span className="text-red-500">*</span>
+            </TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>

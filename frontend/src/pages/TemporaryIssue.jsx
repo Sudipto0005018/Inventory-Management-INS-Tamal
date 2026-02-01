@@ -15,6 +15,7 @@ import {
 import BoxNoDeposit from "../components/BoxNoDeposit";
 import { MultiSelect } from "../components/ui/multi-select";
 
+import GenerateQRDialog from "../components/GenerateQRDialog";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import {
   Dialog,
@@ -39,6 +40,7 @@ const PendingTempLoan = () => {
         </span>
       ),
     },
+    { key: "category", header: "Category" },
     { key: "equipment_system", header: "Equipment / System" },
     { key: "qty_withdrawn", header: "Issued Qty" },
     { key: "service_no", header: "Service No." },
@@ -79,6 +81,11 @@ const PendingTempLoan = () => {
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
   // "returned" | "utilised"
+
+
+  //Generate QR state
+  const [generateQR, setGenerateQR] = useState("no");
+  const [openQRDialog, setOpenQRDialog] = useState(false);
 
   const [boxNo, setBoxNo] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -210,39 +217,52 @@ const PendingTempLoan = () => {
   }, [fetchedData]);
 
   const handleReceive = async () => {
-    if (actionType === "returned") {
-      const returnedQty = Number(inputs.quantity_received);
-      const depositQty = getDepositQty();
-      console.log("deposit qty==>", depositQty);
-      if (!returnedQty) {
-        toaster("error", "Quantity is required");
-        return;
-      }
-      if (returnedQty < 0) {
-        toaster("error", "Quantity cannot be less than zero");
-        return;
-      }
-      if (returnedQty > selectedRow.quantity) {
-        toaster("error", "Quantity cannot be greater than issued quantity");
-        return;
-      }
-      if (!returnedQty) {
-        toaster("error", "Receive date is required");
-        return;
-      }
-       if (depositQty < 0) {
-         toaster("error", "Deposit quantity cannot be less than 0");
-         return;
-       }
+   if (actionType === "returned") {
+     const returnedQty = Number(inputs.quantity_received);
+     const depositQty = Number(getDepositQty());
 
-       if (depositQty !== returnedQty) {
-         toaster(
-           "error",
-           `Deposit quantity must be equal to returned quantity`,
-         );
+     // 🔴 No field should be less than zero
+     const fieldsToValidate = [
+       { value: returnedQty, label: "Returned quantity" },
+       { value: depositQty, label: "Deposit quantity" },
+     ];
+
+     for (const field of fieldsToValidate) {
+       if (field.value < 0) {
+         toaster("error", `${field.label} cannot be less than zero`);
          return;
        }
-    }
+     }
+
+     if (!returnedQty) {
+       toaster("error", "Quantity is required");
+       return;
+     }
+
+     if (returnedQty > selectedRow.quantity) {
+       toaster("error", "Quantity cannot be greater than issued quantity");
+       return;
+     }
+
+     if (!inputs.receive_date) {
+       toaster("error", "Receive date is required");
+       return;
+     }
+
+     // ❌ No single deposit qty can be less than 0
+     const hasNegativeDepositRow = boxNo.some((row) => Number(row.deposit) < 0);
+
+     if (hasNegativeDepositRow) {
+       toaster("error", "Deposit quantity in any box cannot be less than zero");
+       return;
+     }
+
+     if (depositQty !== returnedQty) {
+       toaster("error", "Deposit quantity must be equal to returned quantity");
+       return;
+     }
+   }
+
 
     setIsLoading((prev) => ({ ...prev, receive: true }));
 
@@ -575,6 +595,46 @@ const PendingTempLoan = () => {
                   onChange={(val) => {
                     setBoxNo(val);
                   }}
+                />
+                <div className="mt-4">
+                  <Label className="ms-2 mb-2 block">
+                    Generate QR <span className="text-red-500">*</span>
+                  </Label>
+
+                  <div className="flex gap-6 ms-2">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="generate_qr"
+                        value="no"
+                        checked={generateQR === "no"}
+                        onChange={() => {
+                          setGenerateQR("no");
+                          setOpenQRDialog(false);
+                        }}
+                      />
+                      No
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="generate_qr"
+                        value="yes"
+                        checked={generateQR === "yes"}
+                        onChange={() => {
+                          setGenerateQR("yes");
+                          setOpenQRDialog(true);
+                        }}
+                      />
+                      Yes
+                    </label>
+                  </div>
+                </div>
+                <GenerateQRDialog
+                  open={openQRDialog}
+                  setOpen={setOpenQRDialog}
+                  row={selectedRow}
                 />
               </div>
             </>
