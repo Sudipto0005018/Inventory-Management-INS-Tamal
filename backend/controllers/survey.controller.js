@@ -14,16 +14,6 @@ async function createSurvey(req, res) {
     name,
     issue_to,
   } = req.body;
-  console.log({
-    spare_id,
-    tool_id,
-    withdrawl_qty,
-    withdrawl_date,
-    box_no,
-    service_no,
-    name,
-    issue_to,
-  });
 
   const connection = await pool.getConnection();
   try {
@@ -52,7 +42,7 @@ async function createSurvey(req, res) {
     }
     let transactionId = "PI" + Date.now();
     const [[row]] = await connection.query(
-      `SELECT category,box_no FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+      `SELECT category,box_no,obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
       [spare_id || tool_id],
     );
     if (
@@ -89,9 +79,18 @@ async function createSurvey(req, res) {
           getSQLTimestamp(),
         ],
       );
+      if (row.obs_held - withdrawl_qty < 0) {
+        return new ApiErrorResponse(400, {}, "Invalid withdrawl quantity").send(
+          res,
+        );
+      }
       await connection.query(
-        `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ? WHERE id = ?`,
-        [JSON.stringify(updated), spare_id || tool_id],
+        `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ?,obs_held = ? WHERE id = ?`,
+        [
+          JSON.stringify(updated),
+          row.obs_held - withdrawl_qty,
+          spare_id || tool_id,
+        ],
       );
     }
 
