@@ -1,27 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Pencil } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Pencil, Trash2 } from "lucide-react";
+import apiService from "../utils/apiService";
+import toaster from "../utils/toaster";
 
 const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
-  const [value, setValue] = useState(
-    val && val != null
-      ? val
-      : {
-          vendor: "",
-          address: "",
-          contacts: [""],
-          persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
-        },
-  );
+  const [value, setValue] = useState(() => {
+    if (val && val != null) {
+      return {
+        vendor: val.name || "",
+        address: val.address || "",
+        contacts:
+          typeof val.contacts === "string"
+            ? JSON.parse(val.contacts)
+            : val.contacts || [""],
+        persons:
+          typeof val.details === "string"
+            ? JSON.parse(val.details)
+            : val.details || [
+                { prefix: "Mr", name: "", designation: "", phone: "" },
+              ],
+      };
+    }
+    return {
+      vendor: "",
+      address: "",
+      contacts: [""],
+      persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
+    };
+  });
   const [enabledFields, setEnabledFields] = useState({});
+
+  useEffect(() => {
+    if (val && val != null) {
+      setValue({
+        vendor: val.name || "",
+        address: val.address || "",
+        contacts:
+          typeof val.contacts === "string"
+            ? JSON.parse(val.contacts)
+            : val.contacts || [""],
+        persons:
+          typeof val.details === "string"
+            ? JSON.parse(val.details)
+            : val.details || [
+                { prefix: "Mr", name: "", designation: "", phone: "" },
+              ],
+      });
+    } else {
+      setValue({
+        vendor: "",
+        address: "",
+        contacts: [""],
+        persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
+      });
+    }
+  }, [val]);
 
   const handleAdd = async () => {
     if (!value.vendor.trim()) {
-      alert("OEM Name is required");
+      toaster("error", "OEM Name is required");
       return;
     }
 
@@ -33,22 +82,14 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
     };
 
     try {
-      const res = await fetch("http://localhost:7777/api/v1/oem", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await apiService.post("/oem", payload);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Failed to add OEM");
+      if (!res.success) {
+        toaster("error", res.message || "Failed to add OEM");
         return;
       }
 
-      alert("OEM added successfully");
+      toaster("success", "OEM added successfully");
 
       // Reset form
       setValue({
@@ -61,10 +102,44 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
       onOpenChange(false);
     } catch (error) {
       console.error("Error adding OEM:", error);
-      alert("Something went wrong");
+      toaster("error", "Something went wrong");
     }
   };
-  const handleEdit = async () => {};
+
+  const handleEdit = async () => {
+    if (!value.vendor.trim()) {
+      toaster("error", "OEM Name is required");
+      return;
+    }
+
+    const payload = {
+      name: value.vendor,
+      address: value.address,
+      contacts: value.contacts.filter((c) => c.trim() !== ""),
+      details: value.persons,
+    };
+
+    try {
+      // Check if we have an ID to update
+      if (!val || !val.id) {
+        toaster("error", "Cannot update: Missing ID");
+        return;
+      }
+
+      const res = await apiService.put(`/oem/${val.id}`, payload);
+
+      if (!res.success) {
+        toaster("error", res.message || "Failed to update OEM");
+        return;
+      }
+
+      toaster("success", "OEM updated successfully");
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error updating OEM:", error);
+      toaster("error", "Something went wrong");
+    }
+  };
 
   const isFieldEnabled = (key) => isEditable || enabledFields[key];
 
@@ -90,7 +165,7 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogTitle>Add OEM Firm</DialogTitle>
+        <DialogTitle>{val ? "Edit" : "Add"} OEM Firm</DialogTitle>
 
         <div className="space-y-3">
           {/* OEM Name */}
@@ -119,21 +194,35 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
 
           {/* Contacts */}
           <Label>Office / Firm Contacts</Label>
-          {value.contacts.map((c, i) => (
-            <div key={i} className="flex items-center gap-2 mb-2">
-              <Input
-                placeholder="Contact Number"
-                value={c}
-                disabled={!isFieldEnabled(`contact-${i}`)}
-                onChange={(e) => {
-                  const contacts = [...value.contacts];
-                  contacts[i] = e.target.value;
-                  setValue({ ...value, contacts });
-                }}
-              />
-              {renderEditIcon(`contact-${i}`)}
-            </div>
-          ))}
+          {value.contacts &&
+            value.contacts.map((c, i) => (
+              <div key={i} className="flex items-center gap-2 mb-2">
+                <Input
+                  placeholder="Contact Number"
+                  value={c}
+                  disabled={!isFieldEnabled(`contact-${i}`)}
+                  onChange={(e) => {
+                    const contacts = [...value.contacts];
+                    contacts[i] = e.target.value;
+                    setValue({ ...value, contacts });
+                  }}
+                />
+                {renderEditIcon(`contact-${i}`)}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-red-500 hover:text-red-700"
+                  onClick={() => {
+                    const contacts = value.contacts.filter(
+                      (_, idx) => idx !== i,
+                    );
+                    setValue({ ...value, contacts });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
 
           <Button
             variant="outline"
@@ -151,24 +240,43 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
           {/* Contact Persons */}
           <Label>Individual Details</Label>
           {value.persons.map((p, i) => (
-            <div key={i} className="mb-4 bg-gray-50 p-3 rounded-md border">
-              <div className="grid grid-cols-2 gap-2">
+            <div
+              key={i}
+              className="mb-4 bg-gray-50 p-3 rounded-md border relative"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  const persons = value.persons.filter((_, idx) => idx !== i);
+                  setValue({ ...value, persons });
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <div className="grid grid-cols-2 gap-2 pr-8">
+                {/* Prefix */}
                 {/* Prefix */}
                 <div className="flex items-center">
-                  <select
-                    className="border rounded px-2 py-2 flex-1 h-10 w-full"
+                  <Select
                     value={p.prefix}
                     disabled={!isFieldEnabled(`person-${i}-prefix`)}
-                    onChange={(e) => {
+                    onValueChange={(newValue) => {
                       const persons = [...value.persons];
-                      persons[i].prefix = e.target.value;
+                      persons[i].prefix = newValue;
                       setValue({ ...value, persons });
                     }}
                   >
-                    <option value="Mr">Mr</option>
-                    <option value="Mrs">Mrs</option>
-                    <option value="Ms">Ms</option>
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Prefix" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mr">Mr</SelectItem>
+                      <SelectItem value="Mrs">Mrs</SelectItem>
+                      <SelectItem value="Ms">Ms</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {renderEditIcon(`person-${i}-prefix`)}
                 </div>
 
@@ -248,14 +356,14 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
           </Button>
           <Button
             onClick={() => {
-              if (isEditable) {
-                handleAdd();
-              } else {
+              if (isEditable && val && val.id) {
                 handleEdit();
+              } else {
+                handleAdd();
               }
             }}
           >
-            Submit
+            {isEditable && val && val.id ? "Update" : "Submit"}
           </Button>
         </DialogFooter>
       </DialogContent>

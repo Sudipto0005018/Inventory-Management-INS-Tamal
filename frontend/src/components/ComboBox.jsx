@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { cn } from "../lib/utils";
@@ -35,9 +35,16 @@ const ComboBox = ({
   dialogOpen,
   setDialogOpen,
   className = "",
+  value: propValue,
 }) => {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(propValue || "");
+
+  useEffect(() => {
+    if (propValue !== undefined) {
+      setValue(propValue);
+    }
+  }, [propValue]);
   const [dialogs, setDialogs] = useState({
     other: false,
     confirm: false,

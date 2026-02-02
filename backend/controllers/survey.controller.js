@@ -49,7 +49,30 @@ async function createSurvey(req, res) {
       row.category?.toLowerCase() == "c" ||
       row.category?.toLowerCase() == "lp"
     ) {
+      await connection.query(
+        `INSERT INTO demand (spare_id,tool_id,issue_to,transaction_id,survey_qty,survey_voucher_no,survey_date,created_at,created_by,status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          spare_id || null,
+          tool_id || null,
+          issue_to,
+          transactionId,
+          withdrawl_qty,
+          service_no,
+          withdrawl_date,
+          getSQLTimestamp(),
+          created_by,
+          "pending",
+        ],
+      );
     } else {
+      if (!box_no) {
+        return new ApiErrorResponse(
+          400,
+          {},
+          "box_no is required for this category",
+        ).send(res);
+      }
       const itemBoxNo = JSON.parse(row.box_no);
 
       const updated = itemBoxNo.map((spare) => {

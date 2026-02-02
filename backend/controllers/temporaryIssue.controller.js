@@ -363,25 +363,24 @@ async function categoryWiseUpdate(req, res) {
           spare_id,
           tool_id,
           issue_to,
-          withdrawl_qty,
-          withdrawl_date,
-          box_no,
-          service_no,
+          survey_qty,
+          survey_voucher_no,
+          survey_date,
           created_by,
-          created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+          created_at,
+          status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?)
         `,
         [
-          // transactionId,
           issue.transaction_id,
-          issue.spare_id,
-          issue.tool_id,
+          issue.spare_id || null,
+          issue.tool_id || null,
           issue.issue_to,
           issue.qty_withdrawn,
-          issue.issue_date,
-          JSON.stringify(issue.box_no),
           issue.service_no,
+          issue.issue_date,
           userId,
+          "pending",
         ],
       );
     }
@@ -707,9 +706,8 @@ async function updateTemporaryIssue(req, res) {
   }
 }
 
-
 async function generateQRCode(req, res) {
-  const { tool_id, spare_id, copy_count, box_no } = req.body;
+  const { tool_id, spare_id, boxes } = req.body;
   console.log("req.body", req.body);
 
   const PDFDocument = require("pdfkit");
@@ -771,21 +769,21 @@ async function generateQRCode(req, res) {
         .json(new ApiErrorResponse(400, {}, "Invalid QR generation request"));
     }
 
-    // ✅ Safe to use data now
-    const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
-    const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
-
-    for (let i = 0; i < Number(copy_count); i++) {
-      if (i > 0) doc.addPage();
-
-      doc.image(qrURL, 5, 5, { width: 50, height: 50 });
-      doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
-      doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-      doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-      doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
-      doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+    for (let i = 0; i < boxes.length; i++) {
+      const box_no = boxes[i].box_no;
+      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+      const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
+      const copy_count = Number(boxes[i].copy_count);
+      for (let j = 0; j < Number(copy_count); j++) {
+        if (i + j > 0) doc.addPage();
+        doc.image(qrURL, 5, 5, { width: 50, height: 50 });
+        doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
+        doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
+        doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
+        doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
+        doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+      }
     }
-
     doc.end();
   } catch (error) {
     console.log("Error while generating QR code:", error);

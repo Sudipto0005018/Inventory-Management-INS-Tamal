@@ -24,24 +24,6 @@ import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import { CustomComboBoxService } from "../components/CustomComboBoxService";
 
-// obs_auth, (mendetory)✅
-// bd aut, category, IN pattern not, box_no✅
-// IN pattern✅
-// add oem after remarks✅
-// box no -> box no + quantity✅
-// single row for box column✅
-// if item catagory null follow P route
-// date in issue to✅
-// if product has multiple box
-// Issue -> Submit/ item withdrawn✅
-// in issue page item_for_servay
-// demand date, servay voucher number✅
-// product -> item in toast✅
-// product demanded successfully....
-// remove demand type
-// add demand date✅
-// demand btn -> issue✅
-
 import PaginationTable from "../components/PaginationTableTwo";
 import toaster from "../utils/toaster";
 import apiService from "../utils/apiService";
@@ -59,6 +41,7 @@ import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
 import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
 import ComboBox from "../components/ComboBox";
+import AsyncSelectBox from "../components/AsyncSelectBox";
 
 //search fields
 const SEARCH_FIELDS = [
@@ -76,7 +59,7 @@ const SEARCH_FIELDS = [
   { label: "Sub Component", value: "sub_component" },
 ];
 
-const Spares = () => {
+const Spares = ({ type = "" }) => {
   const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
     useContext(Context);
   const columns = useMemo(() => [
@@ -243,6 +226,7 @@ const Spares = () => {
   const [supplierList, setSupplierList] = useState([]);
   const [selectedOem, setSelectedOem] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [selectedAddSupplier, setSelectedAddSupplier] = useState(null);
 
   const [isOpenOem, setIsOpenOem] = useState({ add: false, edit: false });
   const [selectedOEM, setSelectedOEM] = useState(null);
@@ -372,33 +356,99 @@ const Spares = () => {
   };
 
   //Service NO.
-
-  const BASE_URL = "http://localhost:7777/api/v1";
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/supplier/list`);
-      const data = await res.json();
-
-      console.log("SUPPLIER API RESPONSE 👉", data);
-
-      setSupplierList(Array.isArray(data?.data) ? data.data : []);
+      const res = await apiService.get(`/supplier/list`);
+      setSupplierList(Array.isArray(res?.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch suppliers", error);
       setSupplierList([]);
     }
   };
-
   const fetchOems = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/oem/list`);
-      const data = await res.json();
-
-      console.log("OEM API RESPONSE 👉", data);
-
-      setOemList(Array.isArray(data?.data) ? data.data : []);
+      const res = await apiService.get(`/oem/list`);
+      setOemList(Array.isArray(res?.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch oems", error);
       setOemList([]);
+    }
+  };
+
+  const fetchOemOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/oem/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch OEM options", error);
+      return [];
+    }
+  };
+  const onDeleteOem = async (id) => {
+    try {
+      const res = await apiService.delete(`/oem/${id}`);
+      if (res.success) {
+        toaster("success", "OEM deleted successfully");
+        fetchOems();
+        if (selectedOem === id) {
+          setSelectedOem(null);
+          setInputs((prev) => ({ ...prev, oem: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete OEM");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete OEM");
+    }
+  };
+  const fetchSupplierOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/supplier/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch Supplier options", error);
+      return [];
+    }
+  };
+
+  const onDeleteSupplier = async (id) => {
+    try {
+      const res = await apiService.delete(`/supplier/${id}`);
+      if (res.success) {
+        toaster("success", "Supplier deleted successfully");
+        fetchSuppliers();
+        if (selectedSupplier?.id === id) {
+          setSelectedSupplier(null);
+          setInputs((prev) => ({ ...prev, supplier: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete Supplier");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete Supplier");
+    }
+  };
+  const fetchSupplierDetails = async (id) => {
+    try {
+      const res = await apiService.get(`/supplier/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch Supplier details", error);
+      return null;
     }
   };
 
@@ -436,14 +486,19 @@ const Spares = () => {
     }));
   };
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
+    console.log(type);
+
     try {
-      const response = await apiService.get("/spares", {
-        params: {
-          page,
-          search: searchValue,
-          limit: config.row_per_page,
+      const response = await apiService.get(
+        type ? "/spares/critical" : "/spares",
+        {
+          params: {
+            page,
+            search: searchValue,
+            limit: config.row_per_page,
+          },
         },
-      });
+      );
       setFetchedData(response.data);
     } catch (error) {}
   };
@@ -483,6 +538,7 @@ const Spares = () => {
         "critical_spare",
         inputs.critical_spare == "yes" ? 1 : 0 || 0,
       );
+      formData.append("supplier", inputs.supplier || "");
       const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -506,7 +562,14 @@ const Spares = () => {
           indian_pattern: "",
           remarks: "",
           critical_spare: "",
+          oem: "",
+          supplier: "",
         });
+        setSelectedOem(null);
+        setSelectedAddSupplier(null);
+        setBoxNo([]);
+        setImage({ file: null, preview: null });
+        setIsLooseSpare(false);
       } else {
         toaster("error", response.message);
       }
@@ -523,7 +586,6 @@ const Spares = () => {
         s1 = 0;
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
-      console.log("boxes==>", boxes);
 
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
@@ -572,7 +634,6 @@ const Spares = () => {
 
       const obsAuthorised = Number(selectedRow.obs_authorised);
       const obsHeld = Number(selectedRow.obs_held);
-      console.log("obsheld==>", obsHeld);
 
       // QN must match authorised
       if (s !== obsAuthorised) {
@@ -602,7 +663,6 @@ const Spares = () => {
       let prevTotal = 0;
       let currentTotal = 0;
       const prevBoxes = JSON.parse(savedRow.box_no);
-      console.log("prevBoxes==>", prevBoxes);
 
       for (let i = 0; i < prevBoxes.length; i++) {
         prevTotal += parseInt(prevBoxes[i]?.qtyHeld || 0);
@@ -655,6 +715,7 @@ const Spares = () => {
         "critical_spare",
         selectedRow.critical_spare == "yes" ? 1 : 0 || 0,
       );
+      formData.append("supplier", selectedRow.supplier || "");
       const response = await apiService.post(
         "/spares/update/" + selectedRow.id,
         formData,
@@ -700,7 +761,7 @@ const Spares = () => {
   useEffect(() => {
     const fetchOems = async () => {
       try {
-        const res = await apiService.get("/oems");
+        const res = await apiService.get("/oem/list");
         setOemList(res.data || []);
       } catch (err) {
         console.error(err);
@@ -833,7 +894,7 @@ const Spares = () => {
         ?.join(", "),
       location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
         ?.map((box) => box.location)
-        ?.join(","),
+        ?.join(", "),
 
       edit: (
         <ActionIcons
@@ -1055,6 +1116,10 @@ const Spares = () => {
                 quantity: "",
               },
             ]);
+            setSelectedOem(null);
+            setSelectedAddSupplier(null);
+            setImage({ file: null, preview: null });
+            setIsLooseSpare(false);
           }}
         >
           <button
@@ -1345,34 +1410,28 @@ const Spares = () => {
             <div className="w-full mt-6 grid grid-cols-2 gap-4">
               <div>
                 <Label className="ms-2 mb-1">OEM Details</Label>
-                <ComboBox
-                  dialogContent={
-                    <OEMFirm
-                      open={isOpenOem.add}
-                      onOpenChange={(value) =>
-                        setIsOpenOem((prev) => ({ ...prev, add: value }))
-                      }
-                    />
+
+                <AsyncSelectBox
+                  label="OEM"
+                  value={
+                    selectedOem ? { id: selectedOem, name: inputs.oem } : null
                   }
-                  dialogOpen={isOpenOem.add}
-                  setDialogOpen={(value) =>
-                    setIsOpenOem((prev) => ({ ...prev, add: value }))
-                  }
-                  options={oemList}
-                  onSelect={(value) => {
-                    if (value) {
-                      setInputs((prev) => ({
-                        ...prev,
-                        oem: value.name,
-                      }));
+                  onChange={(val) => {
+                    setSelectedOem(val.id);
+                    setInputs((prev) => ({ ...prev, oem: val.name }));
+                  }}
+                  fetchOptions={fetchOemOptions}
+                  fetchDetails={async (id) => {
+                    try {
+                      const res = await apiService.get(`/oem/${id}`);
+                      return res.data;
+                    } catch (error) {
+                      console.error("Failed to fetch OEM details", error);
+                      return null;
                     }
                   }}
-                  onDelete={async (value) => {}}
-                  onView={(value) => {
-                    setSelectedOEM(value);
-                    setIsOpenOem((prev) => ({ ...prev, edit: true }));
-                  }}
-                  className="w-[660px]"
+                  AddNewModal={OEMFirm}
+                  onDelete={onDeleteOem}
                 />
               </div>
 
@@ -1380,35 +1439,21 @@ const Spares = () => {
                 <Label className="ms-2 mb-1">
                   Vendor / Third Party Supplier
                 </Label>
-                <ComboBox
+                <AsyncSelectBox
                   label="Vendor/ Third Party Supplier"
-                  dialogContent={
-                    <SupplierFirm
-                      open={isOpenSupplier.add}
-                      onOpenChange={(value) =>
-                        setIsOpenSupplier((prev) => ({ ...prev, add: value }))
-                      }
-                    />
+                  value={
+                    selectedAddSupplier
+                      ? { id: selectedAddSupplier, name: inputs.supplier }
+                      : null
                   }
-                  dialogOpen={isOpenSupplier.add}
-                  setDialogOpen={(value) =>
-                    setIsOpenSupplier((prev) => ({ ...prev, add: value }))
-                  }
-                  options={supplierList}
-                  onSelect={(value) => {
-                    if (value) {
-                      setInputs((prev) => ({
-                        ...prev,
-                        supplier: value.name,
-                      }));
-                    }
+                  onChange={(val) => {
+                    setSelectedAddSupplier(val.id);
+                    setInputs((prev) => ({ ...prev, supplier: val.name }));
                   }}
-                  onDelete={async (value) => {}}
-                  onView={(value) => {
-                    setSelectedSupplier(value);
-                    setIsOpenSupplier((prev) => ({ ...prev, edit: true }));
-                  }}
-                  className="w-[670px]"
+                  fetchOptions={fetchSupplierOptions}
+                  fetchDetails={fetchSupplierDetails}
+                  AddNewModal={SupplierFirm}
+                  onDelete={onDeleteSupplier}
                 />
               </div>
             </div>
@@ -1559,18 +1604,6 @@ const Spares = () => {
                   editable={editableFields.category}
                   onEdit={() => enableEdit("category")}
                   onBlur={() => disableEdit("category")}
-                />
-              </div>
-
-              <div>
-                <Label>Location of Storage</Label>
-                <InputWithPencil
-                  name="storage_location"
-                  value={selectedRow.storage_location}
-                  onChange={handleEditChange}
-                  editable={editableFields.storage_location}
-                  onEdit={() => enableEdit("storage_location")}
-                  onBlur={() => disableEdit("storage_location")}
                 />
               </div>
 
@@ -1822,69 +1855,65 @@ const Spares = () => {
             <div className="w-full mt-6 grid grid-cols-2 gap-4">
               <div>
                 <Label className="ms-2 mb-1">OEM Details</Label>
-                <ComboBox
-                  dialogContent={
-                    <OEMFirm
-                      open={isOpenOem.add}
-                      onOpenChange={(value) =>
-                        setIsOpenOem((prev) => ({ ...prev, add: value }))
-                      }
-                    />
+                <AsyncSelectBox
+                  label="OEM"
+                  value={
+                    selectedRow.oem
+                      ? {
+                          id: oemList.find(
+                            (item) => item.name === selectedRow.oem,
+                          )?.id,
+                          name: selectedRow.oem,
+                        }
+                      : null
                   }
-                  dialogOpen={isOpenOem.add}
-                  setDialogOpen={(value) =>
-                    setIsOpenOem((prev) => ({ ...prev, add: value }))
-                  }
-                  options={oemList}
-                  onSelect={(value) => {
-                    if (value) {
-                      setInputs((prev) => ({
-                        ...prev,
-                        oem: value.name,
-                      }));
+                  onChange={(val) => {
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      oem: val.name,
+                    }));
+                  }}
+                  fetchOptions={fetchOemOptions}
+                  fetchDetails={async (id) => {
+                    if (!id) return null;
+                    try {
+                      const res = await apiService.get(`/oem/${id}`);
+                      return res.data;
+                    } catch (error) {
+                      console.error("Failed to fetch OEM details", error);
+                      return null;
                     }
                   }}
-                  onDelete={async (value) => {}}
-                  onView={(value) => {
-                    setSelectedOEM(value);
-                    setIsOpenOem((prev) => ({ ...prev, edit: true }));
-                  }}
-                  className="w-[660px]"
+                  AddNewModal={OEMFirm}
+                  onDelete={onDeleteOem}
                 />
               </div>
               <div>
                 <Label className="ms-2 mb-1">
                   Vendor / Third Party Supplier
                 </Label>
-                <ComboBox
+                <AsyncSelectBox
                   label="Vendor/ Third Party Supplier"
-                  dialogContent={
-                    <SupplierFirm
-                      open={isOpenSupplier.add}
-                      onOpenChange={(value) =>
-                        setIsOpenSupplier((prev) => ({ ...prev, add: value }))
-                      }
-                    />
+                  value={
+                    selectedRow.supplier
+                      ? {
+                          id: supplierList.find(
+                            (item) => item.name === selectedRow.supplier,
+                          )?.id,
+                          name: selectedRow.supplier,
+                        }
+                      : null
                   }
-                  dialogOpen={isOpenSupplier.add}
-                  setDialogOpen={(value) =>
-                    setIsOpenSupplier((prev) => ({ ...prev, add: value }))
-                  }
-                  options={supplierList}
-                  onSelect={(value) => {
-                    if (value) {
-                      setInputs((prev) => ({
-                        ...prev,
-                        supplier: value.name,
-                      }));
-                    }
+                  onChange={(val) => {
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      supplier: val.name,
+                    }));
                   }}
-                  onDelete={async (value) => {}}
-                  onView={(value) => {
-                    setSelectedSupplier(value);
-                    setIsOpenSupplier((prev) => ({ ...prev, edit: true }));
-                  }}
-                  className="w-[670px]"
+                  fetchOptions={fetchSupplierOptions}
+                  fetchDetails={fetchSupplierDetails}
+                  AddNewModal={SupplierFirm}
+                  onDelete={onDeleteSupplier}
                 />
               </div>
             </div>
@@ -1971,7 +2000,8 @@ const Spares = () => {
 
                   <div>
                     <Label className="mb-2">
-                      <i>IN</i> Part No.<span className="text-red-500">*</span>
+                      <i>IN</i> Part No.
+                      <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       readOnly
@@ -2926,7 +2956,8 @@ const Spares = () => {
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <div>
                     <Label className="pb-3">
-                      Internal Demand No.<span className="text-red-500">*</span>
+                      Internal Demand No.
+                      <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       required
@@ -3127,38 +3158,6 @@ const Spares = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={isOpen.deleteSpare}
-        onOpenChange={(set) =>
-          setIsOpen((prev) => ({ ...prev, deleteSpare: set }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Are you sure you want to delete this spare?</DialogTitle>
-          <DialogDescription>
-            This action cannot be undone. Please confirm if you want to proceed
-            with the deletion of the spare:{" "}
-            <strong>{selectedRow.description}</strong>.
-          </DialogDescription>
-          <DialogFooter>
-            <Button
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, deleteSpare: false }))
-              }
-              variant="outline"
-              className="cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDelete}
-              className="text-white bg-red-500 hover:bg-red-600 cursor-pointer"
-            >
-              Delete Spare
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
         <DialogContent
           onPointerDownOutside={(e) => {
@@ -3204,7 +3203,7 @@ const Spares = () => {
         onSubmit={async () => {
           const res = await apiService.post("/suppliers", newSupplier);
           setSupplierList((prev) => [...prev, res.data]);
-          setSelectedSupplier(res.data._id);
+          setSelectedSupplier(res.data.id);
           setInputs((prev) => ({ ...prev, supplier: res.data.supplier }));
           setIsOpenSupplier(false);
         }}

@@ -53,7 +53,7 @@ const SEARCH_FIELDS = [
   { label: "Sub Component", value: "sub_component" },
 ];
 
-const Tools = () => {
+const Tools = ({ type = "" }) => {
   const { config } = useContext(Context);
 
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
@@ -249,40 +249,40 @@ const Tools = () => {
   ]);
 
   //fetch suppliers from list
-    const BASE_URL = "http://localhost:7777/api/v1";
-    const fetchSuppliers = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/supplier/list`);
-        const data = await res.json();
+  const BASE_URL = "http://localhost:7777/api/v1";
+  const fetchSuppliers = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/supplier/list`);
+      const data = await res.json();
 
-        console.log("SUPPLIER API RESPONSE 👉", data);
+      console.log("SUPPLIER API RESPONSE 👉", data);
 
-        setSupplierList(Array.isArray(data?.data) ? data.data : []);
-      } catch (error) {
-        console.error("Failed to fetch suppliers", error);
-        setSupplierList([]);
-      }
+      setSupplierList(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to fetch suppliers", error);
+      setSupplierList([]);
+    }
   };
-  
-    const fetchOems = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/oem/list`);
-        const data = await res.json();
 
-        console.log("OEM API RESPONSE 👉", data);
+  const fetchOems = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/oem/list`);
+      const data = await res.json();
 
-        setOemList(Array.isArray(data?.data) ? data.data : []);
-      } catch (error) {
-        console.error("Failed to fetch oems", error);
-        setOemList([]);
-      }
-    };
+      console.log("OEM API RESPONSE 👉", data);
 
-    useEffect(() => {
-      fetchSuppliers();
-      fetchOems();
-    }, []);
-  
+      setOemList(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to fetch oems", error);
+      setOemList([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+    fetchOems();
+  }, []);
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
     if (searchTerm === actualSearch) {
@@ -326,13 +326,16 @@ const Tools = () => {
   };
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
     try {
-      const response = await apiService.get("/tools", {
-        params: {
-          page,
-          search: searchValue,
-          limit: config.row_per_page,
+      const response = await apiService.get(
+        type ? "/tools/critical" : "/tools",
+        {
+          params: {
+            page,
+            search: searchValue,
+            limit: config.row_per_page,
+          },
         },
-      });
+      );
       setFetchedData(response.data);
     } catch (error) {}
   };
@@ -445,51 +448,49 @@ const Tools = () => {
       const boxes = JSON.parse(selectedRow.box_no || "[]");
       console.log("selected row==>", selectedRow);
 
-       // 🔴 At least one distribution row required
-            if (!boxes.length) {
-              toaster("error", "Item Storage Distribution is required");
-              return;
-            }
-      
-            // 🔴 Mandatory field validation per row
-            for (let i = 0; i < boxes.length; i++) {
-              const { no, location, qtyHeld, qn } = boxes[i];
-      
-              if (!no?.trim()) {
-                toaster("error", `Box No is required in row ${i + 1}`);
-                return;
-              }
-      
-               if (qn === "" || qn === null || isNaN(qn)) {
-                 toaster("error", `Authorised Qty is required in row ${i + 1}`);
-                 return;
-              }
-              
-              if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
-                toaster("error", `Qty Held is required in row ${i + 1}`);
-                return;
-              }
-              
-              if (!location?.trim()) {
-                toaster("error", `Location is required in row ${i + 1}`);
-                return;
-              }
-              // if (Number(qtyHeld) <= 0) {
-              //   toaster("error", `Qty Held must be greater than 0 (row ${i + 1})`);
-              //   return;
-              // }
-      
-             
-      
-              // if (Number(qn) <= 0) {
-              //   toaster(
-              //     "error",
-              //     `Authorised Qty must be greater than 0 (row ${i + 1})`,
-              //   );
-              //   return;
-              // }
+      // 🔴 At least one distribution row required
+      if (!boxes.length) {
+        toaster("error", "Item Storage Distribution is required");
+        return;
       }
-      
+
+      // 🔴 Mandatory field validation per row
+      for (let i = 0; i < boxes.length; i++) {
+        const { no, location, qtyHeld, qn } = boxes[i];
+
+        if (!no?.trim()) {
+          toaster("error", `Box No is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qn === "" || qn === null || isNaN(qn)) {
+          toaster("error", `Authorised Qty is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
+          toaster("error", `Qty Held is required in row ${i + 1}`);
+          return;
+        }
+
+        if (!location?.trim()) {
+          toaster("error", `Location is required in row ${i + 1}`);
+          return;
+        }
+        // if (Number(qtyHeld) <= 0) {
+        //   toaster("error", `Qty Held must be greater than 0 (row ${i + 1})`);
+        //   return;
+        // }
+
+        // if (Number(qn) <= 0) {
+        //   toaster(
+        //     "error",
+        //     `Authorised Qty must be greater than 0 (row ${i + 1})`,
+        //   );
+        //   return;
+        // }
+      }
+
       for (let i = 0; i < boxes.length; i++) {
         const qty1 = boxes[i].qn;
         if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
@@ -731,7 +732,10 @@ const Tools = () => {
       item_dist: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
         ?.map((box) => box.qtyHeld)
         ?.join(", "),
-      location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "", location: "" }])
+      location: (row.box_no
+        ? JSON.parse(row.box_no)
+        : [{ no: "", qn: "", location: "" }]
+      )
         ?.map((box) => box.location)
         ?.join(", "),
 

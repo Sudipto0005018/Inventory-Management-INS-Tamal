@@ -66,8 +66,8 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
 
     try {
       const payload = {
-        tool_id: row.source === "spare" ? null : row.id,
-        spare_id: row.source === "spare" ? row.id : null,
+        tool_id: row.tool_id ? row.tool_id : null,
+        spare_id: row.spare_id ? row.spare_id : null,
         boxes,
       };
 

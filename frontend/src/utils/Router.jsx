@@ -28,8 +28,6 @@ import PendingIssue from "../pages/PendingIssue";
 import PendingStock from "../pages/PendingStock";
 import CompletedServays from "../pages/CompletedServays";
 import PendingSpecial from "../pages/PendingSpecial";
-import CriticalSpares from "../pages/CriticalSpares";
-import CriticalTools from "../pages/CriticalTools";
 import DocumentsCorner from "../pages/DocumentsCorner";
 import TemporaryIssue from "../pages/TemporaryIssue";
 import PendingDemand from "../pages/PendingDemand";
@@ -65,7 +63,7 @@ const Router = () => {
           path="/spares"
           element={
             <ProtectedRoute>
-              <Spares />
+              <Spares key="2" />
             </ProtectedRoute>
           }
         />
@@ -75,7 +73,7 @@ const Router = () => {
           path="/spares/critical"
           element={
             <ProtectedRoute>
-              <CriticalSpares />
+              <Spares type="critical" key="1" />
             </ProtectedRoute>
           }
         />
@@ -145,7 +143,7 @@ const Router = () => {
           path="/tools"
           element={
             <ProtectedRoute>
-              <Tools />
+              <Tools key="3" />
             </ProtectedRoute>
           }
         />
@@ -155,7 +153,7 @@ const Router = () => {
           path="/tools/critical"
           element={
             <ProtectedRoute>
-              <CriticalTools />
+              <Tools type="critical" key="4" />
             </ProtectedRoute>
           }
         />

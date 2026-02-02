@@ -96,14 +96,12 @@ async function updateSpecialDemand(req, res) {
     } = req.body;
 
     if (!id) {
-      return res
-        .status(400)
-        .json(
-          new ApiErrorResponse({
-            success: false,
-            message: "Item ID is required",
-          }),
-        );
+      return res.status(400).json(
+        new ApiErrorResponse({
+          success: false,
+          message: "Item ID is required",
+        }),
+      );
     }
 
     const query = `
@@ -154,14 +152,12 @@ async function updateSpecialDemand(req, res) {
     );
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json(
-        new ApiErrorResponse({
-          success: false,
-          message: "Failed to update Special Demand",
-        }),
-      );
+    res.status(500).json(
+      new ApiErrorResponse({
+        success: false,
+        message: "Failed to update Special Demand",
+      }),
+    );
   }
 }
 
@@ -439,6 +435,7 @@ async function updateSpare(req, res) {
     substitute_name,
     local_terminology,
     critical_spare,
+    supplier,
   } = req.body;
 
   const filename = req.file ? req.file.filename : image || null;
@@ -517,7 +514,8 @@ async function updateSpare(req, res) {
           oem = ?,
           substitute_name = ?,
           local_terminology = ?,
-          critical_spare = ?
+          critical_spare = ?,
+          supplier = ?
       WHERE id = ?
       `,
       [
@@ -538,6 +536,7 @@ async function updateSpare(req, res) {
         substitute_name || null,
         local_terminology || null,
         isCriticalSpare,
+        supplier || null,
         id,
       ],
     );

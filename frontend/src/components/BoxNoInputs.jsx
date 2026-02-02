@@ -25,12 +25,12 @@ import apiService from "../utils/apiService";
 function BoxNoInputs({
   value,
   onChange,
-  isLooseSpare = false, 
+  isLooseSpare = false,
   isBoxnumberDisable = false,
   isAddRow = true,
   // addToDropdown = async () => {},
 }) {
-    const { storageLocation, fetchStorageLocation } = useContext(Context);
+  const { storageLocation, fetchStorageLocation } = useContext(Context);
   const handleInputChange = (index, fieldName, fieldValue) => {
     const newRows = [...value];
     newRows[index] = {
@@ -40,27 +40,27 @@ function BoxNoInputs({
     onChange(newRows);
   };
 
-   const addToDropdown = async (type, value) => {
-     try {
-       const data = {
-         type: [type],
-         attr: [value],
-       };
+  const addToDropdown = async (type, value) => {
+    try {
+      const data = {
+        type: [type],
+        attr: [value],
+      };
 
-       const response = await apiService.post("/config/add", data);
+      const response = await apiService.post("/config/add", data);
 
-       if (response.success) {
-         toaster("success", "Data Added");
+      if (response.success) {
+        toaster("success", "Data Added");
 
-         if (type === "location") {
-           await fetchStorageLocation();
-         }
-       }
-     } catch (error) {
-       console.error(error);
-       toaster("error", "Failed to add");
-     }
-   };
+        if (type === "location") {
+          await fetchStorageLocation();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to add");
+    }
+  };
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newValue, setNewValue] = useState(null);
@@ -171,6 +171,7 @@ function BoxNoInputs({
                   <ComboBox
                     options={storageLocation}
                     placeholder="Select location"
+                    value={row.location}
                     onSelect={(value) => {
                       handleInputChange(index, "location", value.name);
                     }}
