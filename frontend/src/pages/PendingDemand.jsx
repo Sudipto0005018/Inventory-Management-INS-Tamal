@@ -313,9 +313,7 @@ const PendingDemand = () => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">
-            Create Demand for {selectedRow.description}
-          </DialogTitle>
+          <DialogTitle className="capitalize">Demand Details</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <Label htmlFor="demand_no" className="mb-2 gap-1">

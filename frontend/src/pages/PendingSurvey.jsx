@@ -323,7 +323,7 @@ const PendingSurvey = () => {
           }}
         >
           <DialogTitle className="capitalize">
-            Survey {selectedRow.spare_id ? "spare" : "tool"}
+            Issue {selectedRow.spare_id ? "spare" : "tool"}
           </DialogTitle>
           <DialogDescription className="hidden" />
           <div>

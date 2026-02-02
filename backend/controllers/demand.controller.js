@@ -183,45 +183,91 @@ async function getDemands(req, res) {
 }
 
 async function createPendingIssue(req, res) {
-  const { demand_no, demand_date, id } = req.body;
+  const {
+    id,
+    demand_no,
+    demand_date,
+
+    // NAC fields
+    nac_no,
+    nac_date,
+    validity,
+    rate_unit,
+
+    // Stocking fields
+    mo_no,
+    mo_date,
+  } = req.body;
+
   const connection = await pool.getConnection();
+
   try {
     await connection.beginTransaction();
+
     const [rows] = await connection.query(`SELECT * FROM demand WHERE id = ?`, [
       id,
     ]);
 
     if (rows.length === 0) {
+      await connection.rollback();
       return new ApiResponse(404, {}, "Demand not found").send(res);
     }
 
+    const demand = rows[0];
+
     await connection.query(
-      `INSERT INTO pending_issue
-            (demand_no, demand_date, transaction_id, spare_id, tool_id, created_at, created_by, demand_quantity) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `
+      INSERT INTO pending_issue (
+        demand_no,
+        demand_date,
+        transaction_id,
+        spare_id,
+        tool_id,
+        created_at,
+        created_by,
+        demand_quantity,
+
+        nac_no,
+        nac_date,
+        validity,
+        rate_unit,
+        mo_no,
+        mo_date,
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       [
         demand_no,
         demand_date,
-        rows[0].transaction_id,
-        rows[0].spare_id,
-        rows[0].tool_id,
+        demand.transaction_id,
+        demand.spare_id,
+        demand.tool_id,
         getSQLTimestamp(),
         req.user.id,
-        rows[0].survey_qty,
+        demand.survey_qty,
+
+        nac_no || null,
+        nac_date || null,
+        validity || null,
+        rate_unit || null,
+        mo_no || null,
+        mo_date || null,
+        "pending",
       ],
     );
 
-    const a = await connection.query(
+    await connection.query(
       `UPDATE demand SET status = 'complete' WHERE id = ?`,
-      [rows[0].id],
+      [id],
     );
-    console.log(rows);
 
     await connection.commit();
+
     new ApiResponse(201, {}, "Pending issue created successfully").send(res);
   } catch (error) {
     await connection.rollback();
-    console.log("Error while creating pending issue: ", error);
+    console.error("Error while creating pending issue:", error);
     new ApiErrorResponse(500, {}, "Internal server error").send(res);
   } finally {
     connection.release();
@@ -332,9 +378,97 @@ async function getPendingIssue(req, res) {
   }
 }
 
+// UPDATE PENDING ISSUE
+async function updatePendingIssue(req, res) {
+  const { id } = req.params;
+
+  const { nac_no, nac_date, validity, rate_unit, mo_no, mo_date, status } =
+    req.body;
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [existing] = await connection.query(
+      `SELECT id FROM pending_issue WHERE id = ?`,
+      [id],
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return new ApiResponse(404, {}, "Pending issue not found").send(res);
+    }
+
+    const updateFields = [];
+    const updateValues = [];
+
+    if (nac_no !== undefined) {
+      updateFields.push("nac_no = ?");
+      updateValues.push(nac_no);
+    }
+
+    if (nac_date !== undefined) {
+      updateFields.push("nac_date = ?");
+      updateValues.push(nac_date);
+    }
+
+    if (validity !== undefined) {
+      updateFields.push("validity = ?");
+      updateValues.push(validity);
+    }
+
+    if (rate_unit !== undefined) {
+      updateFields.push("rate_unit = ?");
+      updateValues.push(parseFloat(rate_unit).toFixed(2));
+    }
+
+    if (mo_no !== undefined) {
+      updateFields.push("mo_no = ?");
+      updateValues.push(mo_no);
+    }
+
+    if (mo_date !== undefined) {
+      updateFields.push("mo_date = ?");
+      updateValues.push(mo_date);
+    }
+
+    if (status !== undefined) {
+      updateFields.push("status = ?");
+      updateValues.push(status);
+    }
+
+    if (updateFields.length === 0) {
+      await connection.rollback();
+      return new ApiResponse(400, {}, "No fields to update").send(res);
+    }
+
+    updateValues.push(id);
+
+    const updateQuery = `
+      UPDATE pending_issue
+      SET ${updateFields.join(", ")}
+      WHERE id = ?
+    `;
+
+    await connection.query(updateQuery, updateValues);
+
+    await connection.commit();
+
+    new ApiResponse(200, {}, "Pending issue updated successfully").send(res);
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error updating pending issue:", error);
+    new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   createDemand,
   getDemands,
   createPendingIssue,
   getPendingIssue,
+  updatePendingIssue,
 };

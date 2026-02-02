@@ -50,8 +50,8 @@ const PermanentPendings = () => {
     // { key: "survey_date", header: "Survey Date" },
     // { key: "voucher_no", header: "Survey Number" },
     // { key: "quantity", header: "Surveyed Quantity" },
-    { key: "demand", header: "Demand No." },
-    { key: "quantity", header: "Qty" },
+    // { key: "demand", header: "Demand No." },
+    // { key: "quantity", header: "Qty" },
     // { key: "category", header: "Category" },
     { key: "status", header: "Status" },
     { key: "processed", header: "Proceed" },
@@ -108,22 +108,37 @@ const PermanentPendings = () => {
 
   const fetchdata = async () => {
     try {
-      const response = await apiService.get("/pending/surveyed", {
+      setIsLoading((prev) => ({ ...prev, table: true }));
+
+      const response = await apiService.get("/demand/pending-issue", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
+          search: inputs.search || "",
+          cols: selectedValues.join(","), // 🔥 important
+          status: "STOCKED",
         },
       });
+      console.log(response);
+
       if (response.success) {
         setFetchedData(response.data);
       } else {
         toaster("error", response.message);
       }
     } catch (error) {
-      console.log(error);
-      toaster("error", error.message);
+      console.error(error);
+      toaster("error", error.message || "Failed to fetch pending issues");
+    } finally {
+      setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
+
+  const handleSearch = () => {
+    setCurrentPage(1); // reset pagination
+    fetchdata();
+  };
+
   const handleDemand = async () => {
     if (!inputs.demand_no || !inputs.demand_calender) {
       toaster("error", "All fields are required");
@@ -192,7 +207,7 @@ const PermanentPendings = () => {
     }
     setIsLoading((prev) => ({ ...prev, mo: true }));
     try {
-      const response = await apiService.post("/pending/stocking", {
+      const response = await apiService.post("/demand/pending-issue", {
         id: selectedRow.id,
         mo_no: inputs.mo_no,
         gate_pass_date: formatSimpleDate(inputs.gate_pass_calender),
@@ -255,22 +270,18 @@ const PermanentPendings = () => {
   useEffect(() => {
     fetchdata();
   }, [currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchdata();
+  }, [selectedValues]);
+
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       survey_quantity: row.survey_quantity || "0",
-      issue_date: getDate(row.issue_date),
-      survey_date: getDate(row.date),
-      status:
-        row.status == "surveyed"
-          ? "Pending for Demand"
-          : row.status == "demanded"
-          ? "Pending for Issue"
-          : row.status == "naced"
-          ? "Pending for Procurement"
-          : row.status == "stocked"
-          ? "Pending for Stocking"
-          : row.status,
+      // issue_date: getDate(row.issue_date),
+      // survey_date: getDate(row.date),
       processed: (
         <Button
           size="icon"
@@ -579,12 +590,14 @@ const PermanentPendings = () => {
                     Cancel
                   </Button>
                   <SpinnerButton
-                    loading={isLoading.nac}
-                    disabled={isLoading.nac}
-                    loadingText="Submitting..."
-                    onClick={handleNAC}
+                    className="cursor-pointer hover:bg-primary/85"
+                    onClick={handleSearch}
+                    loading={isLoading.search}
+                    disabled={isLoading.search}
+                    loadingText="Searching..."
                   >
-                    Submit
+                    <FaMagnifyingGlass className="size-3.5" />
+                    Search
                   </SpinnerButton>
                 </div>
               </>

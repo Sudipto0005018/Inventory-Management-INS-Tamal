@@ -80,8 +80,6 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
     }
   }
 
-  /* ---------------- TABLE CONFIG ---------------- */
-
   const columns = useMemo(
     () => [
       {
