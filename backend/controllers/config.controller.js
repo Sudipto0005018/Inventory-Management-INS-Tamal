@@ -146,6 +146,20 @@ async function getUserByServiceNo(req, res) {
   }
 }
 
+async function getPersonnel(req, res) {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, attr_1 AS serviceNumber, attr_2 AS name, attr_3 AS `rank`, attr_4 AS phone_no FROM config WHERE type = 'service_no'",
+    );
+    res.status(200).json(new ApiResponse(200, rows, "All Personnel List:"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   addConfig,
   getLocationStorage,
@@ -153,4 +167,5 @@ module.exports = {
   getConcurredBy,
   getUserByServiceNo,
   deleteConfig,
+  getPersonnel,
 };

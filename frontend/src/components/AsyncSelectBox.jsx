@@ -46,7 +46,11 @@ const DefaultRenderDetail = ({ details, onEdit, onDelete }) => {
         <Button variant="ghost" onClick={() => onEdit(details)}>
           <MdEdit className="h-5 w-5 text-primary" />
         </Button>
-        <Button variant="ghost" onClick={() => onDelete(details)}>
+        <Button
+          variant="ghost"
+          className="hidden"
+          onClick={() => onDelete(details)}
+        >
           <FaTrash className="h-4 w-4 p-[1px] text-red-700" />
         </Button>
       </div>
@@ -271,6 +275,10 @@ const AsyncSelectBox = ({
           open={isAddModalOpen}
           onOpenChange={setIsAddModalOpen}
           val={editData}
+          onEdited={(id) => {
+            console.log(id);
+            fetchDetails(id);
+          }}
         />
       )}
 

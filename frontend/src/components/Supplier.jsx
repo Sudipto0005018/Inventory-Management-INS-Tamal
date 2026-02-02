@@ -15,7 +15,13 @@ import { Pencil, Trash2 } from "lucide-react";
 import apiService from "../utils/apiService";
 import toaster from "../utils/toaster";
 
-const SupplierFirm = ({ open, onOpenChange, isEditable = true, val }) => {
+const SupplierFirm = ({
+  open,
+  onOpenChange,
+  isEditable = true,
+  val,
+  onEdited = () => {},
+}) => {
   const [value, setValue] = useState(() => {
     if (val && val != null) {
       return {
@@ -132,7 +138,7 @@ const SupplierFirm = ({ open, onOpenChange, isEditable = true, val }) => {
         toaster("error", res.message || "Failed to update Supplier");
         return;
       }
-
+      onEdited(val.id);
       toaster("success", "Supplier updated successfully");
       onOpenChange(false);
     } catch (error) {

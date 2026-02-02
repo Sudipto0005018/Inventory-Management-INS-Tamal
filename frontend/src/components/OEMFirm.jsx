@@ -15,7 +15,13 @@ import { Pencil, Trash2 } from "lucide-react";
 import apiService from "../utils/apiService";
 import toaster from "../utils/toaster";
 
-const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
+const OEMFirm = ({
+  open,
+  onOpenChange,
+  isEditable = true,
+  val,
+  onEdited = () => {},
+}) => {
   const [value, setValue] = useState(() => {
     if (val && val != null) {
       return {
@@ -133,6 +139,7 @@ const OEMFirm = ({ open, onOpenChange, isEditable = true, val }) => {
         return;
       }
 
+      onEdited(val.id);
       toaster("success", "OEM updated successfully");
       onOpenChange(false);
     } catch (error) {

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
+import { IoMdRefresh } from "react-icons/io";
 
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -46,14 +47,11 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    // { key: "issue_date", header: "Issue Date" },
-    // { key: "survey_date", header: "Survey Date" },
-    // { key: "voucher_no", header: "Survey Number" },
-    // { key: "quantity", header: "Surveyed Quantity" },
-    // { key: "demand", header: "Demand No." },
-    // { key: "quantity", header: "Qty" },
-    // { key: "category", header: "Category" },
-    { key: "status", header: "Status" },
+    { key: "demand_no", header: "Demand No." },
+    { key: "demand_date", header: "Demand Date." },
+    { key: "demand_quantity", header: "Demanded Qty" },
+    { key: "mo_no", header: "MO Gate Pass No." },
+    { key: "mo_date", header: "MO Date" },
     { key: "processed", header: "Proceed" },
   ]);
 
@@ -139,6 +137,19 @@ const PermanentPendings = () => {
     fetchdata();
   };
 
+  const handleRefresh = () => {
+    setInputs((prev) => ({
+      ...prev,
+      search: "",
+    }));
+
+    setSelectedSearchFields([]);
+    setCurrentPage(1);
+    setActualSearch("");
+    // setSelectedRowIndex(null);
+    setPanelProduct({ critical_spare: "no" });
+    fetchdata("", 1);
+  };
   const handleDemand = async () => {
     if (!inputs.demand_no || !inputs.demand_calender) {
       toaster("error", "All fields are required");
@@ -344,6 +355,27 @@ const PermanentPendings = () => {
             <FaMagnifyingGlass className="size-3.5" />
             Search
           </SpinnerButton>
+          <Button
+            variant="outline"
+            className="cursor-pointer flex items-center gap-1 bg-white
+                      hover:bg-gray-200 
+                      hover:scale-105 
+                      transition-all duration-200"
+            onClick={handleRefresh}
+            title="Reset Search"
+          >
+            <IoMdRefresh
+              className="size-7 font-bold
+                        hover:rotate-180 
+                        transition-transform duration-300"
+              style={{
+                color: "#109240",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            />
+            <span className="text-md font-extrabold text-green-700"></span>
+          </Button>
         </div>
         <PaginationTable
           data={tableData}

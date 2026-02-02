@@ -136,6 +136,7 @@ async function getDemands(req, res) {
              LEFT JOIN spares sp ON d.spare_id = sp.id 
              LEFT JOIN tools t ON d.tool_id = t.id 
              ${finalWhereClause}`,
+
       queryParams,
     );
 
@@ -160,6 +161,7 @@ async function getDemands(req, res) {
              LEFT JOIN spares sp ON d.spare_id = sp.id
              LEFT JOIN tools t ON d.tool_id = t.id
              ${finalWhereClause} 
+             ORDER BY d.created_at DESC
              LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset],
     );
@@ -356,6 +358,7 @@ async function getPendingIssue(req, res) {
              LEFT JOIN spares sp ON pi.spare_id = sp.id
              LEFT JOIN tools t ON pi.tool_id = t.id
              ${finalWhereClause} 
+             ORDER BY pi.created_at DESC
              LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset],
     );

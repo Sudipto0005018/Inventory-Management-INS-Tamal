@@ -16,7 +16,7 @@ import PaginationTable from "./PaginationTable";
 import apiService from "../utils/apiService";
 import toaster from "../utils/toaster";
 
-const GenerateQRDialog = ({ open, setOpen, row }) => {
+const GenerateQRDialog = ({ open, setOpen, row, boxesData, updateDetails }) => {
   const [boxes, setBoxes] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -33,16 +33,17 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
         typeof row.box_no === "string" ? JSON.parse(row.box_no) : row.box_no;
 
       setBoxes(
-        parsed.map((b) => ({
+        boxesData.map((b) => ({
           box_no: b.no,
-          return_qty: "",
-          copy_count: "",
+          return_qty: b.deposit || "0",
+          copy_count: b.deposit || "0",
         })),
       );
     } catch {
       toaster("error", "Invalid box number data");
     }
   }, [open, row]);
+  console.log(row);
 
   const handleChange = (index, field, value) => {
     setBoxes((prev) => {
@@ -73,6 +74,7 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
 
       setLoading(true);
       await apiService.downloadFile("/temporaryIssue/genarate-qr", payload);
+      await updateDetails();
     } catch {
       toaster("error", "QR generation failed");
     } finally {
@@ -114,7 +116,7 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
             type="number"
             className="mx-auto w-24 text-center"
             value={box.return_qty}
-            onChange={(e) => handleChange(index, "return_qty", e.target.value)}
+            // onChange={(e) => handleChange(index, "return_qty", e.target.value)}
           />
         ),
         copy_count: (
@@ -122,7 +124,9 @@ const GenerateQRDialog = ({ open, setOpen, row }) => {
             type="number"
             className="mx-auto w-24 text-center"
             value={box.copy_count}
-            onChange={(e) => handleChange(index, "copy_count", e.target.value)}
+            onChange={(e) => {
+              handleChange(index, "copy_count", e.target.value);
+            }}
           />
         ),
       })),

@@ -3,8 +3,8 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
 async function createSpecialDemand(req, res) {
-  const { id } = req.user;
-  const { name } = req.user;
+  const { id: userId, name } = req.user;
+
   try {
     const {
       spare_id,
@@ -17,12 +17,66 @@ async function createSpecialDemand(req, res) {
       requisition_date,
       mo_demand_no,
       mo_demand_date,
-      a,
     } = req.body;
 
     console.log("REQ.BODY =>", req.body);
 
-    const query = `
+    // 🔹 check if ALL 6 fields are filled
+    const allDemandFieldsFilled =
+      internal_demand_no &&
+      internal_demand_date &&
+      requisition_no &&
+      requisition_date &&
+      mo_demand_no &&
+      mo_demand_date;
+
+    /* =====================================================
+       CASE 1: All fields present → INSERT INTO pending_issue
+       ===================================================== */
+    if (allDemandFieldsFilled) {
+      const pendingIssueQuery = `
+        INSERT INTO pending_issue (
+          spare_id,
+          tool_id,
+          demand_no,
+          demand_date,
+          demand_quantity,
+          nac_no,
+          nac_date,
+          mo_no,
+          mo_date,
+          created_by,
+          created_at,
+          status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending')
+      `;
+
+      await pool.query(pendingIssueQuery, [
+        spare_id || null,
+        tool_id || null,
+
+        internal_demand_no,
+        internal_demand_date,
+        obs_increase_qty,
+
+        requisition_no,
+        requisition_date,
+        mo_demand_no,
+        mo_demand_date,
+
+        userId,
+      ]);
+
+      return res.json({
+        success: true,
+        message: "Inserted directly into Pending Issue",
+      });
+    }
+
+    /* =====================================================
+       CASE 2: Any field missing → INSERT INTO special_demand
+       ===================================================== */
+    const specialDemandQuery = `
       INSERT INTO special_demand (
         spare_id,
         tool_id,
@@ -39,11 +93,9 @@ async function createSpecialDemand(req, res) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    await pool.query(query, [
-      // spare_id || null,
-      // tool_id || null,
-      a == "spare" ? id : null,
-      a == "tool" ? id : null,
+    await pool.query(specialDemandQuery, [
+      spare_id || null,
+      tool_id | null,
       obs_authorised,
       obs_increase_qty,
       internal_demand_no || null,
@@ -52,13 +104,13 @@ async function createSpecialDemand(req, res) {
       requisition_date || null,
       mo_demand_no || null,
       mo_demand_date || null,
-      id,
+      userId,
       name,
     ]);
 
     res.json({
       success: true,
-      message: "Special Demand created and tracked successfully",
+      message: "Special Demand created successfully",
     });
   } catch (err) {
     console.error(err);
@@ -94,7 +146,7 @@ async function getSpecialDemandList(req, res) {
 
   try {
     const query = `
-      SELECT 
+      SELECT
         sd.id,
         sd.spare_id,
         sd.tool_id,
@@ -119,19 +171,19 @@ async function getSpecialDemandList(req, res) {
           ELSE 'unknown'
         END AS source,
 
-        CASE 
+        CASE
           WHEN sd.spare_id IS NOT NULL THEN s.description
           WHEN sd.tool_id IS NOT NULL THEN t.description
           ELSE NULL
         END AS description,
 
-        CASE 
+        CASE
           WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
           WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
           ELSE NULL
         END AS indian_pattern,
 
-        CASE 
+        CASE
           WHEN sd.spare_id IS NOT NULL THEN s.category
           WHEN sd.tool_id IS NOT NULL THEN t.category
           ELSE NULL

@@ -82,7 +82,6 @@ const PendingTempLoan = () => {
   const [actionType, setActionType] = useState("returned");
   // "returned" | "utilised"
 
-
   //Generate QR state
   const [generateQR, setGenerateQR] = useState("no");
   const [openQRDialog, setOpenQRDialog] = useState(false);
@@ -155,7 +154,6 @@ const PendingTempLoan = () => {
     }, 0);
   };
 
-
   const handleRefresh = () => {
     setInputs((prev) => ({
       ...prev,
@@ -216,54 +214,7 @@ const PendingTempLoan = () => {
     setTableData(t);
   }, [fetchedData]);
 
-  const handleReceive = async () => {
-   if (actionType === "returned") {
-     const returnedQty = Number(inputs.quantity_received);
-     const depositQty = Number(getDepositQty());
-
-     // 🔴 No field should be less than zero
-     const fieldsToValidate = [
-       { value: returnedQty, label: "Returned quantity" },
-       { value: depositQty, label: "Deposit quantity" },
-     ];
-
-     for (const field of fieldsToValidate) {
-       if (field.value < 0) {
-         toaster("error", `${field.label} cannot be less than zero`);
-         return;
-       }
-     }
-
-     if (!returnedQty) {
-       toaster("error", "Quantity is required");
-       return;
-     }
-
-     if (returnedQty > selectedRow.quantity) {
-       toaster("error", "Quantity cannot be greater than issued quantity");
-       return;
-     }
-
-     if (!inputs.receive_date) {
-       toaster("error", "Receive date is required");
-       return;
-     }
-
-     // ❌ No single deposit qty can be less than 0
-     const hasNegativeDepositRow = boxNo.some((row) => Number(row.deposit) < 0);
-
-     if (hasNegativeDepositRow) {
-       toaster("error", "Deposit quantity in any box cannot be less than zero");
-       return;
-     }
-
-     if (depositQty !== returnedQty) {
-       toaster("error", "Deposit quantity must be equal to returned quantity");
-       return;
-     }
-   }
-
-
+  async function updateDetails() {
     setIsLoading((prev) => ({ ...prev, receive: true }));
 
     try {
@@ -300,6 +251,7 @@ const PendingTempLoan = () => {
         });
         setActionType("returned");
         setBoxNo([]);
+        setOpenQRDialog(false);
         fetchdata();
       } else {
         toaster("error", response.message);
@@ -312,6 +264,64 @@ const PendingTempLoan = () => {
     } finally {
       setIsLoading((prev) => ({ ...prev, receive: false }));
     }
+  }
+
+  const handleReceive = async () => {
+    if (actionType === "returned") {
+      const returnedQty = Number(inputs.quantity_received);
+      const depositQty = Number(getDepositQty());
+
+      // 🔴 No field should be less than zero
+      const fieldsToValidate = [
+        { value: returnedQty, label: "Returned quantity" },
+        { value: depositQty, label: "Deposit quantity" },
+      ];
+
+      for (const field of fieldsToValidate) {
+        if (field.value < 0) {
+          toaster("error", `${field.label} cannot be less than zero`);
+          return;
+        }
+      }
+
+      if (!returnedQty) {
+        toaster("error", "Quantity is required");
+        return;
+      }
+
+      if (returnedQty > selectedRow.quantity) {
+        toaster("error", "Quantity cannot be greater than issued quantity");
+        return;
+      }
+
+      if (!inputs.receive_date) {
+        toaster("error", "Receive date is required");
+        return;
+      }
+
+      // ❌ No single deposit qty can be less than 0
+      const hasNegativeDepositRow = boxNo.some(
+        (row) => Number(row.deposit) < 0,
+      );
+
+      if (hasNegativeDepositRow) {
+        toaster(
+          "error",
+          "Deposit quantity in any box cannot be less than zero",
+        );
+        return;
+      }
+
+      if (depositQty !== returnedQty) {
+        toaster("error", "Deposit quantity must be equal to returned quantity");
+        return;
+      }
+    }
+    if (generateQR != "no") {
+      setOpenQRDialog(true);
+      return;
+    }
+    await updateDetails();
   };
 
   useEffect(() => {
@@ -610,7 +620,6 @@ const PendingTempLoan = () => {
                         checked={generateQR === "no"}
                         onChange={() => {
                           setGenerateQR("no");
-                          setOpenQRDialog(false);
                         }}
                       />
                       No
@@ -624,7 +633,6 @@ const PendingTempLoan = () => {
                         checked={generateQR === "yes"}
                         onChange={() => {
                           setGenerateQR("yes");
-                          setOpenQRDialog(true);
                         }}
                       />
                       Yes
@@ -635,6 +643,8 @@ const PendingTempLoan = () => {
                   open={openQRDialog}
                   setOpen={setOpenQRDialog}
                   row={selectedRow}
+                  boxesData={boxNo}
+                  updateDetails={updateDetails}
                 />
               </div>
             </>

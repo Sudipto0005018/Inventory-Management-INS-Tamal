@@ -42,6 +42,7 @@ import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
 import ComboBox from "../components/ComboBox";
 import AsyncSelectBox from "../components/AsyncSelectBox";
+import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 
 //search fields
 const SEARCH_FIELDS = [
@@ -243,6 +244,12 @@ const Spares = ({ type = "" }) => {
 
   const [savedRow, setSavedRow] = useState(null);
   const [savedHeld, setSavedHeld] = useState(null);
+  const [selectedPerson, setSelectedPerson] = useState({
+    person: null,
+    tempPerson: null,
+    loanPerson: null,
+    options: [],
+  });
   //Demand no and Date
   const isInternalFilled =
     obsDialog.internalDemandNo && obsDialog.internalDemandDate;
@@ -451,10 +458,39 @@ const Spares = ({ type = "" }) => {
       return null;
     }
   };
+  const fetchPersonnelOptions = async () => {
+    try {
+      const res = await apiService.get(`/config/personnel`);
+      if (res.success) {
+        setSelectedPerson((prev) => ({ ...prev, options: res.data }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch Personnel options", error);
+    }
+  };
+
+  const handleAddPersonnel = async (person) => {
+    try {
+      const res = await apiService.post(`/config/add`, {
+        attr: [person.serviceNumber, person.name, person.rank, person.phone_no],
+        type: "service_no",
+      });
+      if (res.success) {
+        toaster("success", "Personnel added successfully");
+        fetchPersonnelOptions();
+      } else {
+        toaster("error", res.message || "Failed to add personnel");
+      }
+    } catch (error) {
+      console.error("Failed to add personnel", error);
+      toaster("error", "Failed to add personnel");
+    }
+  };
 
   useEffect(() => {
     fetchSuppliers();
     fetchOems();
+    fetchPersonnelOptions();
   }, []);
 
   const handleSearch = async (e) => {
@@ -778,24 +814,6 @@ const Spares = ({ type = "" }) => {
     );
   }, [selectedRow.box_no]);
 
-  const handleDelete = async () => {
-    try {
-      const response = await apiService.delete("/spares/" + selectedRow.id);
-      if (response.success) {
-        toaster("success", "Spare deleted successfully");
-        setIsOpen({ ...isOpen, deleteSpare: false });
-        fetchdata();
-      } else {
-        toaster("error", response.message);
-      }
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to delete spare";
-      toaster("error", errMsg);
-    }
-  };
   const submitTemporaryIssue = async (payload) => {
     try {
       const res = await apiService.post("/temporaryIssue/temporary", payload);
@@ -814,14 +832,18 @@ const Spares = ({ type = "" }) => {
     }
   };
   const submitPermanentIssue = async () => {
+    if (!selectedPerson?.person?.serviceNumber) {
+      toaster("error", "Service No is required");
+      return;
+    }
     try {
       const res = await apiService.post("/survey/create", {
         box_no: boxNo,
         spare_id: selectedRow.id,
         withdrawl_qty: selectedRow.new_val,
         withdrawl_date: formatDate(),
-        service_no: user.serviceNumber,
-        name: user.name,
+        service_no: selectedPerson.person?.serviceNumber,
+        name: selectedPerson.person?.name,
         issue_to: selectedRow.issue_to_text,
       });
       if (res.success) {
@@ -1729,7 +1751,7 @@ const Spares = ({ type = "" }) => {
                   onValueChange={(value) =>
                     setSelectedRow((prev) => ({
                       ...prev,
-                      critical_spare: value,
+                      critical_spare: value == "yes" ? 1 : 0,
                     }))
                   }
                   className="mt-2"
@@ -2148,7 +2170,7 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 {/* Service No & Name (Full Width Rows) */}
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
                     <div>
                       <Label>
@@ -2187,7 +2209,24 @@ const Spares = ({ type = "" }) => {
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
+                <ServicePersonnelSearch
+                  options={selectedPerson.options}
+                  value={selectedPerson.person}
+                  onChange={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      person: person,
+                    }));
+                  }}
+                  onAdd={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      person: person,
+                    }));
+                    handleAddPersonnel(person);
+                  }}
+                />
               </div>
             )}
 
@@ -2371,7 +2410,25 @@ const Spares = ({ type = "" }) => {
                   />
                 </div>
 
-                <div className="space-y-4">
+                <ServicePersonnelSearch
+                  options={selectedPerson.options}
+                  value={selectedPerson.tempPerson}
+                  onChange={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      tempPerson: person,
+                    }));
+                  }}
+                  onAdd={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      tempPerson: person,
+                    }));
+                    handleAddPersonnel(person);
+                  }}
+                />
+
+                {/* <div className="space-y-4">
                   <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
                     <div>
                       <Label>
@@ -2410,7 +2467,7 @@ const Spares = ({ type = "" }) => {
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -2579,7 +2636,25 @@ const Spares = ({ type = "" }) => {
                   />
                 </div>
 
-                <div className="space-y-4">
+                <ServicePersonnelSearch
+                  options={selectedPerson.options}
+                  value={selectedPerson.loanPerson}
+                  onChange={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      loanPerson: person,
+                    }));
+                  }}
+                  onAdd={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      loanPerson: person,
+                    }));
+                    handleAddPersonnel(person);
+                  }}
+                />
+
+                {/* <div className="space-y-4">
                   <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
                     <div>
                       <Label>
@@ -2644,7 +2719,7 @@ const Spares = ({ type = "" }) => {
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -3114,9 +3189,8 @@ const Spares = ({ type = "" }) => {
                       Number(obsDialog.quantity);
 
                 //payload
-                console.log("selected row", selectedRow);
                 const payload = {
-                  id: selectedRow.id,
+                  spare_id: selectedRow.id,
 
                   obs_authorised: finalValue,
                   obs_increase_qty: obsDialog.quantity,
@@ -3136,9 +3210,7 @@ const Spares = ({ type = "" }) => {
                   mo_demand_date: obsDialog.moDemandDate
                     ? getISTTimestamp(obsDialog.requisitionDate)
                     : null,
-                  a: selectedRow.source,
                 };
-                console.log("ObS Dialog", payload);
 
                 apiService.post("/specialDemand/special", payload);
 
@@ -3195,7 +3267,7 @@ const Spares = ({ type = "" }) => {
         </DialogContent>
       </Dialog>
 
-      <SupplierFirm
+      {/* <SupplierFirm
         open={isOpenSupplier}
         onOpenChange={setIsOpenSupplier}
         value={newSupplier}
@@ -3216,7 +3288,7 @@ const Spares = ({ type = "" }) => {
         val={selectedOEM}
         isEditable={false}
         setValue={setNewVendor}
-      />
+      /> */}
     </div>
   );
 };
