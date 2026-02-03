@@ -536,7 +536,7 @@ const PermanentPendings = () => {
                 </div>
                 <div className="">
                   <FormattedDatePicker
-                    label="Returned Date"
+                    label="Returned Date *"
                     className="w-full"
                     value={inputs.receive_date}
                     onChange={(date) => {
@@ -553,6 +553,9 @@ const PermanentPendings = () => {
                   />
                 </div>
               </div>
+              <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
+                Box Wise Segregation
+              </Label>
               <BoxNoDeposit
                 className="mt-4"
                 value={boxNo}

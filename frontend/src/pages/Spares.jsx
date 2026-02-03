@@ -1074,7 +1074,9 @@ const Spares = ({ type = "" }) => {
               <Table className="mt-2">
                 <TableBody className="">
                   <TableRow>
-                    <TableCell>Sub Component</TableCell>
+                    <TableCell>
+                      Sub Component<span className="text-red-500">*</span>
+                    </TableCell>
                     <TableCell>{panelProduct.sub_component || "--"}</TableCell>
                   </TableRow>
                   <TableRow>
@@ -1221,7 +1223,9 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">B & D Authorised</Label>
+                  <Label className="ms-2 mb-1">
+                    B & D Authorised<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="b_d_authorised"
@@ -1231,7 +1235,9 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Category</Label>
+                  <Label className="ms-2 mb-1">
+                    Category<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="category"
@@ -1241,7 +1247,9 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Item Code</Label>
+                  <Label className="ms-2 mb-1">
+                    Item Code<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="item_code"
@@ -1256,7 +1264,7 @@ const Spares = ({ type = "" }) => {
                 {/* IN Part No */}
                 <div>
                   <Label className="ms-2 mb-1">
-                    <i>IN</i> Part No.
+                    <i>IN</i> Part No.<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
@@ -1269,6 +1277,7 @@ const Spares = ({ type = "" }) => {
                 <div>
                   <Label className="ms-2 mb-1">
                     Substitute <i>IN</i> Part No.
+                    <span className="text-red-500">*</span>
                   </Label>
                   <DynamicInputList
                     id="substitute_name"
@@ -1282,7 +1291,9 @@ const Spares = ({ type = "" }) => {
 
                 {/* Local Terminology */}
                 <div>
-                  <Label className="ms-2 mb-1">Local Terminology</Label>
+                  <Label className="ms-2 mb-1">
+                    Local Terminology<span className="text-red-500">*</span>
+                  </Label>
                   <DynamicInputList
                     id="local_terminology"
                     data={inputs.local_terminology}
@@ -1302,7 +1313,9 @@ const Spares = ({ type = "" }) => {
 
                 <div>
                   <div>
-                    <Label className="ms-2 mb-1">Critical Spare</Label>
+                    <Label className="ms-2 mb-1">
+                      Critical Spare<span className="text-red-500">*</span>
+                    </Label>
 
                     <RadioGroup
                       value={inputs.critical_spare}
@@ -1340,7 +1353,9 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Sub Component</Label>
+                  <Label className="ms-2 mb-1">
+                    Sub Component<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="sub_component"
@@ -1350,7 +1365,9 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                  <Label className="ms-2 mb-1">
+                    Price/Unit Cost<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="price_unit"
@@ -1538,7 +1555,9 @@ const Spares = ({ type = "" }) => {
           <div>
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
-                <Label>Item Description *</Label>
+                <Label>
+                  Item Description<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="description"
                   value={selectedRow.description}
@@ -1550,7 +1569,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>Equipment / System *</Label>
+                <Label>
+                  Equipment / System<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="equipment_system"
                   value={selectedRow.equipment_system}
@@ -1562,7 +1583,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>Denos *</Label>
+                <Label>
+                  Denos<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="denos"
                   value={selectedRow.denos}
@@ -1574,7 +1597,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>OBS Authorised *</Label>
+                <Label>
+                  OBS Authorised<span className="text-red-500">*</span>
+                </Label>
 
                 <InputWithPencil
                   name="obs_authorised"
@@ -1594,7 +1619,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>OBS Held *</Label>
+                <Label>
+                  OBS Held<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="obs_held"
                   value={selectedRow.obs_held}
@@ -1606,7 +1633,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>B & D Authorised</Label>
+                <Label>
+                  B & D Authorised<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="b_d_authorised"
                   value={selectedRow.b_d_authorised}
@@ -1618,7 +1647,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>Category</Label>
+                <Label>
+                  Category<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="category"
                   value={selectedRow.category}
@@ -1630,7 +1661,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>Item Code</Label>
+                <Label>
+                  Item Code<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="item_code"
                   value={selectedRow.item_code}
@@ -1643,7 +1676,7 @@ const Spares = ({ type = "" }) => {
 
               <div>
                 <Label>
-                  <i>IN</i> Part No.
+                  <i>IN</i> Part No.<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
                   name="indian_pattern"
@@ -1658,6 +1691,7 @@ const Spares = ({ type = "" }) => {
               <div>
                 <Label>
                   Substitute <i>IN</i> Part No.
+                  <span className="text-red-500">*</span>
                 </Label>
 
                 {/* VIEW MODE */}
@@ -1692,7 +1726,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>Local Terminology</Label>
+                <Label>
+                  Local Terminology<span className="text-red-500">*</span>
+                </Label>
                 {!editableFields.local_terminology ? (
                   <InputWithPencil
                     name="local_terminology"
@@ -1744,7 +1780,9 @@ const Spares = ({ type = "" }) => {
               </div> */}
 
               <div>
-                <Label className="ms-2 mb-1">Critical Spare</Label>
+                <Label className="ms-2 mb-1">
+                  Critical Spare<span className="text-red-500">*</span>
+                </Label>
 
                 <RadioGroup
                   value={selectedRow.critical_spare == 1 ? "yes" : "no"}
@@ -1775,7 +1813,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label className="ms-2 mb-1">Sub Component</Label>
+                <Label className="ms-2 mb-1">
+                  Sub Component<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   type="text"
                   name="sub_component"
@@ -1788,7 +1828,9 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                <Label className="ms-2 mb-1">
+                  Price/Unit Cost<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   type="text"
                   name="price_unit"
