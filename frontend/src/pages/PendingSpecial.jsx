@@ -29,9 +29,9 @@ const PendingSpecial = () => {
     {
       key: "indian_pattern",
       header: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },
@@ -141,38 +141,41 @@ const PendingSpecial = () => {
   };
 
   const handleSubmitSpecialDemand = async () => {
+    // 👇 --- CHANGE IS HERE ---
+    // Add the ID of the record we are updating
+    console.log(selectedRow);
+
     const payload = {
-      id: selectedRow.id,
+      id: selectedRow.id, // <-- ADD THIS LINE
+      spare_id: selectedRow.spare_id,
+      tool_id: selectedRow.tool_id,
     };
 
     if (inputs.internal_demand_no) {
       payload.internal_demand_no = inputs.internal_demand_no;
       payload.internal_demand_date = formatDate(inputs.internal_demand_date);
     }
-
     if (inputs.requisition_no) {
       payload.requisition_no = inputs.requisition_no;
       payload.requisition_date = formatDate(inputs.requisition_date);
     }
-
     if (inputs.mo_demand_no) {
       payload.mo_demand_no = inputs.mo_demand_no;
       payload.mo_demand_date = formatDate(inputs.mo_demand_date);
     }
-    console.log(payload);
 
     try {
       setIsLoading((p) => ({ ...p, issue: true }));
-
+      // This PUT request now sends the ID to the updateSpecialDemand function
       const response = await apiService.put(
-        "http://localhost:7777/api/v1/specialDemand/special-demand",
+        "/specialDemand/special-demand",
         payload,
       );
-
       if (response.success) {
-        toaster("success", "Special demand updated successfully");
+        // This message will now correctly be "Moved from Special Demand to Pending Issue"
+        toaster("success", response.message);
         setIsOpen((p) => ({ ...p, issue: false }));
-        fetchdata();
+        fetchdata(); // Refresh the table
       } else {
         toaster("error", response.message);
       }
@@ -199,15 +202,12 @@ const PendingSpecial = () => {
     }
     setIsLoading((prev) => ({ ...prev, inventory: true }));
     try {
-      const response = await apiService.post(
-        "http://localhost:7777/api/v1/specialDemand/special-demand",
-        {
-          id: selectedRow.id,
-          box_no: JSON.stringify(boxNo),
-          source: selectedRow.source,
-          uid: selectedRow.uid,
-        },
-      );
+      const response = await apiService.post("/specialDemand/special-demand", {
+        id: selectedRow.id,
+        box_no: JSON.stringify(boxNo),
+        source: selectedRow.source,
+        uid: selectedRow.uid,
+      });
       if (response.success) {
         toaster("success", "Item added in inventory successfully");
         setIsOpen((prev) => ({ ...prev, inventory: false }));

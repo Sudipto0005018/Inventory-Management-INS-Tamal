@@ -95,7 +95,7 @@ async function createSpecialDemand(req, res) {
 
     await pool.query(specialDemandQuery, [
       spare_id || null,
-      tool_id | null,
+      tool_id || null,
       obs_authorised,
       obs_increase_qty,
       internal_demand_no || null,
@@ -125,8 +125,10 @@ async function getSpecialDemandList(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const whereClause =
+    "WHERE sd.internal_demand_no IS NULL OR sd.requisition_no IS NULL OR sd.mo_demand_no IS NULL";
   const [totalCount] = await pool.query(
-    `SELECT COUNT(*) as count FROM special_demand `,
+    `SELECT COUNT(sd.id) as count FROM special_demand sd ${whereClause}`,
   );
   const total = totalCount[0].count;
   if (total === 0) {
@@ -192,6 +194,7 @@ async function getSpecialDemandList(req, res) {
       FROM special_demand sd
       LEFT JOIN spares s ON s.id = sd.spare_id
       LEFT JOIN tools t on t.id = sd.tool_id
+      ${whereClause}
       ORDER BY sd.created_at DESC
       LIMIT ? OFFSET ?
     `;
@@ -219,7 +222,39 @@ async function getSpecialDemandList(req, res) {
   }
 }
 
-async function updateSpacialDemand(req, res) {
+// async function updateSpecialDemand(req, res) {
+//   const {
+//     spare_id,
+//     tool_id,
+//     internal_demand_no,
+//     internal_demand_date,
+//     requisition_no,
+//     requisition_date,
+//     mo_demand_no,
+//     mo_demand_date,
+//   } = req.body;
+//   try {
+//     const query = `UPDATE special_demand SET internal_demand_no = ?, internal_demand_date = ?, requisition_no = ?, requisition_date = ?, mo_demand_no = ?, mo_demand_date = ? WHERE id = ?`;
+//     await pool.query(query, [
+//       internal_demand_no,
+//       internal_demand_date,
+//       requisition_no || null,
+//       requisition_date || null,
+//       mo_demand_no || null,
+//       mo_demand_date || null,
+//       spare_id,
+//       tool_id,
+//     ]);
+//     res.status(200).json(new ApiResponse(200, {}, "Updated successfully"));
+//   } catch (error) {
+//     console.log(error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// }
+
+async function updateSpecialDemand(req, res) {
   const {
     id,
     internal_demand_no,
@@ -229,28 +264,90 @@ async function updateSpacialDemand(req, res) {
     mo_demand_no,
     mo_demand_date,
   } = req.body;
+  console.log(req.body);
+
+  const { id: userId } = req.user;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Special Demand item ID is required for an update.",
+    });
+  }
+  const connection = await pool.getConnection();
   try {
-    const query = `UPDATE special_demand SET internal_demand_no = ?, internal_demand_date = ?, requisition_no = ?, requisition_date = ?, mo_demand_no = ?, mo_demand_date = ? WHERE id = ?`;
-    await pool.query(query, [
-      internal_demand_no,
-      internal_demand_date,
+    const allDemandFieldsFilled =
+      internal_demand_no &&
+      internal_demand_date &&
+      requisition_no &&
+      requisition_date &&
+      mo_demand_no &&
+      mo_demand_date;
+    if (allDemandFieldsFilled) {
+      const getSpecialDemandQuery = "SELECT * FROM special_demand WHERE id = ?";
+      const [specialDemandRows] = await connection.query(
+        getSpecialDemandQuery,
+        [id],
+      );
+
+      if (!specialDemandRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Special Demand not found",
+        });
+      }
+      const specialDemand = specialDemandRows[0];
+
+      const pendingIssueQuery = `
+              INSERT INTO pending_issue (
+                spare_id, tool_id, demand_no, demand_date, demand_quantity,
+                nac_no, nac_date, mo_no, mo_date, created_by, created_at, status
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending')
+            `;
+
+      await connection.query(pendingIssueQuery, [
+        specialDemand.spare_id || null,
+        specialDemand.tool_id || null,
+        internal_demand_no,
+        internal_demand_date,
+        specialDemand.obs_increase_qty,
+        requisition_no,
+        requisition_date,
+        mo_demand_no,
+        mo_demand_date,
+        userId,
+      ]);
+    }
+    const query = `
+              UPDATE special_demand SET
+                internal_demand_no = ?, internal_demand_date = ?,
+                requisition_no = ?, requisition_date = ?,
+                mo_demand_no = ?, mo_demand_date = ?
+              WHERE id = ?
+            `;
+    await connection.query(query, [
+      internal_demand_no || null,
+      internal_demand_date || null,
       requisition_no || null,
       requisition_date || null,
       mo_demand_no || null,
       mo_demand_date || null,
       id,
     ]);
-    res.status(200).json(new ApiResponse(200, {}, "Updated successfully"));
+
+    await connection.commit();
+    res.status(200).json({ success: true, message: "Updated successfully" });
   } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+    await connection.rollback();
+    console.log("UPDATE SPECIAL DEMAND ERROR =>", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  } finally {
+    connection.release();
   }
 }
 
 module.exports = {
   createSpecialDemand,
   getSpecialDemandList,
-  updateSpacialDemand,
+  updateSpecialDemand,
 };

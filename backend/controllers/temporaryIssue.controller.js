@@ -586,6 +586,7 @@ async function createTemporaryIssue(req, res) {
 async function updateTemporaryIssue(req, res) {
   const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  console.log(req.body);
 
   try {
     /** 1. Fetch issue */

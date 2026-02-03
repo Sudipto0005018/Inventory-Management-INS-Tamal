@@ -11,22 +11,17 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { Calendar } from "../components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import GenerateStockQR from "../components/GenerateStockQR";
+import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 
+import BoxNoDeposit from "../components/BoxNoDeposit";
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
-import { ChevronDownIcon } from "lucide-react";
 import {
-  formatDate,
+  getFormatedDate,
   formatSimpleDate,
   getDate,
 } from "../utils/helperFunctions";
@@ -40,15 +35,15 @@ const PermanentPendings = () => {
     {
       key: "indian_pattern",
       header: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
     { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date." },
+    { key: "demand_date", header: "Demand Date" },
     { key: "demand_quantity", header: "Demanded Qty" },
     { key: "mo_no", header: "MO Gate Pass No." },
     { key: "mo_date", header: "MO Date" },
@@ -63,6 +58,9 @@ const PermanentPendings = () => {
     { value: "survey_quantity", label: "Surveyed Quantity" },
     { value: "status", label: "Status" },
   ];
+
+  const [generateQR, setGenerateQR] = useState("no");
+  const [openQRDialog, setOpenQRDialog] = useState(false);
 
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -88,6 +86,7 @@ const PermanentPendings = () => {
     nac_calender: false,
     gate_pass_calender: false,
     inventory: false,
+    receive: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
   const [inputs, setInputs] = useState({
@@ -101,6 +100,7 @@ const PermanentPendings = () => {
     mo_no: "",
     gate_pass_calender: new Date(),
     search: "",
+    receive_date: new Date(),
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
 
@@ -113,7 +113,7 @@ const PermanentPendings = () => {
           page: currentPage,
           limit: config.row_per_page,
           search: inputs.search || "",
-          cols: selectedValues.join(","), // 🔥 important
+          cols: selectedValues.join(","),
           status: "STOCKED",
         },
       });
@@ -130,6 +130,15 @@ const PermanentPendings = () => {
     } finally {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
+  };
+
+  const getDepositQty = () => {
+    if (!Array.isArray(boxNo)) return 0;
+
+    return boxNo.reduce((sum, row) => {
+      const depositQty = Number(row?.deposit || 0);
+      return sum + depositQty;
+    }, 0);
   };
 
   const handleSearch = () => {
@@ -150,94 +159,101 @@ const PermanentPendings = () => {
     setPanelProduct({ critical_spare: "no" });
     fetchdata("", 1);
   };
-  const handleDemand = async () => {
-    if (!inputs.demand_no || !inputs.demand_calender) {
-      toaster("error", "All fields are required");
-      return;
-    }
-    setIsLoading((prev) => ({ ...prev, demand: true }));
+
+  async function updateDetails() {
+    setIsLoading((prev) => ({ ...prev, receive: true }));
+
     try {
-      const response = await apiService.post("/pending/demand", {
+      const payload = {
         id: selectedRow.id,
-        demand_no: inputs.demand_no,
-        demand_date: formatSimpleDate(inputs.demand_calender),
-      });
+        qty_received: Number(inputs.quantity_received),
+        return_date: formatSimpleDate(inputs.receive_date),
+        box_no: boxNo.map((b) => ({
+          no: b.no,
+          deposit: Number(b.deposit || 0),
+        })),
+        approve: true,
+      };
+
+      const response = await apiService.put("/stock/stock-update", payload);
+
       if (response.success) {
-        toaster("success", "Item demand successfully");
-        setIsOpen((prev) => ({ ...prev, demand: false }));
+        toaster("success", "Item received successfully");
+
+        setIsOpen((prev) => ({ ...prev, receive: false }));
+        setInputs({
+          quantity_received: "",
+          receive_date: new Date(),
+        });
+        setBoxNo([]);
+        setOpenQRDialog(false);
         fetchdata();
       } else {
         toaster("error", response.message);
       }
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message || error.message || "Failed to demand";
-      toaster("error", errMsg);
+      toaster(
+        "error",
+        error.response?.data?.message || error.message || "Operation failed",
+      );
     } finally {
-      setIsLoading((prev) => ({ ...prev, demand: false }));
+      setIsLoading((prev) => ({ ...prev, receive: false }));
     }
-  };
-  const handleNAC = async () => {
-    if (
-      !inputs.nac_no ||
-      !inputs.nac_calender ||
-      !inputs.validity ||
-      !inputs.rate
-    ) {
-      toaster("error", "All fields are required");
+  }
+
+  const handleReceive = async () => {
+    console.log("hj");
+    const returnedQty = Number(inputs.quantity_received);
+    const depositQty = Number(getDepositQty());
+
+    // 🔴 No field should be less than zero
+    const fieldsToValidate = [
+      { value: returnedQty, label: "Returned quantity" },
+      { value: depositQty, label: "Deposit quantity" },
+    ];
+
+    for (const field of fieldsToValidate) {
+      if (field.value < 0) {
+        toaster("error", `${field.label} cannot be less than zero`);
+        return;
+      }
+    }
+
+    if (!returnedQty) {
+      toaster("error", "Quantity is required");
       return;
     }
-    setIsLoading((prev) => ({ ...prev, nac: true }));
-    try {
-      const response = await apiService.post("/pending/nac", {
-        id: selectedRow.id,
-        nac_no: inputs.nac_no,
-        nac_date: formatSimpleDate(inputs.nac_calender),
-        validity: inputs.validity,
-        rate: inputs.rate,
-      });
-      if (response.success) {
-        toaster("success", "Item NAC successfully");
-        setIsOpen((prev) => ({ ...prev, issue: false }));
-        fetchdata();
-      } else {
-        toaster("error", response.message);
-      }
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message || error.message || "Failed to Issue";
-      toaster("error", errMsg);
-    } finally {
-      setIsLoading((prev) => ({ ...prev, nac: false }));
-    }
-  };
-  const handleStocking = async () => {
-    if (!inputs.mo_no || !inputs.gate_pass_calender) {
-      toaster("error", "All fields are required");
+
+    if (returnedQty > selectedRow.quantity) {
+      toaster("error", "Quantity cannot be greater than issued quantity");
       return;
     }
-    setIsLoading((prev) => ({ ...prev, mo: true }));
-    try {
-      const response = await apiService.post("/demand/pending-issue", {
-        id: selectedRow.id,
-        mo_no: inputs.mo_no,
-        gate_pass_date: formatSimpleDate(inputs.gate_pass_calender),
-      });
-      if (response.success) {
-        toaster("success", "Item issued successfully");
-        setIsOpen((prev) => ({ ...prev, issue: false }));
-        fetchdata();
-      } else {
-        toaster("error", response.message);
-      }
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message || error.message || "Failed to issue";
-      toaster("error", errMsg);
-    } finally {
-      setIsLoading((prev) => ({ ...prev, mo: false }));
+
+    if (!inputs.receive_date) {
+      toaster("error", "Receive date is required");
+      return;
     }
+
+    // ❌ No single deposit qty can be less than 0
+    const hasNegativeDepositRow = boxNo.some((row) => Number(row.deposit) < 0);
+
+    if (hasNegativeDepositRow) {
+      toaster("error", "Deposit quantity in any box cannot be less than zero");
+      return;
+    }
+
+    if (depositQty !== returnedQty) {
+      toaster("error", "Deposit quantity must be equal to returned quantity");
+      return;
+    }
+
+    if (generateQR != "no") {
+      setOpenQRDialog(true);
+      return;
+    }
+    await updateDetails();
   };
+
   const handleInventory = async () => {
     let total = 0;
     for (let i = 0; i < boxNo.length; i++) {
@@ -291,27 +307,22 @@ const PermanentPendings = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       survey_quantity: row.survey_quantity || "0",
-      // issue_date: getDate(row.issue_date),
-      // survey_date: getDate(row.date),
+      demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
+
+      mo_date: row.mo_date ? getFormatedDate(row.mo_date) : "-",
       processed: (
         <Button
           size="icon"
           className="bg-white text-black shadow-md border hover:bg-gray-100"
           onClick={() => {
             setSelectedRow(row);
-            setBoxNo(JSON.parse(row.box_no));
-            if (
-              row.category.toLowerCase() == "p" ||
-              row.category.toLowerCase() == "r"
-            ) {
-              if (row.status == "surveyed") {
-                setIsOpen((prev) => ({ ...prev, demand: true }));
-              } else if (row.status == "demanded") {
-                setIsOpen((prev) => ({ ...prev, issue: true }));
-              } else if (row.status == "stocked" || row.status == "naced") {
-                setIsOpen((prev) => ({ ...prev, inventory: true }));
-              }
-            }
+            console.log(row);
+
+            const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
+
+            setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
+
+            setIsOpen((prev) => ({ ...prev, receive: true }));
           }}
         >
           <FaChevronRight />
@@ -321,6 +332,31 @@ const PermanentPendings = () => {
     setTableData(t);
   }, [fetchedData]);
 
+  const normalizeBoxNoForDeposit = (boxNo = []) => {
+    return boxNo.map((item) => ({
+      no: item.no || item.box_no || "",
+      qn: Number(item.authorised_qty ?? item.qn ?? item.qty ?? 0),
+      qtyHeld: Number(item.qty_held ?? item.qtyHeld ?? 0),
+      deposit: Number(
+        item.deposit ??
+          item.deposit_qty ??
+          Math.max(
+            Number(item.authorised_qty ?? item.qty ?? 0) -
+              Number(item.qty_held ?? 0),
+            0,
+          ),
+      ),
+    }));
+  };
+
+  const closeDialog = () => {
+    setIsOpen((prev) => ({ ...prev, receive: false }));
+    setBoxNo([]);
+    setInputs({
+      receive_date: new Date(),
+      quantity_received: "",
+    });
+  };
   return (
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
@@ -387,332 +423,6 @@ const PermanentPendings = () => {
           className="h-[calc(100vh-230px)]"
         />
       </div>
-      <Dialog
-        open={isOpen.demand}
-        onOpenChange={(set) => setIsOpen((prev) => ({ ...prev, demand: set }))}
-      >
-        <DialogContent
-          onPointerDownOutside={(e) => {
-            // e.preventDefault();
-          }}
-          onCloseAutoFocus={() => {
-            setInputs((prev) => ({
-              ...prev,
-              demand_no: "",
-              demand_type: "nac",
-              demand_calender: new Date(),
-            }));
-          }}
-        >
-          <DialogTitle className="capitalize">
-            Demand {selectedRow.source == "spares" ? "spare" : "tool"}
-          </DialogTitle>
-          <DialogDescription className="hidden" />
-          <div>
-            <Label htmlFor="demand_no" className="ms-2 mb-2">
-              Demand No<span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="demand_no"
-              type="text"
-              placeholder="Demand No"
-              name="demand_no"
-              value={inputs.demand_no}
-              onChange={(e) =>
-                setInputs((prev) => ({ ...prev, demand_no: e.target.value }))
-              }
-            />
-            <Label htmlFor="servay_number" className="mb-2 mt-4">
-              Demand Date
-            </Label>
-            <Popover
-              open={isOpen.demand_calender}
-              onOpenChange={(set) => {
-                setIsOpen((prev) => ({ ...prev, demand_calender: set }));
-              }}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  id="date"
-                  className="w-full justify-between font-normal"
-                >
-                  {inputs.demand_calender
-                    ? formatDate(inputs.demand_calender)
-                    : "Select date"}
-                  <ChevronDownIcon />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto overflow-hidden p-0"
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={inputs.demand_calender}
-                  captionLayout="dropdown"
-                  onSelect={(date) => {
-                    setInputs((prev) => ({
-                      ...prev,
-                      demand_calender: date,
-                    }));
-                    setIsOpen((prev) => ({
-                      ...prev,
-                      demand_calender: false,
-                    }));
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-            <div className="flex items-center mt-4 gap-4 justify-end">
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  setIsOpen((prev) => ({ ...prev, demand: false }))
-                }
-              >
-                Cancel
-              </Button>
-              <SpinnerButton
-                loading={isLoading.demand}
-                disabled={isLoading.demand}
-                loadingText="Demanding..."
-                className="text-white hover:bg-primary/85 cursor-pointer"
-                onClick={handleDemand}
-              >
-                Issue
-              </SpinnerButton>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isOpen.issue}
-        onOpenChange={(set) => setIsOpen((prev) => ({ ...prev, issue: set }))}
-      >
-        <DialogContent
-          onCloseAutoFocus={() => {
-            setInputs((prev) => ({
-              ...prev,
-              nac_no: "",
-              nac_calender: new Date(),
-              validity: "",
-              rate: "",
-              mo_no: "",
-              gate_pass_calender: new Date(),
-            }));
-          }}
-        >
-          <DialogTitle className="capitalize">
-            Issue {selectedRow.source == "spares" ? "spare" : "tool"}
-          </DialogTitle>
-          <DialogDescription className="hidden" />
-          <div>
-            <div className="flex items-center">
-              <p className="text-sm ms-2">Select Issue type: </p>
-              <RadioGroup
-                value={inputs.issue_type}
-                onValueChange={(value) =>
-                  setInputs((prev) => ({ ...prev, issue_type: value }))
-                }
-                className="flex gap-8 ms-2"
-              >
-                <div className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="nac" id="nac" />
-                  <Label className="pointer-text" htmlFor="nac">
-                    NAC
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2 cursor-pointer">
-                  <RadioGroupItem value="stocking" id="stocking" />
-                  <Label className="pointer-text" htmlFor="stocking">
-                    Socking in Inventory
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            {inputs.issue_type == "nac" && (
-              <>
-                <Label htmlFor="nac_no" className="ms-2 mb-2 mt-4">
-                  NAC Number<span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="text"
-                  id="nac_no"
-                  value={inputs.nac_no}
-                  placeholder="NAC Number"
-                  onChange={(e) =>
-                    setInputs((prev) => ({ ...prev, nac_no: e.target.value }))
-                  }
-                />
-                <Label htmlFor="nac_no" className="ms-2 mb-2 mt-4">
-                  NAC Date<span className="text-red-500">*</span>
-                </Label>
-                <Popover
-                  open={isOpen.demand_calender}
-                  onOpenChange={(set) => {
-                    setIsOpen((prev) => ({ ...prev, demand_calender: set }));
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      id="date"
-                      className="w-full justify-between font-normal"
-                    >
-                      {inputs.nac_calender
-                        ? formatDate(inputs.nac_calender)
-                        : "Select date"}
-                      <ChevronDownIcon />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={inputs.nac_calender}
-                      captionLayout="dropdown"
-                      onSelect={(date) => {
-                        setInputs((prev) => ({
-                          ...prev,
-                          nac_calender: date,
-                        }));
-                        setIsOpen((prev) => ({
-                          ...prev,
-                          nac_calender: false,
-                        }));
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Label htmlFor="validity" className="ms-2 mb-2 mt-4">
-                  Validity<span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  id="validity"
-                  value={inputs.validity}
-                  placeholder="Validity"
-                  onChange={(e) =>
-                    setInputs((prev) => ({ ...prev, validity: e.target.value }))
-                  }
-                />
-                <Label htmlFor="rate" className="ms-2 mb-2 mt-4">
-                  Rate/Unit<span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  id="rate"
-                  value={inputs.rate}
-                  placeholder="Rate"
-                  onChange={(e) =>
-                    setInputs((prev) => ({ ...prev, rate: e.target.value }))
-                  }
-                />
-                <div className="flex items-center justify-end mt-6 gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setIsOpen((prev) => ({ ...prev, issue: false }))
-                    }
-                  >
-                    Cancel
-                  </Button>
-                  <SpinnerButton
-                    className="cursor-pointer hover:bg-primary/85"
-                    onClick={handleSearch}
-                    loading={isLoading.search}
-                    disabled={isLoading.search}
-                    loadingText="Searching..."
-                  >
-                    <FaMagnifyingGlass className="size-3.5" />
-                    Search
-                  </SpinnerButton>
-                </div>
-              </>
-            )}
-            {inputs.issue_type == "stocking" && (
-              <>
-                <Label htmlFor="mo_no" className="ms-2 mb-2 mt-4">
-                  MO Gate Pass Number<span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="text"
-                  id="mo_no"
-                  value={inputs.mo_no}
-                  placeholder="MO Gate Pass Number"
-                  onChange={(e) =>
-                    setInputs((prev) => ({ ...prev, mo_no: e.target.value }))
-                  }
-                />
-                <Label htmlFor="gate_pass_date" className="ms-2 mb-2 mt-4">
-                  Date<span className="text-red-500">*</span>
-                </Label>
-                <Popover
-                  open={isOpen.gate_pass_calender}
-                  onOpenChange={(set) => {
-                    setIsOpen((prev) => ({ ...prev, gate_pass_calender: set }));
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      id="date"
-                      className="w-full justify-between font-normal"
-                    >
-                      {inputs.gate_pass_calender
-                        ? formatDate(inputs.gate_pass_calender)
-                        : "Select date"}
-                      <ChevronDownIcon />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={inputs.gate_pass_calender}
-                      captionLayout="dropdown"
-                      onSelect={(date) => {
-                        setInputs((prev) => ({
-                          ...prev,
-                          gate_pass_calender: date,
-                        }));
-                        setIsOpen((prev) => ({
-                          ...prev,
-                          gate_pass_calender: false,
-                        }));
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <div className="flex items-center justify-end mt-6 gap-4">
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setIsOpen((prev) => ({ ...prev, issue: false }))
-                    }
-                  >
-                    Cancel
-                  </Button>
-                  <SpinnerButton
-                    loading={isLoading.nac}
-                    disabled={isLoading.nac}
-                    loadingText="Submitting..."
-                    onClick={handleStocking}
-                  >
-                    Submit
-                  </SpinnerButton>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog
         open={isOpen.inventory}
@@ -755,6 +465,157 @@ const PermanentPendings = () => {
                 Submit
               </SpinnerButton>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isOpen.receive}
+        onOpenChange={(set) =>
+          setIsOpen((prev) => {
+            return { ...prev, receive: set };
+          })
+        }
+      >
+        <DialogContent
+          unbounded
+          className="w-[55vw] p-6"
+          onPointerDownOutside={(e) => {
+            // e.preventDefault();
+          }}
+          onCloseAutoFocus={() => {
+            setInputs((prev) => ({
+              ...prev,
+            }));
+          }}
+        >
+          <DialogTitle className="capitalize">Stock Update Details</DialogTitle>
+          <>
+            <div className="grid grid-cols-3 gap-4"></div>
+
+            <DialogDescription className="hidden" />
+            <div className="">
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
+                    Qty Issued<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    className="mt-2"
+                    id="quantity"
+                    type="number"
+                    placeholder="Quantity"
+                    value={selectedRow?.demand_quantity ?? 0}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
+                    Qty Returned<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    className="mt-2"
+                    id="quantity"
+                    visibleColums={[]}
+                    type="number"
+                    placeholder="Quantity"
+                    value={inputs.quantity_received}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setInputs((prev) => ({
+                        ...prev,
+                        quantity_received: value,
+                      }));
+
+                      updateTablePreview({
+                        qty_received: value,
+                        received_quantity: value,
+                      });
+                    }}
+                  />
+                </div>
+                <div className="">
+                  <FormattedDatePicker
+                    label="Returned Date"
+                    className="w-full"
+                    value={inputs.receive_date}
+                    onChange={(date) => {
+                      setInputs((prev) => ({
+                        ...prev,
+                        receive_date: date,
+                      }));
+
+                      updateTablePreview({
+                        returned_date: date,
+                        returned_date_formatted: getDate(date),
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+              <BoxNoDeposit
+                className="mt-4"
+                value={boxNo}
+                onChange={(val) => {
+                  setBoxNo(val);
+                }}
+              />
+              <div className="mt-4">
+                <Label className="ms-2 mb-2 block">
+                  Generate QR <span className="text-red-500">*</span>
+                </Label>
+
+                <div className="flex gap-6 ms-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="generate_qr"
+                      value="no"
+                      checked={generateQR === "no"}
+                      onChange={() => {
+                        setGenerateQR("no");
+                      }}
+                    />
+                    No
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="generate_qr"
+                      value="yes"
+                      checked={generateQR === "yes"}
+                      onChange={() => {
+                        setGenerateQR("yes");
+                      }}
+                    />
+                    Yes
+                  </label>
+                </div>
+              </div>
+              <GenerateStockQR
+                open={openQRDialog}
+                setOpen={setOpenQRDialog}
+                row={selectedRow}
+                boxesData={boxNo}
+                updateDetails={updateDetails}
+              />
+            </div>
+          </>
+
+          <div className="flex items-center mt-4 gap-4 justify-end">
+            <Button onClick={closeDialog} variant="outline">
+              Cancel
+            </Button>
+            <SpinnerButton
+              loading={isLoading.receive}
+              disabled={isLoading.receive}
+              loadingText="Receiving..."
+              onClick={handleReceive}
+              className="text-white hover:bg-primary/85 cursor-pointer"
+            >
+              Submit
+            </SpinnerButton>
           </div>
         </DialogContent>
       </Dialog>

@@ -63,9 +63,9 @@ const PendingTempLoan = () => {
     {
       value: "vue",
       label: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },

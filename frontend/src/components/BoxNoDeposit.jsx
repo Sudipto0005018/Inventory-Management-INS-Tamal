@@ -11,7 +11,7 @@ import {
 function BoxNoDeposit({
   value,
   onChange,
-  isLooseSpare = false, 
+  isLooseSpare = false,
   isBoxnumberDisable = false,
   isAddRow = true,
 }) {
@@ -23,6 +23,8 @@ function BoxNoDeposit({
     };
     onChange(newRows);
   };
+
+  console.log(value);
 
   const addRow = () => {
     onChange([...value, { no: "", qn: "", qtyHeld: "", deposit: "" }]);

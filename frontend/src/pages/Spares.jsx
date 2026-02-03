@@ -2168,48 +2168,6 @@ const Spares = ({ type = "" }) => {
                     isLooseSpare={isLooseSpare}
                   />
                 </div>
-
-                {/* Service No & Name (Full Width Rows) */}
-                {/* <div className="space-y-4">
-                  <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
-                    <div>
-                      <Label>
-                        Service No. <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <CustomComboBoxService
-                          options={[
-                            {
-                              name: "name 1",
-                              serviceNumber: "ser 1 ",
-                            },
-                            {
-                              namenew: "name 2",
-                              serviceNumber: "ser 2 ",
-                            },
-                            {
-                              name1: "name 3",
-                              serviceNumber: "ser 3",
-                            },
-                          ]}
-                          onSelect={(value) => {
-                            setUser((prev) => ({ ...prev, ...value }));
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Name</Label>
-                      <input
-                        type="text"
-                        value={user?.name}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                  </div>
-                </div> */}
                 <ServicePersonnelSearch
                   options={selectedPerson.options}
                   value={selectedPerson.person}
@@ -2428,47 +2386,6 @@ const Spares = ({ type = "" }) => {
                   }}
                 />
 
-                {/* <div className="space-y-4">
-                  <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
-                    <div>
-                      <Label>
-                        Service No. <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <CustomComboBoxService
-                          options={[
-                            {
-                              name: "name 1",
-                              serviceNumber: "ser 1 ",
-                            },
-                            {
-                              namenew: "name 2",
-                              serviceNumber: "ser 2 ",
-                            },
-                            {
-                              name1: "name 3",
-                              serviceNumber: "ser 3",
-                            },
-                          ]}
-                          onSelect={(value) => {
-                            setUser((prev) => ({ ...prev, ...value }));
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Name</Label>
-                      <input
-                        type="text"
-                        value={user?.name}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                  </div>
-                </div> */}
-
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label>
@@ -2653,73 +2570,6 @@ const Spares = ({ type = "" }) => {
                     handleAddPersonnel(person);
                   }}
                 />
-
-                {/* <div className="space-y-4">
-                  <div className="border p-4 rounded-md grid grid-cols-2 gap-4 relative">
-                    <div>
-                      <Label>
-                        Service No. <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <CustomComboBoxService
-                          options={[
-                            {
-                              name: "name 1",
-                              serviceNumber: "ser 1 ",
-                              phone_no: "ph 1",
-                              rank: "rnk 1",
-                            },
-                            {
-                              name: "name 2",
-                              serviceNumber: "ser 2 ",
-                              phone_no: "ph 2",
-                              rank: "rnk 2",
-                            },
-                            {
-                              name: "name 3",
-                              serviceNumber: "ser 3",
-                              phone_no: "ph 3",
-                              rank: "rnk 3",
-                            },
-                          ]}
-                          onSelect={(value) => {
-                            setUser((prev) => ({ ...prev, ...value }));
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Name</Label>
-                      <input
-                        type="text"
-                        value={user?.name}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>Rank</Label>
-                      <input
-                        type="text"
-                        value={user?.rank}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>Phone No.</Label>
-                      <input
-                        type="tel"
-                        name="phone_no"
-                        value={user?.phone_no || ""}
-                        disabled
-                        placeholder="Enter phone number"
-                        className="w-full border rounded-md px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div> */}
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>

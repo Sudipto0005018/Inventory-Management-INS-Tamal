@@ -353,7 +353,8 @@ async function getPendingIssue(req, res) {
                 COALESCE(sp.description, t.description) as description,
                 COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
                 COALESCE(sp.category, t.category) as category,
-                COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
+                COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern,
+                COALESCE(sp.box_no, t.box_no) as box_no
              FROM pending_issue pi
              LEFT JOIN spares sp ON pi.spare_id = sp.id
              LEFT JOIN tools t ON pi.tool_id = t.id
