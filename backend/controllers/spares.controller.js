@@ -439,7 +439,6 @@ async function updateSpare(req, res) {
   } = req.body;
 
   const filename = req.file ? req.file.filename : image || null;
-  const isCriticalSpare = critical_spare === "yes" ? 1 : 0;
 
   if (!description || !equipment_system) {
     return res
@@ -535,7 +534,7 @@ async function updateSpare(req, res) {
         oem || null,
         substitute_name || null,
         local_terminology || null,
-        isCriticalSpare,
+        critical_spare,
         supplier || null,
         id,
       ],

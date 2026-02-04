@@ -1,6 +1,7 @@
 const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
+const { getSQLTimestamp } = require("../utils/helperFunctions");
 
 async function getTemporaryIssueList(req, res) {
   const page = parseInt(req.query?.page) || 1;
@@ -159,7 +160,7 @@ async function categoryWiseUpdate(req, res) {
                 INSERT INTO demand (
                     transaction_id, spare_id, tool_id, issue_to, survey_qty,
                     survey_voucher_no, survey_date, created_by, created_at, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `,
         [
           issue.transaction_id,
@@ -170,6 +171,7 @@ async function categoryWiseUpdate(req, res) {
           issue.service_no,
           issue.issue_date,
           userId,
+          getSQLTimestamp(),
           "pending", // This sets the status for the *new* demand record
         ],
       );
@@ -182,7 +184,7 @@ async function categoryWiseUpdate(req, res) {
                 INSERT INTO survey (
                     transaction_id, spare_id, tool_id, issue_to, withdrawl_qty,
                     withdrawl_date, box_no, service_no, created_by, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `,
         [
           issue.transaction_id,
@@ -194,6 +196,7 @@ async function categoryWiseUpdate(req, res) {
           JSON.stringify(issue.box_no),
           issue.service_no,
           userId,
+          getSQLTimestamp(),
         ],
       );
     }

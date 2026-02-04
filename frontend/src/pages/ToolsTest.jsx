@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, use, useContext } from "react";
-import { MdModeEditOutline } from "react-icons/md";
 import { FaMagnifyingGlass, FaPlus } from "react-icons/fa6";
 import { MultiSelect } from "../components/ui/multi-select";
 import * as XLSX from "xlsx";
@@ -28,9 +27,7 @@ import PaginationTable from "../components/PaginationTableTwo";
 import toaster from "../utils/toaster";
 import apiService from "../utils/apiService";
 import { Context } from "../utils/Context";
-import { GoPlus } from "react-icons/go";
 import { imageBaseURL } from "../utils/baseURL";
-import { IoMdClose } from "react-icons/io";
 import ImagePreviewDialog from "../components/ImagePreviewDialog";
 import { cn } from "../lib/utils";
 import { Table, TableBody, TableCell, TableRow } from "../components/ui/table";
@@ -38,6 +35,8 @@ import BoxNoInputs from "../components/BoxNoInputs";
 import BoxNoInputsSimple from "../components/BoxNoInputsSimple";
 import { getFormatedDate } from "../utils/helperFunctions";
 import TestDialog from "../components/TestDialog";
+import OEMFirm from "../components/OEMFirm";
+import SupplierFirm from "../components/Supplier";
 
 const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
@@ -48,78 +47,14 @@ const SEARCH_FIELDS = [
   { label: "Item Storage Distribution", value: "boxNo" },
   { label: "Location of Storage", value: "storage_location" },
   { label: "Item Distribution", value: "item_distribution" },
-  { label: "Indian Part No.", value: "indian_pattern" },
+  { label: "IN Part No.", value: "indian_pattern" },
   { label: "Item Code", value: "item_code" },
   { label: "Price/Unit Cost", value: "price_unit" },
   { label: "Sub Component", value: "sub_component" },
 ];
 
-const Tools = () => {
+const Tools = ({ type = "" }) => {
   const { config } = useContext(Context);
-  const columns = useMemo(() => [
-    { key: "description", header: "Item Description", width: "max-w-[50px]" },
-    {
-      key: "indian_pattern",
-      header: (
-        <p>
-          <i>IN</i> Part No.
-        </p>
-      ),
-      width: "min-w-[150px]",
-    },
-    {
-      key: "equipment_system",
-      header: (
-        <p>
-          Equipment/
-          <br />
-          System
-        </p>
-      ),
-      width: "max-w-[30px]",
-    },
-    { key: "category", header: "Category", width: "max-w-[60px]" },
-    { key: "denos", header: "Denos", width: "max-w-[60px]" },
-    {
-      key: "obs_authorised",
-      header: (
-        <p>
-          OBS Authorised/
-          <br />
-          Maintained
-        </p>
-      ),
-      width: "max-w-[20px]",
-      // header: "OBS Authorised ",
-    },
-    {
-      key: "obs_held",
-      header: (
-        <p>
-          OBS
-          <br />
-          Held
-        </p>
-      ),
-      width: "max-w-[50px] px-0",
-    },
-    {
-      key: "item_distribution",
-      header: "Box No.",
-      width: "max-w-[90px]",
-    },
-    {
-      key: "boxNo",
-      header: "Item Distribution",
-      width: "max-w-[80px]",
-    },
-    {
-      key: "storage_location",
-      header: "Location of Storage",
-      width: "max-w-[40px]",
-    },
-    { key: "edit", header: "Actions", width: "max-w-[40px]" },
-  ]);
 
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [originalObsAuthorised, setOriginalObsAuthorised] = useState(null);
@@ -151,6 +86,28 @@ const Tools = () => {
   };
 
   const [savedRow, setSavedRow] = useState(null);
+  const [savedHeld, setSavedHeld] = useState(null);
+
+  //OEM Firm Dialog
+  const [isOpenOem, setIsOpenOem] = useState(false);
+
+  const [newVendor, setNewVendor] = useState({
+    vendor: "",
+    address: "",
+    contacts: [""],
+    persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
+  });
+
+  //Supplier Firm Dialog
+  const [isOpenSupplier, setIsOpenSupplier] = useState(false);
+
+  const [newSupplier, setNewSupplier] = useState({
+    supplier: "",
+    address: "",
+    contacts: [""],
+    persons: [{ name: "", designation: "", phone: "" }],
+  });
+
   //Demand no and Date
   const isInternalFilled =
     obsDialog.internalDemandNo && obsDialog.internalDemandDate;
@@ -190,6 +147,7 @@ const Tools = () => {
   const [actualSearch, setActualSearch] = useState("");
   const [inputs, setInputs] = useState({
     search: "",
+    critical_tool: "no",
   });
   const [isOpen, setIsOpen] = useState({
     addSpare: false,
@@ -199,16 +157,9 @@ const Tools = () => {
   const [selectedRow, setSelectedRow] = useState({});
 
   const [oemList, setOemList] = useState([]);
+  const [supplierList, setSupplierList] = useState([]);
   const [selectedOem, setSelectedOem] = useState(null);
-
-  const [isOpenOem, setIsOpenOem] = useState(false);
-
-  const [newVendor, setNewVendor] = useState({
-    vendor: "",
-    address: "",
-    contacts: [""],
-    persons: [{ name: "", designation: "" }],
-  });
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
 
   const [image, setImage] = useState({
     preview: null,
@@ -216,10 +167,121 @@ const Tools = () => {
     previewEdit: null,
     fileEdit: null,
   });
-  const [panelProduct, setPanelProduct] = useState({});
+  const [panelProduct, setPanelProduct] = useState({
+    critical_tool: "no",
+  });
   const [boxNo, setBoxNo] = useState([
     { no: "", qn: "", qtyHeld: "", location: "" },
   ]);
+
+  const result = useMemo(() => {
+    try {
+      const boxes = JSON.parse(selectedRow.box_no);
+      return boxes.map((item) => item.no).join(", ");
+    } catch (e) {
+      return "";
+    }
+  }, [selectedRow]);
+
+  const columns = useMemo(() => [
+    { key: "description", header: "Item Description", width: "max-w-[50px]" },
+    {
+      key: "indian_pattern",
+      header: (
+        <span>
+          <i>IN</i> Part No.
+        </span>
+      ),
+      width: "min-w-[150px]",
+    },
+    {
+      key: "equipment_system",
+      header: (
+        <span>
+          Equipment/
+          <br />
+          System
+        </span>
+      ),
+      width: "max-w-[30px]",
+    },
+    { key: "category", header: "Category", width: "max-w-[60px]" },
+    { key: "denos", header: "Denos", width: "max-w-[60px]" },
+    {
+      key: "obs_authorised",
+      header: (
+        <span>
+          OBS Authorised/
+          <br />
+          Maintained
+        </span>
+      ),
+      width: "max-w-[20px]",
+      // header: "OBS Authorised ",
+    },
+    {
+      key: "obs_held",
+      header: (
+        <span>
+          OBS
+          <br />
+          Held
+        </span>
+      ),
+      width: "max-w-[50px] px-0",
+    },
+    {
+      key: "boxNo",
+      header: "Box No.",
+      width: "max-w-[90px]",
+    },
+    {
+      key: "item_dist",
+      header: "Item Distribution",
+      width: "max-w-[80px]",
+    },
+    {
+      key: "location",
+      header: "Location of Storage",
+      width: "max-w-[40px]",
+    },
+    { key: "edit", header: "Actions", width: "max-w-[40px]" },
+  ]);
+
+  //fetch suppliers from list
+  const BASE_URL = "http://localhost:7777/api/v1";
+  const fetchSuppliers = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/supplier/list`);
+      const data = await res.json();
+
+      console.log("SUPPLIER API RESPONSE 👉", data);
+
+      setSupplierList(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to fetch suppliers", error);
+      setSupplierList([]);
+    }
+  };
+
+  const fetchOems = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/oem/list`);
+      const data = await res.json();
+
+      console.log("OEM API RESPONSE 👉", data);
+
+      setOemList(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to fetch oems", error);
+      setOemList([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+    fetchOems();
+  }, []);
 
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
@@ -264,13 +326,16 @@ const Tools = () => {
   };
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
     try {
-      const response = await apiService.get("/tools", {
-        params: {
-          page,
-          search: searchValue,
-          limit: config.row_per_page,
+      const response = await apiService.get(
+        type ? "/tools/critical" : "/tools",
+        {
+          params: {
+            page,
+            search: searchValue,
+            limit: config.row_per_page,
+          },
         },
-      });
+      );
       setFetchedData(response.data);
     } catch (error) {}
   };
@@ -321,6 +386,10 @@ const Tools = () => {
       formData.append("oem", selectedRow.oem || "");
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
+      formData.append(
+        "critical_tool",
+        inputs.critical_tool == "yes" ? 1 : 0 || 0,
+      );
       const response = await apiService.post("/tools", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -371,18 +440,67 @@ const Tools = () => {
       let s = 0,
         s1 = 0;
 
+      //testing
+      // const boxes1 = JSON.parse(selectedRow.box_no);
+      // var result = boxes1.map((item) => item.no).join(", ");
+      // console.log("result==>", result);
+
       const boxes = JSON.parse(selectedRow.box_no || "[]");
       console.log("selected row==>", selectedRow);
-      for (let i = 0; i < boxes.length; i++) {
-        const qty = boxes[i].qtyHeld;
-        if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
-        toaster("error", "Invalid Qty Held");
+
+      // 🔴 At least one distribution row required
+      if (!boxes.length) {
+        toaster("error", "Item Storage Distribution is required");
         return;
+      }
+
+      // 🔴 Mandatory field validation per row
+      for (let i = 0; i < boxes.length; i++) {
+        const { no, location, qtyHeld, qn } = boxes[i];
+
+        if (!no?.trim()) {
+          toaster("error", `Box No is required in row ${i + 1}`);
+          return;
         }
+
+        if (qn === "" || qn === null || isNaN(qn)) {
+          toaster("error", `Authorised Qty is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
+          toaster("error", `Qty Held is required in row ${i + 1}`);
+          return;
+        }
+
+        if (!location?.trim()) {
+          toaster("error", `Location is required in row ${i + 1}`);
+          return;
+        }
+        // if (Number(qtyHeld) <= 0) {
+        //   toaster("error", `Qty Held must be greater than 0 (row ${i + 1})`);
+        //   return;
+        // }
+
+        // if (Number(qn) <= 0) {
+        //   toaster(
+        //     "error",
+        //     `Authorised Qty must be greater than 0 (row ${i + 1})`,
+        //   );
+        //   return;
+        // }
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
         const qty1 = boxes[i].qn;
         if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
-        toaster("error", "Invalid Qty");
-        return;
+          toaster("error", "Invalid Authorised Qty");
+          return;
+        }
+        const qty = boxes[i].qtyHeld;
+        if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
+          toaster("error", "Invalid Qty Held");
+          return;
         }
         s += Number(boxes[i].qn || 0);
         s1 += Number(boxes[i].qtyHeld || 0);
@@ -405,6 +523,15 @@ const Tools = () => {
 
       const obsAuthorised = Number(selectedRow.obs_authorised);
       const obsHeld = Number(selectedRow.obs_held);
+
+      //corrected OBS Held
+      const prevHeld = Number(savedHeld || 0);
+      const currentHeld = Number(obsHeld || 0);
+
+      if (currentHeld < prevHeld) {
+        toaster("error", "Follow manual withdrawal procedure");
+        return;
+      }
 
       // QN must match authorised
       if (s !== obsAuthorised) {
@@ -503,44 +630,6 @@ const Tools = () => {
     );
   }, [selectedRow.box_no]);
 
-  // const handleExportExcel = () => {
-  //   if (!fetchedData.items || fetchedData.items.length === 0) {
-  //     toaster("error", "No data to export");
-  //     return;
-  //   }
-
-  //   // Prepare data for Excel
-  //   const excelData = fetchedData.items.map((row) => ({
-  //     "Item Description": row.description,
-  //     "Equipment / System": row.equipment_system,
-  //     Denos: row.denos,
-  //     "OBS Authorised": row.obs_authorised,
-  //     "OBS Held": row.obs_held,
-  //     Category: row.category,
-  //     "Item Storage Distribution": row.box_no
-  //       ? JSON.parse(row.box_no)
-  //           .map((b) => b.no)
-  //           .join(", ")
-  //       : "",
-  //     "Item Distribution": row.box_no
-  //       ? JSON.parse(row.box_no)
-  //           .map((b) => b.qn)
-  //           .join(", ")
-  //       : "",
-  //     "Storage Location": row.storage_location,
-  //     "Item Code": row.item_code,
-  //     "IN Part No": row.indian_pattern,
-  //     Remarks: row.remarks,
-  //     OEM: row.oem,
-  //   }));
-
-  //   const worksheet = XLSX.utils.json_to_sheet(excelData);
-  //   const workbook = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Spares");
-
-  //   XLSX.writeFile(workbook, "tools.xlsx");
-  // };
-
   const handleRefresh = () => {
     // reset search input
     setInputs((prev) => ({
@@ -557,15 +646,9 @@ const Tools = () => {
     // reset comparison state
     setActualSearch("");
 
-    // ✅ clear row selection
     setSelectedRowIndex(null);
 
-    // ✅ reset panel product safely
     setPanelProduct({});
-    // clear right panel
-    // setPanelProduct({ description: "", imgUrl: "" });
-
-    // 🔥 fetch initial table data explicitly
     fetchdata("", 1);
   };
   useEffect(() => {
@@ -621,6 +704,21 @@ const Tools = () => {
     };
   }, [image.preview]);
 
+  [
+    {
+      prefix: "",
+      name: "",
+      contact: "",
+      des: "",
+    },
+    {
+      prefix: "",
+      name: "",
+      contact: "",
+      des: "",
+    },
+  ];
+
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
@@ -629,8 +727,18 @@ const Tools = () => {
         <ImagePreviewDialog image={imageBaseURL + row.image} />
       ) : null,
       boxNo: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
-        ?.map((box) => box.qn)
+        ?.map((box) => box.no)
         ?.join(", "),
+      item_dist: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
+        ?.map((box) => box.qtyHeld)
+        ?.join(", "),
+      location: (row.box_no
+        ? JSON.parse(row.box_no)
+        : [{ no: "", qn: "", location: "" }]
+      )
+        ?.map((box) => box.location)
+        ?.join(", "),
+
       // edit: (
       //   <Button
       //     variant="ghost"
@@ -664,8 +772,9 @@ const Tools = () => {
             }
             // setOriginalObsAuthorised(row.obs_authorised);
             setSelectedRow(row);
-            console.log(row);
+            console.log("row==>", row);
             setSavedRow(JSON.parse(JSON.stringify(row)));
+            setSavedHeld(Number(row.obs_held || 0));
             setIsOpen((prev) => ({ ...prev, editSpare: true }));
           }}
           onWithdraw={(row) => {
@@ -684,6 +793,7 @@ const Tools = () => {
     }));
     setTableData(t);
   }, [fetchedData]);
+  console.log("fetchedData==>", fetchedData);
 
   const [testDialog, setTestDialog] = useState(false);
 
@@ -773,7 +883,7 @@ const Tools = () => {
               totalPages={fetchedData.totalPages || 1}
               onPageChange={setCurrentPage}
               bodyClassName="spares-table"
-              selectedRowIndex={selectedRowIndex} // ✅ STEP 6
+              selectedRowIndex={selectedRowIndex}
               onClickRow={(row, index) => {
                 setSelectedRowIndex(index);
                 setPanelProduct(row);
@@ -782,12 +892,6 @@ const Tools = () => {
           </div>
         </div>
       </div>
-      {/* <div
-        className={cn(
-          "w-[302px] shrink-0 h-full border border-black bg-white p-2 rounded-md ms-2",
-          !panelProduct.description && "flex justify-center items-center"
-        )}
-      > */}
       <div
         className={cn(
           "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
@@ -817,7 +921,7 @@ const Tools = () => {
               <Table className="mt-2">
                 <TableBody className="">
                   <TableRow>
-                    <TableCell>Sub Components</TableCell>
+                    <TableCell>Sub Component</TableCell>
                     <TableCell>{panelProduct.sub_component || "--"}</TableCell>
                   </TableRow>
                   <TableRow>
@@ -829,7 +933,7 @@ const Tools = () => {
                   <TableRow>
                     <TableCell>Critical / Special Tools</TableCell>
                     <TableCell>
-                      {panelProduct.substitute_name || "--"}
+                      {panelProduct.critical_tool ? "Yes" : "No"}
                     </TableCell>
                   </TableRow>
                   <TableRow>
@@ -872,8 +976,16 @@ const Tools = () => {
         <DialogContent
           className="w-[95%] h-[95%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Add Tools & Accessories</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -964,15 +1076,16 @@ const Tools = () => {
                 />
               </div>
 
-              {/* <div>
+              <div>
                 <Label>Location of Storage</Label>
                 <Input
                   name="storage_location"
                   value={selectedRow.storage_location}
                   onChange={handleEditChange}
                 />
-              </div> */}
-              <div>
+              </div>
+
+              {/* <div>
                 <Label>Location of Storage</Label>
                 <Input
                   type="text"
@@ -988,8 +1101,7 @@ const Tools = () => {
                   <option value="AER workshop" />
                   <option value="Reserved Room1" />
                 </datalist>
-              </div>
-
+              </div> */}
 
               {/* Row 3 */}
               <div>
@@ -1002,7 +1114,9 @@ const Tools = () => {
               </div>
 
               <div>
-                <Label>Indian Part No.</Label>
+                <Label>
+                  <i>IN</i> Part No.
+                </Label>
                 <Input
                   name="indian_pattern"
                   value={selectedRow.indian_pattern}
@@ -1046,28 +1160,8 @@ const Tools = () => {
               </div>
 
               {/* Critical Spare */}
-              <div>
-                <Label className="ms-2 mb-1">Critical / Special Tool</Label>
-                <RadioGroup defaultValue="no">
-                  <div className="flex gap-6 mt-2">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="yes" />
-                      <Label htmlFor="yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="no" />
-                      <Label htmlFor="no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-
               {/* <div>
-                <Label className="ms-2 mb-1">Special Tool</Label>
+                <Label className="ms-2 mb-1">Critical / Special Tool</Label>
                 <RadioGroup defaultValue="no">
                   <div className="flex gap-6 mt-2">
                     <div className="flex items-center gap-2">
@@ -1087,7 +1181,38 @@ const Tools = () => {
               </div> */}
 
               <div>
-                <Label className="ms-2 mb-1">Sub Components</Label>
+                <Label className="ms-2 mb-1">Critical Tool</Label>
+
+                <RadioGroup
+                  value={inputs.critical_tool}
+                  onValueChange={(value) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      critical_tool: value,
+                    }))
+                  }
+                  className="mt-2"
+                >
+                  <div className="flex gap-6">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="yes" id="critical_yes" />
+                      <Label htmlFor="critical_yes" className="cursor-pointer">
+                        Yes
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="no" id="critical_no" />
+                      <Label htmlFor="critical_no" className="cursor-pointer">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="ms-2 mb-1">Sub Component</Label>
                 <Input
                   type="text"
                   name="sub_component"
@@ -1184,53 +1309,64 @@ const Tools = () => {
                 className="w-full border rounded-md p-2"
                 value={selectedOem || ""}
                 onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
+                  const oemId = e.target.value;
+                  if (oemId === "ADD_NEW") {
                     setIsOpenOem(true);
-                  } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
-                    setInputs((prev) => ({
-                      ...prev,
-                      oem: oem.vendor,
-                    }));
+                    return;
                   }
+                  const oem = oemList.find((o) => o._id === Number(oemId));
+                  setSelectedOem(oemId);
+
+                  if (!oem) return;
+                  setInputs((prev) => ({
+                    ...prev,
+                    oem: oem.name,
+                  }));
                 }}
               >
                 <option value="">Select OEM</option>
 
                 {oemList.map((oem) => (
                   <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
+                    {oem.name}, {oem.id}
                   </option>
                 ))}
 
-                <option value="ADD_NEW">➕ Add New Vendor</option>
+                <option value="ADD_NEW">➕ Add New OEM</option>
               </select>
             </div>
             <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor/ Third Party Supplier</Label>
+              <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
 
               <select
                 className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
+                value={selectedSupplier}
                 onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenOem(true);
-                  } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
-                    setInputs((prev) => ({
-                      ...prev,
-                      oem: oem.vendor,
-                    }));
+                  const supplierId = e.target.value;
+
+                  if (supplierId === "ADD_NEW") {
+                    setIsOpenSupplier(true);
+                    return;
                   }
+
+                  setSelectedSupplier(supplierId);
+
+                  const supplier = supplierList.find(
+                    (s) => s.id === Number(supplierId),
+                  );
+                  if (!supplier) return;
+
+                  setInputs((prev) => ({
+                    ...prev,
+                    supplier: supplier.name,
+                  }));
                 }}
               >
                 <option value="">Select Supplier</option>
 
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
+                {supplierList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}, {s.id}
                   </option>
                 ))}
 
@@ -1282,8 +1418,16 @@ const Tools = () => {
         <DialogContent
           className="w-[90%] h-screen max-w-none mt-2 overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Update Tools & Accessories</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -1324,27 +1468,14 @@ const Tools = () => {
                   onBlur={() => disableEdit("denos")}
                 />
               </div>
-
-              {/* <div>
-                <Label>OBS Authorised *</Label>
-                <InputWithPencil
-                  name="obs_authorised"
-                  value={selectedRow.obs_authorised}
-                  onChange={handleEditChange}
-                  editable={editableFields.obs_authorised}
-                  onEdit={() => enableEdit("obs_authorised")}
-                  onBlur={() => disableEdit("obs_authorised")}
-                />
-              </div> */}
-
               <div>
                 <Label>OBS Authorised *</Label>
 
                 <InputWithPencil
                   name="obs_authorised"
                   value={selectedRow.obs_authorised}
-                  readOnly // 🔒 prevent manual typing
-                  editable={false} // force pencil-based action
+                  readOnly
+                  editable={false}
                   onEdit={() => {
                     // ⭐ OPEN DIALOG HERE
                     setObsDialog({
@@ -1422,7 +1553,9 @@ const Tools = () => {
               </div>
 
               <div>
-                <Label>Indian Part No.</Label>
+                <Label>
+                  <i>IN</i> Part No.
+                </Label>
                 <InputWithPencil
                   name="indian_pattern"
                   value={selectedRow.indian_pattern}
@@ -1432,20 +1565,6 @@ const Tools = () => {
                   onBlur={() => disableEdit("indian_pattern")}
                 />
               </div>
-
-              {/* <div>
-                <Label>
-                  Substitute <i>IN</i> Part No.
-                </Label>
-                <InputWithPencil
-                  name="substitute_name"
-                  value={selectedRow.substitute_name}
-                  onChange={handleEditChange}
-                  editable={editableFields.substitute_name}
-                  onEdit={() => enableEdit("substitute_name")}
-                  onBlur={() => disableEdit("substitute_name")}
-                />
-              </div> */}
 
               <div>
                 <Label>
@@ -1517,18 +1636,6 @@ const Tools = () => {
                 )}
               </div>
 
-              {/* <div>
-                <Label>Local Terminology</Label>
-                <InputWithPencil
-                  name="local_terminology"
-                  value={selectedRow.local_terminology}
-                  onChange={handleEditChange}
-                  editable={editableFields.local_terminology}
-                  onEdit={() => enableEdit("local_terminology")}
-                  onBlur={() => disableEdit("local_terminology")}
-                />
-              </div> */}
-
               {/* Critical Spare */}
               <div>
                 <Label className="ms-2 mb-1">Critical / Special Tool</Label>
@@ -1551,7 +1658,7 @@ const Tools = () => {
               </div>
 
               <div>
-                <Label className="ms-2 mb-1">Sub Components</Label>
+                <Label className="ms-2 mb-1">Sub Component</Label>
                 <InputWithPencil
                   type="text"
                   name="sub_component"
@@ -1629,7 +1736,7 @@ const Tools = () => {
                     box_no: JSON.stringify(value),
                   }));
                 }}
-                isLooseSpare={isLooseSpare} // ✅ SAME PROP
+                isLooseSpare={isLooseSpare}
                 isBoxnumberDisable={false}
               />
             </div>
@@ -1673,14 +1780,17 @@ const Tools = () => {
                 className="w-full border rounded-md p-2"
                 value={selectedOem || ""}
                 onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
+                  const oemId = e.target.value;
+                  if (oemId === "ADD_NEW") {
                     setIsOpenOem(true);
                   } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
+                    const oem = oemList.find((o) => o._id === Number(oemId));
+                    setSelectedOem(oemId);
+
+                    if (!oem) return;
                     setInputs((prev) => ({
                       ...prev,
-                      oem: oem.vendor,
+                      oem: oem.name,
                     }));
                   }
                 }}
@@ -1689,7 +1799,7 @@ const Tools = () => {
 
                 {oemList.map((oem) => (
                   <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
+                    {oem.name}, {oem.id}
                   </option>
                 ))}
 
@@ -1697,29 +1807,37 @@ const Tools = () => {
               </select>
             </div>
             <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor/ Third Party Supplier</Label>
+              <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
 
               <select
                 className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
+                value={selectedSupplier}
                 onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenOem(true);
-                  } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
-                    setInputs((prev) => ({
-                      ...prev,
-                      oem: oem.vendor,
-                    }));
+                  const supplierId = e.target.value;
+
+                  if (supplierId === "ADD_NEW") {
+                    setIsOpenSupplier(true);
+                    return;
                   }
+
+                  setSelectedSupplier(supplierId);
+
+                  const supplier = supplierList.find(
+                    (s) => s.id === Number(supplierId),
+                  );
+                  if (!supplier) return;
+
+                  setInputs((prev) => ({
+                    ...prev,
+                    supplier: supplier.name,
+                  }));
                 }}
               >
                 <option value="">Select Supplier</option>
 
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
+                {supplierList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
                 ))}
 
@@ -1747,12 +1865,7 @@ const Tools = () => {
             >
               Cancel
             </Button>
-            {/* <Button
-                className="text-white hover:bg-primary/85 cursor-pointer"
-                onClick={handleEditSpare}
-              >
-                Update Tools
-              </Button> */}
+
             <Button
               className="text-white hover:bg-primary/85 cursor-pointer"
               // onClick={handleUpdateClick}
@@ -1767,17 +1880,21 @@ const Tools = () => {
         open={obsDialog.open}
         onOpenChange={(open) => setObsDialog((prev) => ({ ...prev, open }))}
       >
-        <DialogContent className="!max-w-none w-[45vw] max-w-[950px]">
+        <DialogContent className="!max-w-none w-[48vw] max-w-[950px]">
           <DialogTitle>Confirm OBS Authorised Change</DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
             <div>
-              <Label className="pb-2">Existing Authorised Qty</Label>
+              <Label className="pb-2">
+                Existing Authorised Qty<span className="text-red-500">*</span>
+              </Label>
               <Input value={originalObsAuthorised} disabled />
             </div>
 
             {/* Action */}
             <div>
-              <Label className="pb-2">Action</Label>
+              <Label className="pb-2">
+                Action<span className="text-red-500">*</span>
+              </Label>
               <select
                 className="w-full border rounded h-9 px-2"
                 value={obsDialog.action}
@@ -1795,8 +1912,11 @@ const Tools = () => {
 
             {/* Quantity */}
             <div>
-              <Label className="pb-2">Qty (Inc/Dec)</Label>
+              <Label className="pb-2">
+                Qty (Inc/Dec)<span className="text-red-500">*</span>
+              </Label>
               <Input
+                required
                 type="number"
                 value={obsDialog.quantity}
                 onChange={(e) =>
@@ -1810,7 +1930,9 @@ const Tools = () => {
 
             {/* Final Expected Quantity */}
             <div>
-              <Label className="pb-2">Final Expected Qty</Label>
+              <Label className="pb-2">
+                Final Expected Qty<span className="text-red-500">*</span>
+              </Label>
               <Input
                 disabled
                 value={
@@ -1827,11 +1949,14 @@ const Tools = () => {
           </div>
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
-              <p className="font-medium text-sm mb-2">Quote Authority *</p>
+              <p className="font-medium text-sm mb-2">
+                Quote Authority<span className="text-red-500"> *</span>
+              </p>
 
               <div>
                 <Label className="pb-2">Letter / Fax / Signal Details </Label>
                 <Input
+                  required
                   placeholder="Enter reference details"
                   value={obsDialog.quoteAuthority}
                   onChange={(e) =>
@@ -1844,7 +1969,10 @@ const Tools = () => {
               </div>
 
               <div className="mt-3">
-                <Label>Confirm Demand Generated</Label>
+                <Label>
+                  Confirm Demand Generated
+                  <span className="text-red-500">*</span>
+                </Label>
                 <div className="flex gap-6 mt-1">
                   <label className="flex items-center gap-2">
                     <input
@@ -1889,8 +2017,11 @@ const Tools = () => {
               {obsDialog.demandGenerated === "yes" && (
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <div>
-                    <Label className="pb-3">Internal Demand No.*</Label>
+                    <Label className="pb-3">
+                      Internal Demand No.<span className="text-red-500">*</span>
+                    </Label>
                     <Input
+                      required
                       placeholder="Enter Demand No."
                       value={obsDialog.internalDemandNo}
                       onChange={(e) =>
@@ -1903,7 +2034,7 @@ const Tools = () => {
                   </div>
 
                   <FormattedDatePicker
-                    label="Date*"
+                    label="Date *"
                     value={obsDialog.internalDemandDate}
                     onChange={(val) =>
                       setObsDialog((prev) => ({
@@ -1983,76 +2114,7 @@ const Tools = () => {
               />
             </div>
           )}
-          {/* <p className="font-medium text-sm">Item Storage Distribution</p> */}
-          {/* ================= DECREASE FLOW ================= */}
-          {/* {obsDialog.action === "decrease" && (
-            <div className="pt-3 border-t space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Mention storage details from which the item quantity is
-                withdrawn.
-              </p>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Box No. / Rack No.</Label>
-                  <Input
-                    placeholder=""
-                    value={obsDialog.withdrawBoxNo}
-                    onChange={(e) =>
-                      setObsDialog((prev) => ({
-                        ...prev,
-                        withdrawBoxNo: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Authorised Qty</Label>
-                  <Input
-                    type="number"
-                    placeholder=""
-                    value={obsDialog.withdrawAuthorisedQty}
-                    onChange={(e) =>
-                      setObsDialog((prev) => ({
-                        ...prev,
-                        withdrawAuthorisedQty: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Qty Held</Label>
-                  <Input
-                    type="number"
-                    placeholder=""
-                    value={obsDialog.withdrawQtyHeld}
-                    onChange={(e) =>
-                      setObsDialog((prev) => ({
-                        ...prev,
-                        withdrawQtyHeld: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Location of Storage</Label>
-                  <Input
-                    placeholder=""
-                    value={obsDialog.withdrawLocation}
-                    onChange={(e) =>
-                      setObsDialog((prev) => ({
-                        ...prev,
-                        withdrawLocation: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          )} */}
           <DialogFooter>
             <Button
               variant="outline"
@@ -2061,36 +2123,54 @@ const Tools = () => {
               Cancel
             </Button>
 
-            {/* <Button
-              onClick={() => {
-                const finalValue =
-                  obsDialog.action === "increase"
-                    ? Number(selectedRow.obs_authorised) +
-                      Number(obsDialog.quantity)
-                    : Number(selectedRow.obs_authorised) -
-                      Number(obsDialog.quantity);
-
-                setSelectedRow((prev) => ({
-                  ...prev,
-                  obs_authorised: finalValue.toString(),
-                }));
-
-                setObsDialog((prev) => ({ ...prev, open: false }));
-                handleEditSpare();
-              }}
-            >
-              Confirm & Update
-            </Button> */}
-
             <Button
               onClick={() => {
-                if (
-                  obsDialog.action === "increase" &&
-                  !obsDialog.quoteAuthority?.trim()
-                ) {
-                  alert("Quote Authority is required");
+                // Qty validation (required)
+                // if (!obsDialog.quantity || Number(obsDialog.quantity) <= 0) {
+                //   toaster("error", "Qty (Increase / Decrease) is required");
+                //   return;
+                // }
+
+                if (!obsDialog.quantity || Number(obsDialog.quantity) == 0) {
+                  toaster("error", "Qty (Increase / Decrease) is required");
                   return;
                 }
+
+                if (!obsDialog.quantity || Number(obsDialog.quantity) <= 0) {
+                  toaster("error", "Invalid Qty");
+                  return;
+                }
+
+                // Increase-specific validations
+                if (obsDialog.action === "increase") {
+                  if (!obsDialog.quoteAuthority?.trim()) {
+                    toaster("error", "Quote Authority is required");
+                    return;
+                  }
+
+                  // Yes / No mandatory check
+                  if (!obsDialog.demandGenerated) {
+                    toaster(
+                      "error",
+                      "Please confirm whether Demand is generated (Yes / No)",
+                    );
+                    return;
+                  }
+
+                  if (obsDialog.demandGenerated === "yes") {
+                    if (!obsDialog.internalDemandNo?.trim()) {
+                      toaster("error", "Internal Demand No is required");
+                      return;
+                    }
+
+                    if (!obsDialog.internalDemandDate) {
+                      toaster("error", "Internal Demand Date is required");
+                      return;
+                    }
+                  }
+                }
+
+                // Calculate final value
                 const finalValue =
                   obsDialog.action === "increase"
                     ? Number(originalObsAuthorised) + Number(obsDialog.quantity)
@@ -2103,6 +2183,8 @@ const Tools = () => {
                 }));
 
                 setObsDialog((prev) => ({ ...prev, open: false }));
+
+                toaster("success", "Quantity updated successfully");
               }}
             >
               Submit
@@ -2110,119 +2192,32 @@ const Tools = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isOpenOem} onOpenChange={setIsOpenOem}>
-        <DialogContent className="max-w-xl">
-          <DialogTitle>Add OEM Firm</DialogTitle>
-
-          <div className="space-y-3">
-            <Label>OEM Name</Label>
-            <Input
-              placeholder="OEM Name"
-              value={newVendor.vendor}
-              onChange={(e) =>
-                setNewVendor({ ...newVendor, vendor: e.target.value })
-              }
-            />
-
-            <Label>OEM Address</Label>
-            <Textarea
-              placeholder="Address"
-              value={newVendor.address}
-              onChange={(e) =>
-                setNewVendor({ ...newVendor, address: e.target.value })
-              }
-            />
-
-            {/* Contacts */}
-            <Label>Office / Firm Contacts</Label>
-            {newVendor.contacts.map((c, i) => (
-              <Input
-                key={i}
-                placeholder="Contact Number"
-                value={c}
-                onChange={(e) => {
-                  const contacts = [...newVendor.contacts];
-                  contacts[i] = e.target.value;
-                  setNewVendor({ ...newVendor, contacts });
-                }}
-              />
-            ))}
-            <Button
-              variant="outline"
-              onClick={() =>
-                setNewVendor((prev) => ({
-                  ...prev,
-                  contacts: [...prev.contacts, ""],
-                }))
-              }
-            >
-              + Add Contact
-            </Button>
-
-            {/* Contact Persons */}
-            <Label>Individual Details</Label>
-            {newVendor.persons.map((p, i) => (
-              <div key={i} className="grid grid-cols-2 gap-2">
-                <Input
-                  placeholder="Name"
-                  value={p.name}
-                  onChange={(e) => {
-                    const persons = [...newVendor.persons];
-                    persons[i].name = e.target.value;
-                    setNewVendor({ ...newVendor, persons });
-                  }}
-                />
-                <Input
-                  placeholder="Designation"
-                  value={p.designation}
-                  onChange={(e) => {
-                    const persons = [...newVendor.persons];
-                    persons[i].designation = e.target.value;
-                    setNewVendor({ ...newVendor, persons });
-                  }}
-                />
-                <Input
-                  placeholder="Phone"
-                  value={p.designation}
-                  onChange={(e) => {
-                    const persons = [...newVendor.persons];
-                    persons[i].designation = e.target.value;
-                    setNewVendor({ ...newVendor, persons });
-                  }}
-                />
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              onClick={() =>
-                setNewVendor((prev) => ({
-                  ...prev,
-                  persons: [...prev.persons, { name: "", designation: "" }],
-                }))
-              }
-            >
-              + Add Person
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpenOem(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                const res = await apiService.post("/oems", newVendor);
-                setOemList((prev) => [...prev, res.data]);
-                setSelectedOem(res.data._id);
-                setInputs((prev) => ({ ...prev, oem: res.data.vendor }));
-                setIsOpenOem(false);
-              }}
-            >
-              Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <OEMFirm
+        open={isOpenOem}
+        onOpenChange={setIsOpenOem}
+        value={newVendor}
+        setValue={setNewVendor}
+        onSubmit={async () => {
+          const res = await apiService.post("/oems", newVendor);
+          setOemList((prev) => [...prev, res.data]);
+          setSelectedOem(res.data._id);
+          setInputs((prev) => ({ ...prev, oem: res.data.vendor }));
+          setIsOpenOem(false);
+        }}
+      />
+      <SupplierFirm
+        open={isOpenSupplier}
+        onOpenChange={setIsOpenSupplier}
+        value={newSupplier}
+        setValue={setNewSupplier}
+        onSubmit={async () => {
+          const res = await apiService.post("/suppliers", newSupplier);
+          setSupplierList((prev) => [...prev, res.data]);
+          setSelectedSupplier(res.data._id);
+          setInputs((prev) => ({ ...prev, supplier: res.data.supplier }));
+          setIsOpenSupplier(false);
+        }}
+      />
     </div>
   );
 };

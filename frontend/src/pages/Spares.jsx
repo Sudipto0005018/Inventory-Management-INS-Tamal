@@ -229,9 +229,6 @@ const Spares = ({ type = "" }) => {
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [selectedAddSupplier, setSelectedAddSupplier] = useState(null);
 
-  const [isOpenOem, setIsOpenOem] = useState({ add: false, edit: false });
-  const [selectedOEM, setSelectedOEM] = useState(null);
-  const [isOpenSupplier, setIsOpenSupplier] = useState(false);
   const [newValue, setNewValue] = useState(null);
   const [dropdownType, setDropdownType] = useState(null); // "issue" | "concurred_by"
 
@@ -522,8 +519,6 @@ const Spares = ({ type = "" }) => {
     }));
   };
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
-    console.log(type);
-
     try {
       const response = await apiService.get(
         type ? "/spares/critical" : "/spares",
@@ -1027,7 +1022,10 @@ const Spares = ({ type = "" }) => {
           </Button>
 
           <Button
-            onClick={() => setIsOpen({ ...isOpen, addSpare: true })}
+            onClick={() => {
+              setIsOpen({ ...isOpen, addSpare: true });
+              setBoxNo([{}]);
+            }}
             className="cursor-pointer hover:bg-primary/85"
           >
             <FaPlus /> Add Spare
@@ -2772,7 +2770,7 @@ const Spares = ({ type = "" }) => {
                     selectedRow.withdraw_type === "single"
                       ? 1
                       : Number(selectedRow.new_val),
-                  service_no: user?.serviceNumber || "",
+                  service_no: selectedPerson.tempPerson.serviceNumber || "",
                   issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
 
                   issue_date: getISTTimestamp(date),
@@ -3170,29 +3168,6 @@ const Spares = ({ type = "" }) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* <SupplierFirm
-        open={isOpenSupplier}
-        onOpenChange={setIsOpenSupplier}
-        value={newSupplier}
-        setValue={setNewSupplier}
-        onSubmit={async () => {
-          const res = await apiService.post("/suppliers", newSupplier);
-          setSupplierList((prev) => [...prev, res.data]);
-          setSelectedSupplier(res.data.id);
-          setInputs((prev) => ({ ...prev, supplier: res.data.supplier }));
-          setIsOpenSupplier(false);
-        }}
-      />
-      <OEMFirm
-        open={isOpenOem.edit}
-        onOpenChange={(value) => {
-          setIsOpenOem((prev) => ({ ...prev, edit: value }));
-        }}
-        val={selectedOEM}
-        isEditable={false}
-        setValue={setNewVendor}
-      /> */}
     </div>
   );
 };

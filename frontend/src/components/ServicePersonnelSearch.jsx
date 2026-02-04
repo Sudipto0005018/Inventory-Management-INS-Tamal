@@ -72,7 +72,7 @@ export default function ServicePersonnelSearch({
         {/* Row 1 */}
         <div className="space-y-2">
           <Label className="ms-1">
-            Service No <span className="text-red-500">*</span>{" "}
+            Service No. <span className="text-red-500">*</span>{" "}
           </Label>
           <Input
             value={searchTerm}

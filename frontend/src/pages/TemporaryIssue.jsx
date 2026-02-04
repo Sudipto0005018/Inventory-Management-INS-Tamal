@@ -134,11 +134,11 @@ const PendingTempLoan = () => {
   };
 
   const handleSearch = async (e) => {
-    const searchTerm = inputs.search.trim();
-    if (searchTerm === actualSearch) {
+    const service_no = inputs.search.trim();
+    if (service_no === actualSearch) {
       return;
     } else {
-      setActualSearch(searchTerm);
+      setActualSearch(service_no);
     }
     setIsLoading((prev) => ({ ...prev, search: true }));
     await fetchdata();

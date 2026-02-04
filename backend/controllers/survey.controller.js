@@ -206,7 +206,7 @@ async function getSurveys(req, res) {
              LEFT JOIN spares sp ON s.spare_id = sp.id
              LEFT JOIN tools t ON s.tool_id = t.id
              ${finalWhereClause} 
-             ORDER BY s.created_at DESC
+             ORDER BY s.id DESC
              LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset],
     );
