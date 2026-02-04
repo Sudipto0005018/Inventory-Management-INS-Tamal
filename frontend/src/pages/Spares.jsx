@@ -2763,28 +2763,27 @@ const Spares = ({ type = "" }) => {
                   return;
                 }
 
-                const payload = {
-                  a: selectedRow.id ? "spare" : "tool",
-                  spare_id: selectedRow.id || null,
-                  qty_withdrawn:
-                    selectedRow.withdraw_type === "single"
-                      ? 1
-                      : Number(selectedRow.new_val),
-                  service_no: selectedPerson.tempPerson.serviceNumber || "",
-                  issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
-
-                  issue_date: getISTTimestamp(date),
-                  loan_duration: Number(selectedRow.loan_duration),
-
-                  return_date: null,
-                  qty_received: null,
-
-                  box_no: boxNo,
-                };
-
                 if (selectedIssue === "permanent") {
                   submitPermanentIssue();
                 } else if (selectedIssue === "temporary") {
+                  const payload = {
+                    a: selectedRow.id ? "spare" : "tool",
+                    spare_id: selectedRow.id || null,
+                    qty_withdrawn:
+                      selectedRow.withdraw_type === "single"
+                        ? 1
+                        : Number(selectedRow.new_val),
+                    service_no: selectedPerson.tempPerson.serviceNumber || "",
+                    issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
+
+                    issue_date: getISTTimestamp(date),
+                    loan_duration: Number(selectedRow.loan_duration),
+
+                    return_date: null,
+                    qty_received: null,
+
+                    box_no: boxNo,
+                  };
                   submitTemporaryIssue(payload);
                 }
               }}
