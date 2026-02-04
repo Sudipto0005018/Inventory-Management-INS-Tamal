@@ -2764,7 +2764,7 @@ const Tools = ({ type = "" }) => {
                     selectedRow.withdraw_type === "single"
                       ? 1
                       : Number(selectedRow.new_val),
-                  service_no: user?.serviceNumber || "",
+                  service_no: selectedPerson.tempPerson.serviceNumber || "",
                   issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
 
                   issue_date: getISTTimestamp(date),
