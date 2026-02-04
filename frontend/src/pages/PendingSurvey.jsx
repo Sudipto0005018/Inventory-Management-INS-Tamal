@@ -50,6 +50,7 @@ const PendingSurvey = () => {
       header: "Withdrawal Date",
       width: "min-w-[40px]",
     },
+    { key: "service_no", header: "Service No.", width: "min-w-[40px]" },
     { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
     { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
     {
