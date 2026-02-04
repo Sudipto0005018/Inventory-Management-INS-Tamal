@@ -2133,20 +2133,24 @@ const Spares = ({ type = "" }) => {
                     </Label>
                     <RadioGroup
                       value={selectedRow.withdraw_type}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setSelectedRow((prev) => ({
                           ...prev,
                           withdraw_type: value,
                           obs_held: value === "single" ? 1 : prev.obs_held,
-                        }))
-                      }
+                        }));
+                        if (value === "single" && boxNo.length === 1) {
+                          const box = [...boxNo];
+                          box[0].withdraw = 1;
+                          setBoxNo(box);
+                        }
+                      }}
                       className="flex gap-2 mt-2 w-full"
                     >
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="single" id="single" />
                         <Label htmlFor="single">Single Issue</Label>
                       </div>
-
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="bulk" id="bulk" />
                         <Label htmlFor="bulk">Bulk Issue</Label>
@@ -2332,20 +2336,24 @@ const Spares = ({ type = "" }) => {
                     </Label>
                     <RadioGroup
                       value={selectedRow.withdraw_type}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setSelectedRow((prev) => ({
                           ...prev,
                           withdraw_type: value,
                           obs_held: value === "single" ? 1 : prev.obs_held,
-                        }))
-                      }
+                        }));
+                        if (value === "single" && boxNo.length === 1) {
+                          const box = [...boxNo];
+                          box[0].withdraw = 1;
+                          setBoxNo(box);
+                        }
+                      }}
                       className="flex gap-2 mt-2 w-full"
                     >
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="single" id="single" />
                         <Label htmlFor="single">Single Issue</Label>
                       </div>
-
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="bulk" id="bulk" />
                         <Label htmlFor="bulk">Bulk Issue</Label>
@@ -2519,20 +2527,24 @@ const Spares = ({ type = "" }) => {
                     </Label>
                     <RadioGroup
                       value={selectedRow.withdraw_type}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
                         setSelectedRow((prev) => ({
                           ...prev,
                           withdraw_type: value,
                           obs_held: value === "single" ? 1 : prev.obs_held,
-                        }))
-                      }
+                        }));
+                        if (value === "single" && boxNo.length === 1) {
+                          const box = [...boxNo];
+                          box[0].withdraw = 1;
+                          setBoxNo(box);
+                        }
+                      }}
                       className="flex gap-2 mt-2 w-full"
                     >
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="single" id="single" />
                         <Label htmlFor="single">Single Issue</Label>
                       </div>
-
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="bulk" id="bulk" />
                         <Label htmlFor="bulk">Bulk Issue</Label>
