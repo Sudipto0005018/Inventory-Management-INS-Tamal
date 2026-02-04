@@ -19,6 +19,7 @@ async function updateStock(req, res) {
         .status(404)
         .json({ success: false, message: "Issue not found" });
     }
+    console.log(issue);
 
     const { transaction_id } = issue;
     const isSpare = !!issue.spare_id;

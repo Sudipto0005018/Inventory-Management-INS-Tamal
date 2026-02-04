@@ -20,6 +20,7 @@ async function createSpecialDemand(req, res) {
     } = req.body;
 
     console.log("REQ.BODY =>", req.body);
+    const transaction_id = "SD-" + Date.now();
 
     // 🔹 check if ALL 6 fields are filled
     const allDemandFieldsFilled =
@@ -47,8 +48,9 @@ async function createSpecialDemand(req, res) {
           mo_date,
           created_by,
           created_at,
-          status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending')
+          status,
+          transaction_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
       `;
 
       await pool.query(pendingIssueQuery, [
@@ -65,6 +67,7 @@ async function createSpecialDemand(req, res) {
         mo_demand_date,
 
         userId,
+        transaction_id,
       ]);
 
       return res.json({
@@ -264,7 +267,6 @@ async function updateSpecialDemand(req, res) {
     mo_demand_no,
     mo_demand_date,
   } = req.body;
-  console.log(req.body);
 
   const { id: userId } = req.user;
 
@@ -301,8 +303,8 @@ async function updateSpecialDemand(req, res) {
       const pendingIssueQuery = `
               INSERT INTO pending_issue (
                 spare_id, tool_id, demand_no, demand_date, demand_quantity,
-                nac_no, nac_date, mo_no, mo_date, created_by, created_at, status
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending')
+                nac_no, nac_date, mo_no, mo_date, created_by, created_at, status, transaction_id
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
             `;
 
       await connection.query(pendingIssueQuery, [
@@ -316,6 +318,7 @@ async function updateSpecialDemand(req, res) {
         mo_demand_no,
         mo_demand_date,
         userId,
+        "SD-" + Date.now(),
       ]);
     }
     const query = `

@@ -3110,7 +3110,7 @@ const Spares = ({ type = "" }) => {
                     : null,
                   mo_demand_no: obsDialog.moDemandNo?.trim() || null,
                   mo_demand_date: obsDialog.moDemandDate
-                    ? getISTTimestamp(obsDialog.requisitionDate)
+                    ? getISTTimestamp(obsDialog.moDemandDate)
                     : null,
                 };
 
