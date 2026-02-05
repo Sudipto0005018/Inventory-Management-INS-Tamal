@@ -1,9 +1,5 @@
-import { useState, useEffect, useMemo, use, useContext } from "react";
-import { MdModeEditOutline } from "react-icons/md";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { FaMagnifyingGlass, FaPlus } from "react-icons/fa6";
-import { GoPlus } from "react-icons/go";
-import { IoMdClose } from "react-icons/io";
-import * as XLSX from "xlsx";
 import { MultiSelect } from "../components/ui/multi-select";
 import InputWithPencil from "../components/ui/InputWithPencil";
 import { IoMdRefresh } from "react-icons/io";
@@ -23,26 +19,8 @@ import {
 } from "../components/ui/dialog";
 
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
-import { getFormatedDate } from "../utils/helperFunctions";
+import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
-
-// obs_auth, (mendetory)✅
-// bd aut, category, IN pattern not, box_no✅
-// IN pattern✅
-// add oem after remarks✅
-// box no -> box no + quantity✅
-// single row for box column✅
-// if item catagory null follow P route
-// date in issue to✅
-// if product has multiple box
-// Issue -> Submit/ item withdrawn✅
-// in issue page item_for_servay
-// demand date, servay voucher number✅
-// product -> item in toast✅
-// product demanded successfully....
-// remove demand type
-// add demand date✅
-// demand btn -> issue✅
 
 import PaginationTable from "../components/PaginationTableTwo";
 import toaster from "../utils/toaster";
@@ -56,10 +34,12 @@ import BoxNoInputs from "../components/BoxNoInputs";
 import BoxNoInputsSimple from "../components/BoxNoInputsSimple";
 import DynamicInputList from "../components/DynamicInputList";
 import MultiImageSelect from "../components/MultiImageSelect";
-import TestDialog from "../components/TestDialog";
 import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
 import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
+import ComboBox from "../components/ComboBox";
+import AsyncSelectBox from "../components/AsyncSelectBox";
+import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 
 //search fields
 const SEARCH_FIELDS = [
@@ -76,12 +56,16 @@ const SEARCH_FIELDS = [
   { label: "Price/Unit", value: "price_unit" },
   { label: "Sub Component", value: "sub_component" },
 ];
-const DocumentsCorner = () => {
-  const { config } = useContext(Context);
-
+const DocumentsCorner = ({ type = "" }) => {
+  const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
+    useContext(Context);
   const columns = useMemo(
     () => [
-      { key: "description", header: "Document Description", width: "w-[140px]" },
+      {
+        key: "description",
+        header: "Document Description",
+        width: "w-[140px]",
+      },
       { key: "indian_pattern", header: "Folder No.", width: "w-[120px]" },
       {
         key: "equipment_system",
@@ -96,22 +80,16 @@ const DocumentsCorner = () => {
       { key: "obs_authorised", header: "Quantity", width: "w-[120px]" },
       {
         key: "boxNo",
-        header: (
-          <p>
-            Box No./ 
-             Rack No.
-          </p>
-        ),
+        header: <p>Box No./ Rack No.</p>,
         width: "w-[140px]",
       },
       { key: "location", header: "Location of Storage", width: "w-[150px]" },
       { key: "edit", header: "Actions", width: "w-[170px]" },
     ],
-    []
+    [],
   );
 
-
-
+  const [open, setOpen] = useState(false);
   const [originalObsAuthorised, setOriginalObsAuthorised] = useState(null);
 
   const [obsDialog, setObsDialog] = useState({
@@ -121,26 +99,30 @@ const DocumentsCorner = () => {
 
     demandGenerated: "",
     internalDemandNo: "",
-    internalDemandDate: new Date(),
+    // internalDemandDate: new Date(),
+    internalDemandDate: null,
 
     requisitionNo: "",
-    requisitionDate: new Date(),
+    // requisitionDate: new Date(),
+    requisitionDate: null,
 
     moDemandNo: "",
-    moDemandDate: new Date(),
+    // moDemandDate: new Date(),
+    moDemandDate: null,
   });
 
   const [isLooseSpare, setIsLooseSpare] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
   const [users, setUsers] = useState([
     { service_no: "", name: "", isNewUser: false },
   ]);
+  const [user, setUser] = useState();
 
   const [date, setDate] = useState(new Date());
   const [editableFields, setEditableFields] = useState({
     substitute_name: false,
     local_terminology: false,
   });
+  const [loading, setLoading] = useState(false);
   const [selectedSearchFields, setSelectedSearchFields] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,7 +132,6 @@ const DocumentsCorner = () => {
     totalPages: 1,
     currentPage: 1,
   });
-  const [isTempLocal, setIsTempLocal] = useState(false);
   const [isLoading, setIsLoading] = useState({ table: false });
   const [actualSearch, setActualSearch] = useState("");
   const [inputs, setInputs] = useState({
@@ -197,9 +178,7 @@ const DocumentsCorner = () => {
     imgUrl: "",
     critical_spare: "no",
   });
-  const [boxNo, setBoxNo] = useState([
-    { no: "", qn: "", qtyHeld: "", location: "" },
-  ]);
+  const [boxNo, setBoxNo] = useState([]);
   const [selectedIssue, setSelectedIssue] = useState("parmenent");
 
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
@@ -207,11 +186,11 @@ const DocumentsCorner = () => {
   const [oemList, setOemList] = useState([]);
   const [supplierList, setSupplierList] = useState([]);
   const [selectedOem, setSelectedOem] = useState(null);
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [selectedAddSupplier, setSelectedAddSupplier] = useState(null);
 
-  const [isOpenOem, setIsOpenOem] = useState(false);
-
-  const [isOpenSupplier, setIsOpenSupplier] = useState(false);
+  const [newValue, setNewValue] = useState(null);
+  const [dropdownType, setDropdownType] = useState(null); // "issue" | "concurred_by"
 
   const [newSupplier, setNewSupplier] = useState({
     supplier: "",
@@ -222,6 +201,12 @@ const DocumentsCorner = () => {
 
   const [savedRow, setSavedRow] = useState(null);
   const [savedHeld, setSavedHeld] = useState(null);
+  const [selectedPerson, setSelectedPerson] = useState({
+    person: null,
+    tempPerson: null,
+    loanPerson: null,
+    options: [],
+  });
   //Demand no and Date
   const isInternalFilled =
     obsDialog.internalDemandNo && obsDialog.internalDemandDate;
@@ -234,6 +219,41 @@ const DocumentsCorner = () => {
     if (typeof value === "string" && value.trim() !== "")
       return value.split(",").map((v) => v.trim());
     return [""];
+  };
+
+  const handleInputChange = (index, fieldName, fieldValue) => {
+    const newRows = [...value];
+    newRows[index] = {
+      ...newRows[index],
+      [fieldName]: fieldValue,
+    };
+    onChange(newRows);
+  };
+
+  const addToDropdown = async (type, value) => {
+    try {
+      const data = {
+        type: [type],
+        attr: [value],
+      };
+
+      const response = await apiService.post("/config/add", data);
+
+      if (response.success) {
+        toaster("success", "Data Added");
+
+        if (type === "issue") {
+          await fetchIssueTo();
+        }
+
+        if (type === "concurred_by") {
+          await fetchConcurredBy();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to add");
+    }
   };
 
   const handleOptionWithdrawl = (e) => {
@@ -299,6 +319,137 @@ const DocumentsCorner = () => {
     }));
   };
 
+  //Service NO.
+  const fetchSuppliers = async () => {
+    try {
+      const res = await apiService.get(`/supplier/list`);
+      setSupplierList(Array.isArray(res?.data) ? res.data : []);
+    } catch (error) {
+      console.error("Failed to fetch suppliers", error);
+      setSupplierList([]);
+    }
+  };
+  const fetchOems = async () => {
+    try {
+      const res = await apiService.get(`/oem/list`);
+      setOemList(Array.isArray(res?.data) ? res.data : []);
+    } catch (error) {
+      console.error("Failed to fetch oems", error);
+      setOemList([]);
+    }
+  };
+
+  const fetchOemOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/oem/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch OEM options", error);
+      return [];
+    }
+  };
+  const onDeleteOem = async (id) => {
+    try {
+      const res = await apiService.delete(`/oem/${id}`);
+      if (res.success) {
+        toaster("success", "OEM deleted successfully");
+        fetchOems();
+        if (selectedOem === id) {
+          setSelectedOem(null);
+          setInputs((prev) => ({ ...prev, oem: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete OEM");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete OEM");
+    }
+  };
+  const fetchSupplierOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/supplier/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch Supplier options", error);
+      return [];
+    }
+  };
+
+  const onDeleteSupplier = async (id) => {
+    try {
+      const res = await apiService.delete(`/supplier/${id}`);
+      if (res.success) {
+        toaster("success", "Supplier deleted successfully");
+        fetchSuppliers();
+        if (selectedSupplier?.id === id) {
+          setSelectedSupplier(null);
+          setInputs((prev) => ({ ...prev, supplier: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete Supplier");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete Supplier");
+    }
+  };
+  const fetchSupplierDetails = async (id) => {
+    try {
+      const res = await apiService.get(`/supplier/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch Supplier details", error);
+      return null;
+    }
+  };
+  const fetchPersonnelOptions = async () => {
+    try {
+      const res = await apiService.get(`/config/personnel`);
+      if (res.success) {
+        setSelectedPerson((prev) => ({ ...prev, options: res.data }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch Personnel options", error);
+    }
+  };
+
+  const handleAddPersonnel = async (person) => {
+    try {
+      const res = await apiService.post(`/config/add`, {
+        attr: [person.serviceNumber, person.name, person.rank, person.phone_no],
+        type: "service_no",
+      });
+      if (res.success) {
+        toaster("success", "Personnel added successfully");
+        fetchPersonnelOptions();
+      } else {
+        toaster("error", res.message || "Failed to add personnel");
+      }
+    } catch (error) {
+      console.error("Failed to add personnel", error);
+      toaster("error", "Failed to add personnel");
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+    fetchOems();
+    fetchPersonnelOptions();
+  }, []);
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
     if (searchTerm === actualSearch) {
@@ -327,60 +478,75 @@ const DocumentsCorner = () => {
       [name]: value.toUpperCase(),
     }));
   };
-    
-    const DUMMY_DOCUMENTS = [
-      {
-        id: 1,
-        description: "Hydraulic Pump Manual",
-        indian_pattern: "FOLDER-001",
-        equipment_system: "Hydraulic System",
-        obs_authorised: 5,
-        box_no: JSON.stringify([
-          { no: "BX-01", qn: 5, qtyHeld: 5, location: "RACK-A" },
-        ]),
-      },
-      {
-        id: 2,
-        description: "Electrical Wiring Diagram",
-        indian_pattern: "FOLDER-002",
-        equipment_system: "Electrical System",
-        obs_authorised: 3,
-        box_no: JSON.stringify([
-          { no: "BX-02", qn: 3, qtyHeld: 3, location: "RACK-B" },
-        ]),
-      },
-      {
-        id: 3,
-        description: "Engine Overhaul Instructions",
-        indian_pattern: "FOLDER-003",
-        equipment_system: "Engine System",
-        obs_authorised: 2,
-        box_no: JSON.stringify([
-          { no: "BX-03", qn: 2, qtyHeld: 2, location: "RACK-C" },
-        ]),
-      },
-    ];
 
-const fetchdata = (searchValue = "", page = 1) => {
-  let filtered = DUMMY_DOCUMENTS;
+  const DUMMY_DOCUMENTS = [
+    {
+      id: 1,
+      description: "Hydraulic Pump Manual",
+      indian_pattern: "FOLDER-001",
+      equipment_system: "Hydraulic System",
+      obs_authorised: 5,
+      box_no: JSON.stringify([
+        { no: "BX-01", qn: 5, qtyHeld: 5, location: "RACK-A" },
+      ]),
+    },
+    {
+      id: 2,
+      description: "Electrical Wiring Diagram",
+      indian_pattern: "FOLDER-002",
+      equipment_system: "Electrical System",
+      obs_authorised: 3,
+      box_no: JSON.stringify([
+        { no: "BX-02", qn: 3, qtyHeld: 3, location: "RACK-B" },
+      ]),
+    },
+    {
+      id: 3,
+      description: "Engine Overhaul Instructions",
+      indian_pattern: "FOLDER-003",
+      equipment_system: "Engine System",
+      obs_authorised: 2,
+      box_no: JSON.stringify([
+        { no: "BX-03", qn: 2, qtyHeld: 2, location: "RACK-C" },
+      ]),
+    },
+  ];
 
-  if (searchValue) {
-    const s = searchValue.toLowerCase();
-    filtered = filtered.filter(
-      (item) =>
-        item.description.toLowerCase().includes(s) ||
-        item.indian_pattern.toLowerCase().includes(s) ||
-        item.equipment_system.toLowerCase().includes(s),
-    );
-  }
+  const fetchdata = (searchValue = "", page = 1) => {
+    let filtered = DUMMY_DOCUMENTS;
 
-  setFetchedData({
-    items: filtered,
-    totalItems: filtered.length,
-    totalPages: 1,
-    currentPage: 1,
-  });
-};
+    if (searchValue) {
+      const s = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.description.toLowerCase().includes(s) ||
+          item.indian_pattern.toLowerCase().includes(s) ||
+          item.equipment_system.toLowerCase().includes(s),
+      );
+    }
+
+    setFetchedData({
+      items: filtered,
+      totalItems: filtered.length,
+      totalPages: 1,
+      currentPage: 1,
+    });
+  };
+  // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
+  //   try {
+  //     const response = await apiService.get(
+  //       type ? "/spares/critical" : "/spares",
+  //       {
+  //         params: {
+  //           page,
+  //           search: searchValue,
+  //           limit: config.row_per_page,
+  //         },
+  //       },
+  //     );
+  //     setFetchedData(response.data);
+  //   } catch (error) {}
+  // };
 
   const handleaddSpare = async () => {
     try {
@@ -417,6 +583,7 @@ const fetchdata = (searchValue = "", page = 1) => {
         "critical_spare",
         inputs.critical_spare == "yes" ? 1 : 0 || 0,
       );
+      formData.append("supplier", inputs.supplier || "");
       const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -440,7 +607,14 @@ const fetchdata = (searchValue = "", page = 1) => {
           indian_pattern: "",
           remarks: "",
           critical_spare: "",
+          oem: "",
+          supplier: "",
         });
+        setSelectedOem(null);
+        setSelectedAddSupplier(null);
+        setBoxNo([]);
+        setImage({ file: null, preview: null });
+        setIsLooseSpare(false);
       } else {
         toaster("error", response.message);
       }
@@ -457,15 +631,12 @@ const fetchdata = (searchValue = "", page = 1) => {
         s1 = 0;
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
-      console.log("boxes==>", boxes);
 
-      // 🔴 At least one distribution row required
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
         return;
       }
 
-      // 🔴 Mandatory field validation per row
       for (let i = 0; i < boxes.length; i++) {
         const { no, location, qtyHeld, qn } = boxes[i];
 
@@ -488,27 +659,26 @@ const fetchdata = (searchValue = "", page = 1) => {
           toaster("error", `Location is required in row ${i + 1}`);
           return;
         }
-  
       }
       // console.log("selected row==>", selectedRow);
       for (let i = 0; i < boxes.length; i++) {
-        const qty = boxes[i].qtyHeld;
+        const qty = boxes[i].qn;
         if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
-          toaster("error", "Invalid Qty");
+          toaster("error", "Invalid Authorised Qty");
           return;
         }
-        const qty1 = boxes[i].qn;
+        const qty1 = boxes[i].qtyHeld;
         if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
-          toaster("error", "Invalid Qty");
+          toaster("error", "Invalid Held Qty");
           return;
         }
+
         s += Number(boxes[i].qn || 0);
-        s1 += Number(qty || 0);
+        s1 += Number(qty1 || 0);
       }
 
       const obsAuthorised = Number(selectedRow.obs_authorised);
       const obsHeld = Number(selectedRow.obs_held);
-      console.log("obsheld==>", obsHeld);
 
       // QN must match authorised
       if (s !== obsAuthorised) {
@@ -538,7 +708,6 @@ const fetchdata = (searchValue = "", page = 1) => {
       let prevTotal = 0;
       let currentTotal = 0;
       const prevBoxes = JSON.parse(savedRow.box_no);
-      console.log("prevBoxes==>", prevBoxes);
 
       for (let i = 0; i < prevBoxes.length; i++) {
         prevTotal += parseInt(prevBoxes[i]?.qtyHeld || 0);
@@ -591,6 +760,7 @@ const fetchdata = (searchValue = "", page = 1) => {
         "critical_spare",
         selectedRow.critical_spare == "yes" ? 1 : 0 || 0,
       );
+      formData.append("supplier", selectedRow.supplier || "");
       const response = await apiService.post(
         "/spares/update/" + selectedRow.id,
         formData,
@@ -606,9 +776,6 @@ const fetchdata = (searchValue = "", page = 1) => {
         toaster("error", response.message);
       }
     } catch (error) {
-      //  catch (error) {
-      //   console.log(error);
-      // }
       const errMsg =
         error.response?.data?.message ||
         error.message ||
@@ -618,36 +785,28 @@ const fetchdata = (searchValue = "", page = 1) => {
   };
 
   const handleRefresh = () => {
-    // reset search input
     setInputs((prev) => ({
       ...prev,
       search: "",
     }));
 
-    // reset search fields dropdown
     setSelectedSearchFields([]);
 
-    // reset pagination
     setCurrentPage(1);
 
-    // reset comparison state
     setActualSearch("");
 
-    // ✅ clear row selection
     setSelectedRowIndex(null);
 
-    // clear right panel
     setPanelProduct({ critical_spare: "no" });
-    // setPanelProduct({ description: "", imgUrl: "" });
 
-    // 🔥 fetch initial table data explicitly
     fetchdata("", 1);
   };
 
   useEffect(() => {
     const fetchOems = async () => {
       try {
-        const res = await apiService.get("/oems");
+        const res = await apiService.get("/oem/list");
         setOemList(res.data || []);
       } catch (err) {
         console.error(err);
@@ -664,22 +823,66 @@ const fetchdata = (searchValue = "", page = 1) => {
     );
   }, [selectedRow.box_no]);
 
-  const handleDelete = async () => {
+  const submitTemporaryIssue = async (payload) => {
     try {
-      const response = await apiService.delete("/spares/" + selectedRow.id);
-      if (response.success) {
-        toaster("success", "Spare deleted successfully");
-        setIsOpen({ ...isOpen, deleteSpare: false });
-        fetchdata();
-      } else {
-        toaster("error", response.message);
+      const res = await apiService.post("/temporaryIssue/temporary", payload);
+      if (res.success) {
+        toaster("success", "Temporary Issue created successfully");
+        console.log(boxNo);
+
+        setBoxNo([{ withdraw: "" }]);
+        await fetchdata();
+      }
+
+      setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+    } catch (err) {
+      console.error(err);
+      toaster("error", "Server error");
+    }
+  };
+
+  const submitTyLoan = async (payload) => {
+    try {
+      const res = await apiService.post("/tyLoan/ty", payload);
+      if (res.success) {
+        toaster("success", "Ty Loan created successfully");
+        console.log(boxNo);
+
+        setBoxNo([{ withdraw: "" }]);
+        await fetchdata();
+      }
+
+      setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+    } catch (err) {
+      console.error(err);
+      toaster("error", "Server error");
+    }
+  };
+
+  const submitPermanentIssue = async () => {
+    if (!selectedPerson?.person?.serviceNumber) {
+      toaster("error", "Service No is required");
+      return;
+    }
+    try {
+      const res = await apiService.post("/survey/create", {
+        box_no: boxNo,
+        spare_id: selectedRow.id,
+        withdrawl_qty: selectedRow.new_val,
+        withdrawl_date: formatDate(),
+        service_no: selectedPerson.person?.serviceNumber,
+        name: selectedPerson.person?.name,
+        issue_to: selectedRow.issue_to_text,
+      });
+      if (res.success) {
+        toaster("success", "Survey created successfully");
+        setBoxNo([{ withdraw: "" }]);
+        await fetchdata();
+        setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
       }
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to delete spare";
-      toaster("error", errMsg);
+      console.error(error);
+      toaster("error", "Server error");
     }
   };
 
@@ -741,7 +944,7 @@ const fetchdata = (searchValue = "", page = 1) => {
         ?.join(", "),
       location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
         ?.map((box) => box.location)
-        ?.join(","),
+        ?.join(", "),
 
       edit: (
         <ActionIcons
@@ -770,14 +973,23 @@ const fetchdata = (searchValue = "", page = 1) => {
           }}
           onShowQR={(row) => {
             setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, qrView: true }));
-          }}
-          onScanQR={() => {
-            setIsOpen((prev) => ({ ...prev, qrScan: true }));
+            setIsOpen((prev) => ({ ...prev, qrDialog: true }));
           }}
         />
       ),
 
+      // delete: (
+      //     <Button
+      //         variant="ghost"
+      //         className="text-red-600 hover:text-red-700 hover:bg-red-100"
+      //         onClick={() => {
+      //             setSelectedRow(row);
+      //             setIsOpen({ ...isOpen, deleteSpare: true });
+      //         }}
+      //     >
+      //         <HiTrash />
+      //     </Button>
+      // ),
     }));
 
     console.log("Transformed table data:", t);
@@ -843,7 +1055,10 @@ const fetchdata = (searchValue = "", page = 1) => {
           </Button>
 
           <Button
-            onClick={() => setIsOpen({ ...isOpen, addSpare: true })}
+            onClick={() => {
+              setIsOpen({ ...isOpen, addSpare: true });
+              setBoxNo([{}]);
+            }}
             className="cursor-pointer hover:bg-primary/85"
           >
             <FaPlus /> Add Document
@@ -890,13 +1105,21 @@ const fetchdata = (searchValue = "", page = 1) => {
               <Table className="mt-2">
                 <TableBody className="">
                   <TableRow>
-                    <TableCell>Sub Component</TableCell>
+                    <TableCell>
+                      Sub Component<span className="text-red-500">*</span>
+                    </TableCell>
                     <TableCell>{panelProduct.sub_component || "--"}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Substitute Part No.</TableCell>
                     <TableCell>
                       {panelProduct.substitute_name || "--"}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Critical Spares</TableCell>
+                    <TableCell>
+                      {panelProduct.critical_spare ? "Yes" : "No"}
                     </TableCell>
                   </TableRow>
                   <TableRow>
@@ -938,7 +1161,8 @@ const fetchdata = (searchValue = "", page = 1) => {
         <DialogContent
           className="w-[95%] max-h-[90%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
           onCloseAutoFocus={() => {
             setInputs({ search: inputs.search });
             setBoxNo([
@@ -947,8 +1171,19 @@ const fetchdata = (searchValue = "", page = 1) => {
                 quantity: "",
               },
             ]);
+            setSelectedOem(null);
+            setSelectedAddSupplier(null);
+            setImage({ file: null, preview: null });
+            setIsLooseSpare(false);
           }}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Add Document</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
@@ -957,24 +1192,12 @@ const fetchdata = (searchValue = "", page = 1) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
-                    Document Description<span className="text-red-500">*</span>
+                    Item Description<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
                     name="description"
                     value={inputs.description}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Folder No.<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="indian_pattern"
-                    value={inputs.indian_pattern}
                     onChange={handleChange}
                   />
                 </div>
@@ -987,6 +1210,18 @@ const fetchdata = (searchValue = "", page = 1) => {
                     type="text"
                     name="equipment_system"
                     value={inputs.equipment_system}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Denos<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    name="denos"
+                    value={inputs.denos}
                     onChange={handleChange}
                   />
                 </div>
@@ -1019,7 +1254,9 @@ const fetchdata = (searchValue = "", page = 1) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">B & D Authorised</Label>
+                  <Label className="ms-2 mb-1">
+                    B & D Authorised<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="b_d_authorised"
@@ -1029,7 +1266,9 @@ const fetchdata = (searchValue = "", page = 1) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Category</Label>
+                  <Label className="ms-2 mb-1">
+                    Category<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="category"
@@ -1039,7 +1278,9 @@ const fetchdata = (searchValue = "", page = 1) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Item Code</Label>
+                  <Label className="ms-2 mb-1">
+                    Item Code<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="item_code"
@@ -1054,7 +1295,7 @@ const fetchdata = (searchValue = "", page = 1) => {
                 {/* IN Part No */}
                 <div>
                   <Label className="ms-2 mb-1">
-                    <i>IN</i> Part No.
+                    <i>IN</i> Part No.<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
@@ -1067,6 +1308,7 @@ const fetchdata = (searchValue = "", page = 1) => {
                 <div>
                   <Label className="ms-2 mb-1">
                     Substitute <i>IN</i> Part No.
+                    <span className="text-red-500">*</span>
                   </Label>
                   <DynamicInputList
                     id="substitute_name"
@@ -1080,13 +1322,19 @@ const fetchdata = (searchValue = "", page = 1) => {
 
                 {/* Local Terminology */}
                 <div>
-                  <Label className="ms-2 mb-1">Local Terminology</Label>
+                  <Label className="ms-2 mb-1">
+                    Local Terminology<span className="text-red-500">*</span>
+                  </Label>
                   <DynamicInputList
                     id="local_terminology"
                     data={inputs.local_terminology}
                     placeholder="Local Terminology"
                     onChange={(values) => {
                       updateDynamicInputs(values, "local_terminology");
+                      // console.log(JSON.stringify(values), values.join(","));
+                      // const joined = values.join(",");
+                      // const arr = joined.split(",");
+                      // console.log(joined, arr);
                     }}
                     editable={editableFields.local_terminology}
                     onEdit={() => enableEdit("local_terminology")}
@@ -1095,7 +1343,50 @@ const fetchdata = (searchValue = "", page = 1) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Sub Component</Label>
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Critical Spare<span className="text-red-500">*</span>
+                    </Label>
+
+                    <RadioGroup
+                      value={inputs.critical_spare}
+                      onValueChange={(value) =>
+                        setInputs((prev) => ({
+                          ...prev,
+                          critical_spare: value,
+                        }))
+                      }
+                      className="mt-2"
+                    >
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="critical_yes" />
+                          <Label
+                            htmlFor="critical_yes"
+                            className="cursor-pointer"
+                          >
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="critical_no" />
+                          <Label
+                            htmlFor="critical_no"
+                            className="cursor-pointer"
+                          >
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Sub Component<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="sub_component"
@@ -1105,7 +1396,9 @@ const fetchdata = (searchValue = "", page = 1) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                  <Label className="ms-2 mb-1">
+                    Price/Unit Cost<span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     type="text"
                     name="price_unit"
@@ -1113,34 +1406,34 @@ const fetchdata = (searchValue = "", page = 1) => {
                     onChange={handleChange}
                   />
                 </div>
-
-                <div className="mt-4">
-                  <Label className="ms-2 mb-1">Loose Item</Label>
-                  <RadioGroup
-                    value={isLooseSpare ? "yes" : "no"}
-                    onValueChange={(val) => setIsLooseSpare(val === "yes")}
-                  >
-                    <div className="flex gap-6 mt-2">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="yes" id="loose-yes" />
-                        <Label htmlFor="loose-yes" className="cursor-pointer">
-                          Yes
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="no" id="loose-no" />
-                        <Label htmlFor="loose-no" className="cursor-pointer">
-                          No
-                        </Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
               </div>
             </div>
 
             <div className="flex flex-col mt-5">
+              <div className="mt-4">
+                <Label className="ms-2 mb-1">Loose Spare</Label>
+                <RadioGroup
+                  value={isLooseSpare ? "yes" : "no"}
+                  onValueChange={(val) => setIsLooseSpare(val === "yes")}
+                >
+                  <div className="flex gap-6 mt-2">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="yes" id="loose-yes" />
+                      <Label htmlFor="loose-yes" className="cursor-pointer">
+                        Yes
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="no" id="loose-no" />
+                      <Label htmlFor="loose-no" className="cursor-pointer">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
                 Item Storage Distribution
               </Label>
@@ -1149,6 +1442,7 @@ const fetchdata = (searchValue = "", page = 1) => {
                 value={boxNo}
                 onChange={setBoxNo}
                 isLooseSpare={isLooseSpare}
+                addToDropdown={addToDropdown}
               />
             </div>
             <div className="w-full my-2 mt-6">
@@ -1183,71 +1477,55 @@ const fetchdata = (searchValue = "", page = 1) => {
                 }}
               />
             </div>
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">OEM Details</Label>
+            <div className="w-full mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <Label className="ms-2 mb-1">OEM Details</Label>
 
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
-                onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenOem(true);
-                  } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
-                    setInputs((prev) => ({
-                      ...prev,
-                      oem: oem.vendor,
-                    }));
+                <AsyncSelectBox
+                  label="OEM"
+                  value={
+                    selectedOem ? { id: selectedOem, name: inputs.oem } : null
                   }
-                }}
-              >
-                <option value="">Select OEM</option>
+                  onChange={(val) => {
+                    setSelectedOem(val.id);
+                    setInputs((prev) => ({ ...prev, oem: val.name }));
+                  }}
+                  fetchOptions={fetchOemOptions}
+                  fetchDetails={async (id) => {
+                    try {
+                      const res = await apiService.get(`/oem/${id}`);
+                      return res.data;
+                    } catch (error) {
+                      console.error("Failed to fetch OEM details", error);
+                      return null;
+                    }
+                  }}
+                  AddNewModal={OEMFirm}
+                  onDelete={onDeleteOem}
+                />
+              </div>
 
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New OEM</option>
-              </select>
-            </div>
-
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor / Third Party Supplier</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedSupplier || ""}
-                onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenSupplier(true);
-                    return;
+              <div>
+                <Label className="ms-2 mb-1">
+                  Vendor / Third Party Supplier
+                </Label>
+                <AsyncSelectBox
+                  label="Vendor/ Third Party Supplier"
+                  value={
+                    selectedAddSupplier
+                      ? { id: selectedAddSupplier, name: inputs.supplier }
+                      : null
                   }
-
-                  const supplier = supplierList.find(
-                    (s) => s._id === e.target.value,
-                  );
-                  if (!supplier) return;
-
-                  setSelectedSupplier(supplier._id);
-                  setInputs((prev) => ({
-                    ...prev,
-                    supplier: supplier.supplier,
-                  }));
-                }}
-              >
-                <option value="">Select Supplier</option>
-
-                {supplierList.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.supplier}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New Supplier</option>
-              </select>
+                  onChange={(val) => {
+                    setSelectedAddSupplier(val.id);
+                    setInputs((prev) => ({ ...prev, supplier: val.name }));
+                  }}
+                  fetchOptions={fetchSupplierOptions}
+                  fetchDetails={fetchSupplierDetails}
+                  AddNewModal={SupplierFirm}
+                  onDelete={onDeleteSupplier}
+                />
+              </div>
             </div>
 
             <div className="w-full mt-6">
@@ -1291,16 +1569,26 @@ const fetchdata = (searchValue = "", page = 1) => {
         }
       >
         <DialogContent
-          className="w-[95%] h-[90%] overflow-y-auto"
+          className=" w-[95%] h-[90%] overflow-y-auto"
           unbounded={true}
-          onPointerDownOutside={() => {}}
+          // onPointerDownOutside={() => {}}
+          onPointerDownOutside={(e) => e.preventDefault()}
         >
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
           <DialogTitle className="">Update Document</DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
-                <Label>Document Description *</Label>
+                <Label>
+                  Item Description<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="description"
                   value={selectedRow.description}
@@ -1312,19 +1600,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>Folder No. *</Label>
-                <InputWithPencil
-                  name="indian_pattern"
-                  value={selectedRow.indian_pattern}
-                  onChange={handleEditChange}
-                  editable={editableFields.indian_pattern}
-                  onEdit={() => enableEdit("indian_pattern")}
-                  onBlur={() => disableEdit("indian_pattern")}
-                />
-              </div>
-
-              <div>
-                <Label>Equipment / System *</Label>
+                <Label>
+                  Equipment / System<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="equipment_system"
                   value={selectedRow.equipment_system}
@@ -1336,29 +1614,45 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>OBS Authorised *</Label>
+                <Label>
+                  Denos<span className="text-red-500">*</span>
+                </Label>
+                <InputWithPencil
+                  name="denos"
+                  value={selectedRow.denos}
+                  onChange={handleEditChange}
+                  editable={editableFields.denos}
+                  onEdit={() => enableEdit("denos")}
+                  onBlur={() => disableEdit("denos")}
+                />
+              </div>
+
+              <div>
+                <Label>
+                  OBS Authorised<span className="text-red-500">*</span>
+                </Label>
 
                 <InputWithPencil
                   name="obs_authorised"
                   value={selectedRow.obs_authorised}
-                  readOnly // 🔒 prevent manual typing
-                  editable={false} // force pencil-based action
+                  readOnly
+                  editable={false}
                   onEdit={() => {
-                    // ⭐ OPEN DIALOG HERE
                     setObsDialog({
                       open: true,
                       action: "increase",
                       quantity: "",
                     });
 
-                    // store original value (safety)
                     setOriginalObsAuthorised(selectedRow.obs_authorised);
                   }}
                 />
               </div>
 
               <div>
-                <Label>OBS Held *</Label>
+                <Label>
+                  OBS Held<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="obs_held"
                   value={selectedRow.obs_held}
@@ -1370,7 +1664,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>B & D Authorised</Label>
+                <Label>
+                  B & D Authorised<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="b_d_authorised"
                   value={selectedRow.b_d_authorised}
@@ -1382,7 +1678,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>Category</Label>
+                <Label>
+                  Category<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="category"
                   value={selectedRow.category}
@@ -1394,19 +1692,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>Location of Storage</Label>
-                <InputWithPencil
-                  name="storage_location"
-                  value={selectedRow.storage_location}
-                  onChange={handleEditChange}
-                  editable={editableFields.storage_location}
-                  onEdit={() => enableEdit("storage_location")}
-                  onBlur={() => disableEdit("storage_location")}
-                />
-              </div>
-
-              <div>
-                <Label>Item Code</Label>
+                <Label>
+                  Item Code<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   name="item_code"
                   value={selectedRow.item_code}
@@ -1419,7 +1707,7 @@ const fetchdata = (searchValue = "", page = 1) => {
 
               <div>
                 <Label>
-                  <i>IN</i> Part No.
+                  <i>IN</i> Part No.<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
                   name="indian_pattern"
@@ -1434,6 +1722,7 @@ const fetchdata = (searchValue = "", page = 1) => {
               <div>
                 <Label>
                   Substitute <i>IN</i> Part No.
+                  <span className="text-red-500">*</span>
                 </Label>
 
                 {/* VIEW MODE */}
@@ -1468,9 +1757,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label>Local Terminology</Label>
-
-                {/* VIEW MODE */}
+                <Label>
+                  Local Terminology<span className="text-red-500">*</span>
+                </Label>
                 {!editableFields.local_terminology ? (
                   <InputWithPencil
                     name="local_terminology"
@@ -1481,7 +1770,6 @@ const fetchdata = (searchValue = "", page = 1) => {
                     onEdit={() => enableEdit("local_terminology")}
                   />
                 ) : (
-                  /* EDIT MODE */
                   <div
                     onBlur={() => disableEdit("local_terminology")}
                     tabIndex={0}
@@ -1501,8 +1789,64 @@ const fetchdata = (searchValue = "", page = 1) => {
                 )}
               </div>
 
+              {/* critical-special-price_unit-sub_component */}
+              {/* <div>
+                <Label className="ms-2 mb-1">Critical Spare</Label>
+                <RadioGroup defaultValue="no">
+                  <div className="flex gap-6 mt-2">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="yes" id="yes" />
+                      <Label htmlFor="yes" className="cursor-pointer">
+                        Yes
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="no" id="no" />
+                      <Label htmlFor="no" className="cursor-pointer">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div> */}
+
               <div>
-                <Label className="ms-2 mb-1">Sub Component</Label>
+                <Label className="ms-2 mb-1">
+                  Critical Spare<span className="text-red-500">*</span>
+                </Label>
+
+                <RadioGroup
+                  value={selectedRow.critical_spare == 1 ? "yes" : "no"}
+                  onValueChange={(value) =>
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      critical_spare: value == "yes" ? 1 : 0,
+                    }))
+                  }
+                  className="mt-2"
+                >
+                  <div className="flex gap-6">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="yes" id="critical_yes" />
+                      <Label htmlFor="critical_yes" className="cursor-pointer">
+                        Yes
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="no" id="critical_no" />
+                      <Label htmlFor="critical_no" className="cursor-pointer">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="ms-2 mb-1">
+                  Sub Component<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   type="text"
                   name="sub_component"
@@ -1515,7 +1859,9 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div>
-                <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                <Label className="ms-2 mb-1">
+                  Price/Unit Cost<span className="text-red-500">*</span>
+                </Label>
                 <InputWithPencil
                   type="text"
                   name="price_unit"
@@ -1526,8 +1872,11 @@ const fetchdata = (searchValue = "", page = 1) => {
                   onBlur={() => disableEdit("price_unit")}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col mt-3">
               <div className="mt-4">
-                <Label className="ms-2 mb-1">Loose Item</Label>
+                <Label className="ms-2 mb-1">Loose Spare</Label>
                 <RadioGroup
                   value={isLooseSpare ? "yes" : "no"}
                   onValueChange={(val) => setIsLooseSpare(val === "yes")}
@@ -1549,9 +1898,7 @@ const fetchdata = (searchValue = "", page = 1) => {
                   </div>
                 </RadioGroup>
               </div>
-            </div>
 
-            <div className="flex flex-col mt-3">
               <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
                 Item Storage Distribution
               </Label>
@@ -1600,70 +1947,70 @@ const fetchdata = (searchValue = "", page = 1) => {
               />
             </div>
 
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">OEM Details</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedOem || ""}
-                onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenOem(true);
-                  } else {
-                    const oem = oemList.find((o) => o._id === e.target.value);
-                    setSelectedOem(oem._id);
-                    setInputs((prev) => ({
+            <div className="w-full mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <Label className="ms-2 mb-1">OEM Details</Label>
+                <AsyncSelectBox
+                  label="OEM"
+                  value={
+                    selectedRow.oem
+                      ? {
+                          id: oemList.find(
+                            (item) => item.name === selectedRow.oem,
+                          )?.id,
+                          name: selectedRow.oem,
+                        }
+                      : null
+                  }
+                  onChange={(val) => {
+                    setSelectedRow((prev) => ({
                       ...prev,
-                      oem: oem.vendor,
+                      oem: val.name,
                     }));
+                  }}
+                  fetchOptions={fetchOemOptions}
+                  fetchDetails={async (id) => {
+                    if (!id) return null;
+                    try {
+                      const res = await apiService.get(`/oem/${id}`);
+                      return res.data;
+                    } catch (error) {
+                      console.error("Failed to fetch OEM details", error);
+                      return null;
+                    }
+                  }}
+                  AddNewModal={OEMFirm}
+                  onDelete={onDeleteOem}
+                />
+              </div>
+              <div>
+                <Label className="ms-2 mb-1">
+                  Vendor / Third Party Supplier
+                </Label>
+                <AsyncSelectBox
+                  label="Vendor/ Third Party Supplier"
+                  value={
+                    selectedRow.supplier
+                      ? {
+                          id: supplierList.find(
+                            (item) => item.name === selectedRow.supplier,
+                          )?.id,
+                          name: selectedRow.supplier,
+                        }
+                      : null
                   }
-                }}
-              >
-                <option value="">Select OEM</option>
-
-                {oemList.map((oem) => (
-                  <option key={oem._id} value={oem._id}>
-                    {oem.vendor}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New OEM</option>
-              </select>
-            </div>
-            <div className="w-full mt-6">
-              <Label className="ms-2 mb-1">Vendor/ Third Party Supplier</Label>
-
-              <select
-                className="w-full border rounded-md p-2"
-                value={selectedSupplier || ""}
-                onChange={(e) => {
-                  if (e.target.value === "ADD_NEW") {
-                    setIsOpenSupplier(true);
-                    return;
-                  }
-
-                  const supplier = supplierList.find(
-                    (s) => s._id === e.target.value,
-                  );
-                  if (!supplier) return;
-
-                  setSelectedSupplier(supplier._id);
-                  setInputs((prev) => ({
-                    ...prev,
-                    supplier: supplier.supplier,
-                  }));
-                }}
-              >
-                <option value="">Select Supplier</option>
-
-                {supplierList.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.supplier}
-                  </option>
-                ))}
-
-                <option value="ADD_NEW">➕ Add New Supplier</option>
-              </select>
+                  onChange={(val) => {
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      supplier: val.name,
+                    }));
+                  }}
+                  fetchOptions={fetchSupplierOptions}
+                  fetchDetails={fetchSupplierDetails}
+                  AddNewModal={SupplierFirm}
+                  onDelete={onDeleteSupplier}
+                />
+              </div>
             </div>
 
             <div className="w-full mt-6">
@@ -1704,265 +2051,265 @@ const fetchdata = (searchValue = "", page = 1) => {
       >
         <DialogContent
           unbounded
-          onOpenAutoFocus={(e) => e.preventDefault()}
           className="w-[65vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
+          onCloseAutoFocus={() => {
+            setSelectedPerson((prev) => ({
+              ...prev,
+              loanPerson: null,
+              person: null,
+              tempPerson: null,
+            }));
+          }}
         >
           <DialogTitle>Manual Withdrawal</DialogTitle>
 
           <div>
-            <div className="flex items-center gap-3">
-              <h2>Temporary Issue (Local)</h2>
-            </div>
+            <RadioGroup
+              value={selectedIssue}
+              onValueChange={(e) => {
+                setSelectedIssue(e);
+                console.log(boxNo, "prev");
 
-            <div className="space-y-6 mt-4">
-              {/* Row 1 */}
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <Label className="mb-2">Document Description *</Label>
-                  <Input
-                    readOnly
-                    name="description"
-                    value={selectedRow.description}
-                    onChange={handleEditChange}
-                    editable={editableFields.description}
-                    onEdit={() => enableEdit("description")}
-                    onBlur={() => disableEdit("description")}
-                  />
-                </div>
+                const temp = JSON.parse(JSON.stringify(boxNo));
+                for (let i = 0; i < temp.length; i++) {
+                  delete temp[i].withdraw;
+                }
+                console.log(temp, "current");
 
-                <div>
-                  <Label className="mb-2">Folder No. *</Label>
-                  <Input
-                    readOnly
-                    name="indian_pattern"
-                    value={selectedRow.indian_pattern}
-                    onChange={handleEditChange}
-                    editable={editableFields.indian_pattern}
-                    onEdit={() => enableEdit("indian_pattern")}
-                    onBlur={() => disableEdit("indian_pattern")}
-                  />
-                </div>
-
-                <div>
-                  <Label className="mb-2">Equipment/ System *</Label>
-                  <Input
-                    readOnly
-                    name="equipment_system"
-                    value={selectedRow.equipment_system}
-                    onChange={handleEditChange}
-                    editable={editableFields.equipment_system}
-                    onEdit={() => enableEdit("equipment_system")}
-                    onBlur={() => disableEdit("equipment_system")}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2">Issue To *</Label>
-
-                  {selectedRow.issue_to !== "OTHER" ? (
-                    <select
-                      name="issue_to"
-                      value={selectedRow.issue_to || ""}
-                      onChange={handleOptionWithdrawl}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="FER">FER</option>
-                      <option value="AER">AER</option>
-                      <option value="OMS">OMS</option>
-                      <option value="CONTROL">Control</option>
-                      <option value="OTHER">Other</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      name="issue_to"
-                      value={selectedRow.issue_to_text || ""}
-                      onChange={(e) =>
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          issue_to_text: e.target.value,
-                        }))
-                      }
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                      placeholder="Enter Issue To"
-                      autoFocus
-                    />
-                  )}
-                </div>
+                setBoxNo(temp);
+              }}
+              className="flex gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="temporary" id="r2" />
+                <Label htmlFor="r2">Temporary Issue (Local)</Label>
               </div>
+            </RadioGroup>
 
-              {/* Row 2 */}
-              <div className="grid grid-cols-4 gap-4 items-start w-full">
-                {/* Quantity Withdrawal */}
-                <div className="w-full mt-2">
-                  <Label className="mb-3">Qty Withdrawal *</Label>
-                  <RadioGroup
-                    value={selectedRow.withdraw_type}
-                    onValueChange={(value) =>
-                      setSelectedRow((prev) => ({
-                        ...prev,
-                        withdraw_type: value,
-                        obs_held: value === "single" ? 1 : prev.obs_held, // force 1 for single
-                      }))
-                    }
-                    className="flex gap-2 mt-2 w-full"
-                  >
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="single" id="single" />
-                      <Label htmlFor="single">Single Issue</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <div className="w-full">
-                  <Label className="mb-2">Single Qty</Label>
-
-                  <Input
-                    name="new_val"
-                    type="number"
-                    value={1}
-                    disabled
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Withdrawal Date */}
-                <div className="w-full">
-                  <FormattedDatePicker
-                    label="Withdrawal Date *"
-                    value={date}
-                    onChange={setDate}
-                  />
-                </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="flex flex-col mt-[-20px]">
-                <Label className="ms-2 mb-1" htmlFor="box_no">
-                  Item Storage Distribution
-                </Label>
-
-                <BoxNoWithdrawl
-                  value={boxNo}
-                  onChange={setBoxNo}
-                  isLooseSpare={isLooseSpare}
-                />
-              </div>
-
-              {/* Service No & Name (Full Width Rows) */}
-              <div className="space-y-4">
-                {users.map((user, index) => (
-                  <div
-                    key={index}
-                    className="border p-4 rounded-md grid grid-cols-2 gap-4 relative"
-                  >
-                    <div>
-                      <Label>Service No. *</Label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={user.service_no}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setUsers((prev) =>
-                              prev.map((u, i) =>
-                                i === index
-                                  ? {
-                                      ...u,
-                                      service_no: value,
-                                      name:
-                                        value === "12345" ? "Ravi Kumar" : "",
-                                      isNewUser: value !== "12345",
-                                    }
-                                  : u,
-                              ),
-                            );
-                          }}
-                          className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Name*</Label>
-                      <input
-                        type="text"
-                        value={user.name}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>Rank*</Label>
-                      <input
-                        type="text"
-                        value={user.rank}
-                        readOnly
-                        className="w-full border rounded-md px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>Phone No.*</Label>
-                      <input
-                        type="tel"
-                        name="phone_no"
-                        value={selectedRow.phone_no || ""}
-                        onChange={handleEditChange}
-                        placeholder="Enter phone number"
-                        className="w-full border rounded-md px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Loan Duration (in days)</Label>
-                  <input
-                    type="number"
-                    name="loan_duration"
-                    value={selectedRow.loan_duration || ""}
-                    onChange={handleEditChange}
-                    placeholder="Enter days"
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label>Concurred by *</Label>
-                  {selectedRow.issue_to !== "OTHER" ? (
-                    <select
-                      name="issue_to"
-                      value={selectedRow.issue_to || ""}
+            {selectedIssue === "temporary" && (
+              <div className="space-y-6 mt-4">
+                {/* Row 1 */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <Label className="mb-2">
+                      Document Descriptionn
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      readOnly
+                      name="description"
+                      value={selectedRow.description}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="FER">EO</option>
-                      <option value="AER">SEO</option>
-                      <option value="OMS">AEO (FWD)</option>
-                      <option value="CONTROL">AEO (AFT)</option>
-                      <option value="CONTROL">AEO (OMS)</option>
-                      <option value="OTHER">Other</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      name="issue_to"
-                      value={selectedRow.issue_to_text || ""}
-                      onChange={(e) =>
+                      editable={editableFields.description}
+                      onEdit={() => enableEdit("description")}
+                      onBlur={() => disableEdit("description")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2">
+                      Folder No. <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      readOnly
+                      name="indian_pattern"
+                      value={selectedRow.indian_pattern}
+                      onChange={handleEditChange}
+                      editable={editableFields.indian_pattern}
+                      onEdit={() => enableEdit("indian_pattern")}
+                      onBlur={() => disableEdit("indian_pattern")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2">
+                      Equipment/ System <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      readOnly
+                      name="equipment_system"
+                      value={selectedRow.equipment_system}
+                      onChange={handleEditChange}
+                      editable={editableFields.equipment_system}
+                      onEdit={() => enableEdit("equipment_system")}
+                      onBlur={() => disableEdit("equipment_system")}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 mt-[-10px]">
+                    <label className="text-sm font-medium text-gray-700">
+                      Issue to <span className="text-red-500">*</span>
+                    </label>
+                    <ComboBox
+                      options={issueTo}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("issue", value.name);
+                      }}
+                      placeholder="Select issue to..."
+                      onSelect={(value) => {
                         setSelectedRow((prev) => ({
                           ...prev,
-                          issue_to_text: e.target.value,
-                        }))
-                      }
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                      placeholder="Enter Issue To"
-                      autoFocus
+                          issue_to_text: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchIssueTo();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
-                  )}
+                  </div>
+                </div>
+
+                {/* Row 2 */}
+                <div className="grid grid-cols-4 gap-4 items-start w-full">
+                  {/* Quantity Withdrawal */}
+                  <div className="w-full">
+                    <Label className="mb-3">
+                      Qty Withdrawal <span className="text-red-500">*</span>
+                    </Label>
+                    <RadioGroup
+                      value={selectedRow.withdraw_type}
+                      onValueChange={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          withdraw_type: value,
+                          obs_held: value === "single" ? 1 : prev.obs_held,
+                        }));
+                        if (value === "single" && boxNo.length === 1) {
+                          const box = [...boxNo];
+                          box[0].withdraw = 1;
+                          setBoxNo(box);
+                        }
+                      }}
+                      className="flex gap-2 mt-2 w-full"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="single" id="single" />
+                        <Label htmlFor="single">Single Issue</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Withdrawal Qty */}
+                  <div className="w-full">
+                    <Label className="mb-2">Single Qty</Label>
+
+                    <Input
+                      name="new_val"
+                      type="number"
+                      value={
+                        selectedRow.withdraw_type === "single"
+                          ? 1
+                          : selectedRow.new_val || ""
+                      }
+                      onChange={(e) => {
+                        if (selectedRow.withdraw_type === "bulk") {
+                          handleEditChange(e);
+                          if (boxNo.length == 1) {
+                            const box = [...boxNo];
+                            box[0].withdraw = e.target.value;
+                            setBoxNo(box);
+                          }
+                        }
+                      }}
+                      disabled={selectedRow.withdraw_type === "single"}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Withdrawal Date */}
+                  <div className="w-full">
+                    <FormattedDatePicker
+                      label="Withrawal Date *"
+                      value={date}
+                      onChange={setDate}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3 */}
+                <div className="flex flex-col mt-[-20px]">
+                  <Label className="ms-2 mb-1 " htmlFor="box_no">
+                    Item Storage Distribution{" "}
+                    <span className="text-red-500">*</span>
+                  </Label>
+
+                  <BoxNoWithdrawl
+                    value={boxNo}
+                    onChange={(val) => {
+                      setBoxNo(val);
+                    }}
+                    isLooseSpare={isLooseSpare}
+                  />
+                </div>
+
+                <ServicePersonnelSearch
+                  options={selectedPerson.options}
+                  value={selectedPerson.tempPerson}
+                  onChange={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      tempPerson: person,
+                    }));
+                  }}
+                  onAdd={(person) => {
+                    setSelectedPerson((prev) => ({
+                      ...prev,
+                      tempPerson: person,
+                    }));
+                    handleAddPersonnel(person);
+                  }}
+                />
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>
+                      Loan Duration (in days)
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <input
+                      type="number"
+                      name="loan_duration"
+                      value={selectedRow.loan_duration || ""}
+                      onChange={handleEditChange}
+                      placeholder="Enter days"
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 mt-[-10px]">
+                    <label className="text-sm font-medium text-gray-700">
+                      Concurred By <span className="text-red-500">*</span>
+                    </label>
+                    <ComboBox
+                      options={concurredBy}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("concurred_by", value.name);
+                      }}
+                      placeholder="Select concurred by ..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          concurred_by: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchConcurredBy();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
           <DialogFooter className="mt-6">
             <Button
@@ -1978,7 +2325,6 @@ const fetchdata = (searchValue = "", page = 1) => {
             <Button
               className="text-white hover:bg-primary/85 cursor-pointer"
               onClick={() => {
-                // Text / Select required fields
                 if (!selectedRow.description?.trim()) {
                   toaster("error", "Item Description is required");
                   return;
@@ -1988,11 +2334,6 @@ const fetchdata = (searchValue = "", page = 1) => {
                   toaster("error", "IN Part No. is required");
                   return;
                 }
-
-                // if (!selectedRow.category) {
-                //   toaster("error", "Category is required");
-                //   return;
-                // }
 
                 if (!selectedRow.withdraw_type) {
                   toaster("error", "Withdrawal type is required");
@@ -2004,10 +2345,6 @@ const fetchdata = (searchValue = "", page = 1) => {
                   return;
                 }
 
-                /* ================================
-                  🔴 POSITIVE NUMBER VALIDATION
-                ================================= */
-
                 if (
                   selectedRow.withdraw_type === "bulk" &&
                   Number(selectedRow.new_val) <= 0
@@ -2016,40 +2353,32 @@ const fetchdata = (searchValue = "", page = 1) => {
                   return;
                 }
 
-                // Validate Box / Rack rows
-                for (const row of boxNo) {
-                  if (Number(row.qtyHeld) <= 0) {
-                    toaster("error", "Qty Held must be greater than 0");
-                    return;
-                  }
-
-                  if (Number(row.withdraw) <= 0) {
-                    toaster("error", "Withdrawal Qty must be greater than 0");
-                    return;
-                  }
-                }
-
-                // Validate Service No
-                for (const user of users) {
-                  if (!user.service_no?.trim()) {
-                    toaster("error", "Service No is required");
-                    return;
-                  }
-                }
-
-                // 🔢 Expected withdrawal qty
                 const expectedQty =
                   selectedRow.withdraw_type === "single"
                     ? 1
                     : Number(selectedRow.new_val || 0);
 
-                // 🔢 Total withdrawal from boxes/racks
-                const totalWithdraw = boxNo.reduce(
-                  (sum, row) => sum + Number(row.withdraw || 0),
-                  0,
-                );
+                const totalWithdraw = boxNo.reduce((sum, row) => {
+                  return sum + Number(row.withdraw || 0);
+                }, 0);
 
-                // 🔴 MISMATCH VALIDATION
+                const hasNegativeWithdrawRow = boxNo.some(
+                  (row) => Number(row.withdraw) < 0,
+                );
+                if (hasNegativeWithdrawRow) {
+                  toaster(
+                    "error",
+                    "Withdrawal quantity in any box cannot be less than zero",
+                  );
+                  return;
+                }
+                if (totalWithdraw <= 0) {
+                  toaster(
+                    "error",
+                    "Total Withdrawal Quantity must be greater than 0",
+                  );
+                  return;
+                }
                 if (expectedQty !== totalWithdraw) {
                   toaster("error", "Withdrawal Quantity Mismatch", {
                     description: `Total distributed withdrawal (${totalWithdraw}) must be equal to ${
@@ -2058,10 +2387,9 @@ const fetchdata = (searchValue = "", page = 1) => {
                         : "Bulk Qty"
                     } (${expectedQty}).`,
                   });
-                  return; // ⛔ stop submit
+                  return;
                 }
 
-                // 🔴 Already existing validation
                 const invalidRow = boxNo.find((row) => {
                   const qtyHeld = Number(row.qtyHeld || 0);
                   const withdraw = Number(row.withdraw || 0);
@@ -2076,8 +2404,50 @@ const fetchdata = (searchValue = "", page = 1) => {
                   return;
                 }
 
-                // SUCCESS
-                setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+                if (selectedIssue === "permanent") {
+                  submitPermanentIssue();
+                } else if (selectedIssue === "temporary") {
+                  const payload = {
+                    a: selectedRow.id ? "spare" : "tool",
+                    spare_id: selectedRow.id || null,
+                    qty_withdrawn:
+                      selectedRow.withdraw_type === "single"
+                        ? 1
+                        : Number(selectedRow.new_val),
+                    service_no: selectedPerson.tempPerson.serviceNumber || "",
+                    issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
+
+                    issue_date: getISTTimestamp(date),
+                    loan_duration: Number(selectedRow.loan_duration),
+
+                    return_date: null,
+                    qty_received: null,
+
+                    box_no: boxNo,
+                  };
+                  submitTemporaryIssue(payload);
+                } else if (selectedIssue === "ty") {
+                  const payload = {
+                    a: selectedRow.id ? "spare" : "tool",
+                    spare_id: selectedRow.id || null,
+                    qty_withdrawn:
+                      selectedRow.withdraw_type === "single"
+                        ? 1
+                        : Number(selectedRow.new_val),
+                    service_no: selectedPerson.loanPerson.serviceNumber || "",
+                    concurred_by:
+                      selectedRow.concurred_by_text || selectedRow.concurred_by,
+
+                    issue_date: getISTTimestamp(date),
+                    loan_duration: Number(selectedRow.loan_duration),
+
+                    return_date: null,
+                    qty_received: null,
+
+                    box_no: boxNo,
+                  };
+                  submitTyLoan(payload);
+                }
               }}
             >
               Submit
@@ -2089,16 +2459,20 @@ const fetchdata = (searchValue = "", page = 1) => {
         open={obsDialog.open}
         onOpenChange={(open) => setObsDialog((prev) => ({ ...prev, open }))}
       >
-        <DialogContent className="!max-w-none w-[45vw] max-w-[950px]">
+        <DialogContent className="!max-w-none w-[48vw] max-w-[950px]">
           <DialogTitle>Confirm OBS Authorised Change</DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
             <div>
-              <Label>Existing Authorised Qty</Label>
+              <Label>
+                Existing Authorised Qty<span className="text-red-500">*</span>
+              </Label>
               <Input value={originalObsAuthorised} disabled />
             </div>
 
             <div>
-              <Label>Action</Label>
+              <Label>
+                Action<span className="text-red-500">*</span>
+              </Label>
               <select
                 className="w-full border rounded h-9 px-2"
                 value={obsDialog.action}
@@ -2115,7 +2489,9 @@ const fetchdata = (searchValue = "", page = 1) => {
             </div>
 
             <div>
-              <Label>Qty (Inc/ Dec)</Label>
+              <Label>
+                Qty (Inc/ Dec)<span className="text-red-500">*</span>
+              </Label>
               <Input
                 required
                 type="number"
@@ -2130,7 +2506,9 @@ const fetchdata = (searchValue = "", page = 1) => {
             </div>
 
             <div>
-              <Label>Final Expected Qty</Label>
+              <Label>
+                Final Expected Qty<span className="text-red-500">*</span>
+              </Label>
               <Input
                 disabled
                 value={
@@ -2147,7 +2525,9 @@ const fetchdata = (searchValue = "", page = 1) => {
           </div>
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
-              <p className="font-medium text-sm mb-2">Quote Authority *</p>
+              <p className="font-medium text-sm mb-2">
+                Quote Authority<span className="text-red-500"> *</span>
+              </p>
 
               <div>
                 <Label className="pb-2">Letter / Fax / Signal Details </Label>
@@ -2165,7 +2545,10 @@ const fetchdata = (searchValue = "", page = 1) => {
               </div>
 
               <div className="mt-4">
-                <Label>Confirm Demand Generated</Label>
+                <Label>
+                  Confirm Demand Generated
+                  <span className="text-red-500">*</span>
+                </Label>
                 <div className="flex gap-6 mt-1">
                   <label className="flex items-center gap-2">
                     <input
@@ -2194,11 +2577,11 @@ const fetchdata = (searchValue = "", page = 1) => {
                           ...prev,
                           demandGenerated: "no",
                           internalDemandNo: "",
-                          internalDemandDate: "",
+                          internalDemandDate: null,
                           requisitionNo: "",
-                          requisitionDate: "",
+                          requisitionDate: null,
                           moDemandNo: "",
-                          moDemandDate: "",
+                          moDemandDate: null,
                         }))
                       }
                     />
@@ -2210,7 +2593,10 @@ const fetchdata = (searchValue = "", page = 1) => {
               {obsDialog.demandGenerated === "yes" && (
                 <div className="grid grid-cols-2 gap-3 mt-6">
                   <div>
-                    <Label className="pb-3">Internal Demand No.*</Label>
+                    <Label className="pb-3">
+                      Internal Demand No.
+                      <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       required
                       placeholder="Enter Demand No."
@@ -2225,7 +2611,7 @@ const fetchdata = (searchValue = "", page = 1) => {
                   </div>
 
                   <FormattedDatePicker
-                    label="Date*"
+                    label="Date *"
                     value={obsDialog.internalDemandDate}
                     onChange={(val) =>
                       setObsDialog((prev) => ({
@@ -2365,11 +2751,38 @@ const fetchdata = (searchValue = "", page = 1) => {
                     : Number(originalObsAuthorised) -
                       Number(obsDialog.quantity);
 
+                //payload
+                const payload = {
+                  spare_id: selectedRow.id,
+
+                  obs_authorised: finalValue,
+                  obs_increase_qty: obsDialog.quantity,
+                  internal_demand_no:
+                    obsDialog.demandGenerated === "yes"
+                      ? obsDialog.internalDemandNo?.trim()
+                      : null,
+                  internal_demand_date:
+                    obsDialog.demandGenerated === "yes"
+                      ? getISTTimestamp(obsDialog.internalDemandDate)
+                      : null,
+                  requisition_no: obsDialog.requisitionNo?.trim() || null,
+                  requisition_date: obsDialog.requisitionDate
+                    ? getISTTimestamp(obsDialog.requisitionDate)
+                    : null,
+                  mo_demand_no: obsDialog.moDemandNo?.trim() || null,
+                  mo_demand_date: obsDialog.moDemandDate
+                    ? getISTTimestamp(obsDialog.moDemandDate)
+                    : null,
+                };
+
+                apiService.post("/specialDemand/special", payload);
+
+                //new-logic
                 setSelectedRow((prev) => ({
                   ...prev,
-                  obs_authorised: finalValue.toString(),
+                  ...payload,
+                  status: "demanded",
                 }));
-
                 setObsDialog((prev) => ({ ...prev, open: false }));
 
                 toaster("success", "Quantity updated successfully");
@@ -2380,64 +2793,42 @@ const fetchdata = (searchValue = "", page = 1) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={isOpen.deleteSpare}
-        onOpenChange={(set) =>
-          setIsOpen((prev) => ({ ...prev, deleteSpare: set }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Are you sure you want to delete this spare?</DialogTitle>
+      <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
+        <DialogContent
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          showCloseButton={false}
+        >
+          <DialogTitle>Confirmation</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. Please confirm if you want to proceed
-            with the deletion of the spare:{" "}
-            <strong>{selectedRow.description}</strong>.
+            Do you want to save it for later?
           </DialogDescription>
-          <DialogFooter>
+          <div className="flex gap-3 justify-end items-center">
             <Button
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, deleteSpare: false }))
-              }
-              variant="outline"
               className="cursor-pointer"
+              variant="outline"
+              onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleDelete}
-              className="text-white bg-red-500 hover:bg-red-600 cursor-pointer"
+            <SpinnerButton
+              className="cursor-pointer"
+              disabled={loading}
+              loading={loading}
+              loadingText="Adding..."
+              onClick={async () => {
+                setLoading(true);
+                await addToDropdown(dropdownType, newValue);
+                setLoading(false);
+                setOpen(false);
+              }}
             >
-              Delete Spare
-            </Button>
-          </DialogFooter>
+              Add
+            </SpinnerButton>
+          </div>
         </DialogContent>
       </Dialog>
-      <OEMFirm
-        open={isOpenOem}
-        onOpenChange={setIsOpenOem}
-        value={newVendor}
-        setValue={setNewVendor}
-        onSubmit={async () => {
-          const res = await apiService.post("/oems", newVendor);
-          setOemList((prev) => [...prev, res.data]);
-          setSelectedOem(res.data._id);
-          setInputs((prev) => ({ ...prev, oem: res.data.vendor }));
-          setIsOpenOem(false);
-        }}
-      />
-      <SupplierFirm
-        open={isOpenSupplier}
-        onOpenChange={setIsOpenSupplier}
-        value={newSupplier}
-        setValue={setNewSupplier}
-        onSubmit={async () => {
-          const res = await apiService.post("/suppliers", newSupplier);
-          setSupplierList((prev) => [...prev, res.data]);
-          setSelectedSupplier(res.data._id);
-          setInputs((prev) => ({ ...prev, supplier: res.data.supplier }));
-          setIsOpenSupplier(false);
-        }}
-      />
     </div>
   );
 };
