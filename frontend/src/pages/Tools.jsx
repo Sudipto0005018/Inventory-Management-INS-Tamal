@@ -820,6 +820,25 @@ const Tools = ({ type = "" }) => {
       toaster("error", "Server error");
     }
   };
+
+  const submitTyLoan = async (payload) => {
+    try {
+      const res = await apiService.post("/tyLoan/ty", payload);
+      if (res.success) {
+        toaster("success", "Ty Loan created successfully");
+        console.log(boxNo);
+
+        setBoxNo([{ withdraw: "" }]);
+        await fetchdata();
+      }
+
+      setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
+    } catch (err) {
+      console.error(err);
+      toaster("error", "Server error");
+    }
+  };
+
   const submitPermanentIssue = async () => {
     if (!selectedPerson?.person?.serviceNumber) {
       toaster("error", "Service No is required");
@@ -2013,13 +2032,32 @@ const Tools = ({ type = "" }) => {
         <DialogContent
           unbounded
           className="w-[65vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
+          onCloseAutoFocus={() => {
+            setSelectedPerson((prev) => ({
+              ...prev,
+              loanPerson: null,
+              person: null,
+              tempPerson: null,
+            }));
+          }}
         >
           <DialogTitle>Manual Withdrawal</DialogTitle>
 
           <div>
             <RadioGroup
               value={selectedIssue}
-              onValueChange={setSelectedIssue}
+              onValueChange={(e) => {
+                setSelectedIssue(e);
+                console.log(boxNo, "prev");
+
+                const temp = JSON.parse(JSON.stringify(boxNo));
+                for (let i = 0; i < temp.length; i++) {
+                  delete temp[i].withdraw;
+                }
+                console.log(temp, "current");
+
+                setBoxNo(temp);
+              }}
               className="flex gap-4"
             >
               <div className="flex items-center gap-3">
@@ -2757,29 +2795,49 @@ const Tools = ({ type = "" }) => {
                   return;
                 }
 
-                const payload = {
-                  a: selectedRow.id ? "tool" : "spare",
-                  tool_id: selectedRow.id || null,
-                  qty_withdrawn:
-                    selectedRow.withdraw_type === "single"
-                      ? 1
-                      : Number(selectedRow.new_val),
-                  service_no: selectedPerson.tempPerson.serviceNumber || "",
-                  issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
-
-                  issue_date: getISTTimestamp(date),
-                  loan_duration: Number(selectedRow.loan_duration),
-
-                  return_date: null,
-                  qty_received: null,
-
-                  box_no: boxNo,
-                };
-
                 if (selectedIssue === "permanent") {
                   submitPermanentIssue();
                 } else if (selectedIssue === "temporary") {
+                  const payload = {
+                    a: selectedRow.id ? "tool" : "spare",
+                    tool_id: selectedRow.id || null,
+                    qty_withdrawn:
+                      selectedRow.withdraw_type === "single"
+                        ? 1
+                        : Number(selectedRow.new_val),
+                    service_no: selectedPerson.tempPerson.serviceNumber || "",
+                    issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
+
+                    issue_date: getISTTimestamp(date),
+                    loan_duration: Number(selectedRow.loan_duration),
+
+                    return_date: null,
+                    qty_received: null,
+
+                    box_no: boxNo,
+                  };
                   submitTemporaryIssue(payload);
+                } else if (selectedIssue === "ty") {
+                  const payload = {
+                    a: selectedRow.id ? "tool" : "spare",
+                    tool_id: selectedRow.id || null,
+                    qty_withdrawn:
+                      selectedRow.withdraw_type === "single"
+                        ? 1
+                        : Number(selectedRow.new_val),
+                    service_no: selectedPerson.loanPerson.serviceNumber || "",
+                    concurred_by:
+                      selectedRow.concurred_by_text || selectedRow.concurred_by,
+
+                    issue_date: getISTTimestamp(date),
+                    loan_duration: Number(selectedRow.loan_duration),
+
+                    return_date: null,
+                    qty_received: null,
+
+                    box_no: boxNo,
+                  };
+                  submitTyLoan(payload);
                 }
               }}
             >

@@ -273,7 +273,8 @@ const Router = () => {
           path="/temp-loan/pending"
           element={
             <ProtectedRoute>
-              <PendingTempLoan />
+              {/* <PendingTempLoan /> */}
+              <CompletedTempLoan />
             </ProtectedRoute>
           }
         />

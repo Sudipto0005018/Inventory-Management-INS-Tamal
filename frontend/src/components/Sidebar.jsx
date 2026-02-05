@@ -1,16 +1,10 @@
 import { useState, useContext } from "react";
 import { NavLink } from "react-router";
 import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
-import { FaMobileAlt, FaRegClipboard, FaTools } from "react-icons/fa";
+import { FaRegClipboard, FaTools } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
 
-import {
-  FaGears,
-  FaMagnifyingGlass,
-  FaPeopleRoof,
-  FaRegClock,
-} from "react-icons/fa6";
-import { HiOutlineHome } from "react-icons/hi2";
+import { FaGears, FaPeopleRoof, FaRegClock } from "react-icons/fa6";
 import { BsCartPlus } from "react-icons/bs";
 import { LuNotebookPen } from "react-icons/lu";
 import { User } from "lucide-react";
@@ -20,11 +14,7 @@ import { IoDocumentSharp } from "react-icons/io5";
 import logo1 from "../assets/logo1.png";
 
 import { cn } from "@/lib/utils";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Context } from "../utils/Context";
 
 const menuItems = [
@@ -33,23 +23,19 @@ const menuItems = [
     name: "Spares",
     path: "/spares",
     icon: <FaGears />,
-    submenu: [
-      { name: "Critical Spares", path: "/spares/critical" },
-    ],
+    submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
   },
   {
     name: "Tools & Accessories",
     path: "/tools",
     icon: <FaTools />,
-    submenu: [
-      { name: "Critical / Special Tools", path: "/tools/critical" },
-    ],
+    submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
   },
   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
   // { name: "Handheld Details", path: "/handheld", icon: <FaMobileAlt /> },
   {
     name: "Permanent Issue",
-    path: "/permanent",
+    path: "/permanent/pending-survey",
     icon: <FaRegClock />,
     submenu: [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
@@ -62,18 +48,15 @@ const menuItems = [
   },
   {
     name: "Temporary Issue",
-    path: "/temporary",
+    path: "/temporary/temporary-issue",
     icon: <FaRegClock />,
     submenu: [
       { name: "Temporary Issue Local", path: "/temporary/temporary-issue" },
-      // { name: "Pending for Demand", path: "/permanent/pending-demand" },
-      // { name: "Pending for Issue", path: "/permanent/pending-issue" },
-      // { name: "Completed", path: "/permanent/complete" },
     ],
   },
   {
     name: "Temporary Loan",
-    path: "/temp-loan",
+    path: "/temp-loan/pending",
     icon: <BsCartPlus />,
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
@@ -126,7 +109,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       className={cn(
         "fixed top-0 left-0 h-full w-64 bg-[#0a1025] text-white z-50",
         "transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        isOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
       {/* Header */}
@@ -156,18 +139,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   setOpenMenu(openMenu === item.name ? null : item.name)
                 }
               >
-                {/* <CollapsibleTrigger className="flex w-full items-center justify-between p-3 hover:bg-primary/40 rounded-md">
-                  <div className="flex gap-3 items-center">
-                    {item.icon}
-                    <span className="text-sm">{item.name}</span>
-                  </div>
-                  {openMenu === item.name ? (
-                    <FiChevronDown />
-                  ) : (
-                    <FiChevronRight />
-                  )}
-                </CollapsibleTrigger> */}
-
                 <div className="flex items-center justify-between p-3 rounded-md hover:bg-primary/40">
                   {/* Parent navigation */}
                   <NavLink
@@ -176,7 +147,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     className={({ isActive }) =>
                       cn(
                         "flex gap-3 items-center text-sm w-full",
-                        isActive && "text-primary"
+                        isActive && "text-primary",
                       )
                     }
                   >
@@ -224,7 +195,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-primary/40",
-                  isActive && "bg-primary"
+                  isActive && "bg-primary",
                 )
               }
             >

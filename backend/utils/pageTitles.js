@@ -6,7 +6,7 @@ export const pageTitles = {
   "/tools": "Tools & Accessories",
   "/tools/critical": "Critical Tools",
   "/documents": "Documents Corner",
-   "/temporary/temporary-issue" : "Temporary Issue Local",
+  "/temporary/temporary-issue": "Temporary Issue Local",
   "/search": "Search",
   "/handheld": "Handheld Details",
 
@@ -19,8 +19,8 @@ export const pageTitles = {
 
   "/temporary": "Temporary Issue",
 
-  "/temp-loan/pending": "Temporary Loan - Pending",
-  "/temp-loan/complete": "Temporary Loan - Completed",
+  "/temp-loan/pending": "TY Loan - Pending",
+  "/temp-loan/complete": "TY Loan - Completed",
 
   "/departments": "Departments",
   "/users": "Users",
