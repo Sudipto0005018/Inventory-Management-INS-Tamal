@@ -168,45 +168,82 @@ const PendingTempLoan = () => {
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
 
-    const t = fetchedData.items.map((row) => ({
-      ...row,
+    const t = fetchedData.items.map((row) => {
+      const issuedQty = Number(row.qty_withdrawn || 0);
 
-      concurred_by: row.concurred_by?.toUpperCase() || "-",
+      return {
+        ...row,
 
-      loan_duration: row.loan_duration ?? "-",
+        quantity: issuedQty,
 
-      loan_status:
-        Number(row.qty_received || 0) >= Number(row.qty_withdrawn || 0)
-          ? "Completed"
-          : "Pending",
+        concurred_by: row.concurred_by?.toUpperCase() || "-",
 
-      quantity: row.qty_withdrawn ?? 0,
+        loan_duration: row.loan_duration ?? "-",
 
-      service_no: row.service_no || "-",
+        service_no: row.service_no || "-",
 
-      issue_date_formated: row.issue_date ? getDate(row.issue_date) : "-",
+        issue_date_formated: row.issue_date
+          ? getFormatedDate(row.issue_date)
+          : "-",
 
-      received_quantity: row.qty_received ?? 0,
+        submission_date: row.issue_date
+          ? getFormatedDate(
+              addDate(row.issue_date, parseInt(row.loan_duration || 0)),
+            )
+          : "-",
 
-      status:
-        row.status?.toLowerCase() == "pending" ? (
-          <Chip text="Pending" varient="info" />
-        ) : (
-          <Chip text="Completed" varient="success" />
+        received_quantity: row.qty_received ?? 0,
+
+        /** ✅ STATUS FROM BACKEND */
+        status: (() => {
+          const s = row.loan_status?.toLowerCase();
+
+          if (s === "pending") {
+            return <Chip text="Pending" varient="info" />;
+          }
+
+          if (s === "partial") {
+            return <Chip text="Partial" varient="warning" />;
+          }
+
+          if (s === "complete") {
+            return <Chip text="Completed" varient="success" />;
+          }
+
+          return <Chip text="Unknown" varient="default" />;
+        })(),
+
+        receive: (
+          <Button
+            size="icon"
+            className="bg-white text-black shadow-md border hover:bg-gray-100"
+            onClick={() => {
+              let parsedBoxNo = [];
+
+              try {
+                if (Array.isArray(row.box_no)) {
+                  parsedBoxNo = row.box_no;
+                } else if (typeof row.box_no === "string") {
+                  parsedBoxNo = JSON.parse(row.box_no);
+                }
+              } catch (e) {
+                console.error("Invalid box_no JSON", e);
+              }
+
+              setSelectedRow({
+                ...row,
+                quantity: issuedQty,
+              });
+
+              setBoxNo(parsedBoxNo);
+              setIsOpen((prev) => ({ ...prev, receive: true }));
+            }}
+          >
+            <FaChevronRight />
+          </Button>
         ),
-      receive: (
-        <Button
-          size="icon"
-          className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, receive: true }));
-          }}
-        >
-          <FaChevronRight />
-        </Button>
-      ),
-    }));
+      };
+    });
 
     setTableData(t);
   }, [fetchedData]);

@@ -11,7 +11,7 @@ async function getTemporaryIssueList(req, res) {
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
-      `SELECT COUNT(*) AS count FROM temporary_issue_local WHERE status = 'pending'`,
+      `SELECT COUNT(*) AS count FROM temporary_issue_local  WHERE status IN ('pending', 'partial')`,
     );
 
     const total = countResult[0].count;
@@ -39,12 +39,17 @@ async function getTemporaryIssueList(req, res) {
         til.tool_id,
 
         til.qty_withdrawn,
+        til.qty_received,
+
+        /* 🔹 Balance calculation */
+        (til.qty_withdrawn - IFNULL(til.qty_received,0)) AS balance_qty,
+
         til.service_no,
         til.issue_to,
         til.issue_date,
         til.loan_duration,
         til.return_date,
-        til.qty_received,
+       
 
         til.created_by,
         u1.name AS created_by_name,
@@ -54,6 +59,7 @@ async function getTemporaryIssueList(req, res) {
         u2.name AS approved_by_name,
         til.approved_at,
         til.box_no,
+        til.status AS loan_status,
 
         CASE
           WHEN til.spare_id IS NOT NULL THEN 'spare'
@@ -90,7 +96,8 @@ async function getTemporaryIssueList(req, res) {
       LEFT JOIN tools t ON t.id = til.tool_id
       LEFT JOIN users u1 ON u1.id = til.created_by
       LEFT JOIN users u2 ON u2.id = til.approved_by
-      WHERE til.status = 'pending'
+      WHERE til.status IN ('pending','partial')
+      
       ORDER BY til.created_at DESC
       LIMIT ? OFFSET ?
     `;
@@ -377,7 +384,7 @@ async function updateTemporaryIssue(req, res) {
   try {
     /** 1. Fetch issue */
     const [[issue]] = await pool.query(
-      `SELECT spare_id, tool_id, transaction_id FROM temporary_issue_local WHERE id = ?`,
+      `SELECT spare_id, tool_id, transaction_id, qty_withdrawn, qty_received FROM temporary_issue_local WHERE id = ?`,
       [id],
     );
 
@@ -391,6 +398,32 @@ async function updateTemporaryIssue(req, res) {
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = issue.spare_id || issue.tool_id;
+
+    /** 🔹 Calculate cumulative return */
+    const prevReturned = parseInt(issue.qty_received || 0);
+    const currentReturn = parseInt(qty_received || 0);
+    const totalReturned = prevReturned + currentReturn;
+
+    const withdrawnQty = parseInt(issue.qty_withdrawn);
+
+    /** Prevent over-return */
+    if (totalReturned > withdrawnQty) {
+      return res.status(400).json({
+        success: false,
+        message: "Returned quantity cannot be greater than withdrawn quantity",
+      });
+    }
+
+    /** Decide status */
+    let status = "pending";
+
+    if (totalReturned === 0) {
+      status = "pending";
+    } else if (totalReturned < withdrawnQty) {
+      status = "partial";
+    } else {
+      status = "complete";
+    }
 
     /** 2. Fetch inventory */
     const [[inventory]] = await pool.query(
@@ -447,14 +480,15 @@ async function updateTemporaryIssue(req, res) {
       `
       UPDATE temporary_issue_local
       SET qty_received = ?, return_date = ?, approved_by = ?,
-          box_no = ?, status = 'complete', approved_at = NOW()
+          box_no = ?, status = ?, approved_at = NOW()
       WHERE id = ?
       `,
       [
-        qty_received,
+        totalReturned, // cumulative qty
         return_date,
         approve ? userId : null,
         JSON.stringify(updatedBoxes),
+        status,
         id,
       ],
     );
@@ -485,7 +519,11 @@ async function updateTemporaryIssue(req, res) {
     res.json({
       success: true,
       transactionId: transaction_id,
-      message: "Item returned and inventory updated successfully",
+      status,
+      message:
+        status === "complete"
+          ? "Full return completed"
+          : "Partial return saved",
     });
   } catch (error) {
     console.error("UPDATE TEMP ISSUE ERROR =>", error);
