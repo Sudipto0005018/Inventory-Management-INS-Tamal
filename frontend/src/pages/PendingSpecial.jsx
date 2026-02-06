@@ -77,7 +77,7 @@ const PendingSpecial = () => {
   const [isLoading, setIsLoading] = useState({
     table: false,
     demand: false,
-    nac: false,
+    requisition: false,
     mo: false,
     inventory: false,
     issue: false,
@@ -86,7 +86,7 @@ const PendingSpecial = () => {
     demand: false,
     issue: false,
     demand_calender: false,
-    nac_calender: false,
+    requisition_calender: false,
     gate_pass_calender: false,
     inventory: false,
   });
@@ -504,8 +504,8 @@ const PendingSpecial = () => {
                   Cancel
                 </Button>
                 <SpinnerButton
-                  loading={isLoading.nac}
-                  disabled={isLoading.nac}
+                  loading={isLoading.requisition}
+                  disabled={isLoading.requisition}
                   loadingText="Submitting..."
                   onClick={handleSubmitSpecialDemand}
                 >

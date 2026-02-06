@@ -42,8 +42,8 @@ async function createSpecialDemand(req, res) {
           demand_no,
           demand_date,
           demand_quantity,
-          nac_no,
-          nac_date,
+          requisition_no,
+          requisition_date,
           mo_no,
           mo_date,
           created_by,
@@ -303,7 +303,7 @@ async function updateSpecialDemand(req, res) {
       const pendingIssueQuery = `
               INSERT INTO pending_issue (
                 spare_id, tool_id, demand_no, demand_date, demand_quantity,
-                nac_no, nac_date, mo_no, mo_date, created_by, created_at, status, transaction_id
+                requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
             `;
 
