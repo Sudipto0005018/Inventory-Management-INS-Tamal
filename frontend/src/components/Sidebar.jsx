@@ -42,6 +42,7 @@ const menuItems = [
       { name: "Pending for Demand", path: "/permanent/pending-demand" },
       { name: "Pending for Issue", path: "/permanent/pending-issue" },
       { name: "Pending for Stock Update", path: "/permanent/stock-update" },
+      { name: "Pending for Procurement", path: "/permanent/procurement" },
       { name: "Pending for Special Demand", path: "/permanent/special-demand" },
       { name: "Completed", path: "/permanent/complete" },
     ],

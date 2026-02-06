@@ -1117,12 +1117,6 @@ const DocumentsCorner = ({ type = "" }) => {
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Critical Spares</TableCell>
-                    <TableCell>
-                      {panelProduct.critical_spare ? "Yes" : "No"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
                     <TableCell>Local Terminology</TableCell>
                     <TableCell>
                       {panelProduct.local_terminology || "--"}
@@ -1192,12 +1186,24 @@ const DocumentsCorner = ({ type = "" }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
-                    Item Description<span className="text-red-500">*</span>
+                    Document Description<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
                     name="description"
                     value={inputs.description}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Folder No.<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    name="indian_pattern"
+                    value={inputs.indian_pattern}
                     onChange={handleChange}
                   />
                 </div>
@@ -1225,7 +1231,10 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
+              </div>
 
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     OBS Authorised<span className="text-red-500">*</span>
@@ -1237,10 +1246,6 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     OBS Held<span className="text-red-500">*</span>
@@ -1276,7 +1281,10 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
+              </div>
 
+              {/* Row 3 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     Item Code<span className="text-red-500">*</span>
@@ -1288,10 +1296,6 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* IN Part No */}
                 <div>
                   <Label className="ms-2 mb-1">
@@ -1331,58 +1335,12 @@ const DocumentsCorner = ({ type = "" }) => {
                     placeholder="Local Terminology"
                     onChange={(values) => {
                       updateDynamicInputs(values, "local_terminology");
-                      // console.log(JSON.stringify(values), values.join(","));
-                      // const joined = values.join(",");
-                      // const arr = joined.split(",");
-                      // console.log(joined, arr);
                     }}
                     editable={editableFields.local_terminology}
                     onEdit={() => enableEdit("local_terminology")}
                     onBlur={() => disableEdit("local_terminology")}
                   />
                 </div>
-
-                <div>
-                  <div>
-                    <Label className="ms-2 mb-1">
-                      Critical Spare<span className="text-red-500">*</span>
-                    </Label>
-
-                    <RadioGroup
-                      value={inputs.critical_spare}
-                      onValueChange={(value) =>
-                        setInputs((prev) => ({
-                          ...prev,
-                          critical_spare: value,
-                        }))
-                      }
-                      className="mt-2"
-                    >
-                      <div className="flex gap-6">
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="yes" id="critical_yes" />
-                          <Label
-                            htmlFor="critical_yes"
-                            className="cursor-pointer"
-                          >
-                            Yes
-                          </Label>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="no" id="critical_no" />
-                          <Label
-                            htmlFor="critical_no"
-                            className="cursor-pointer"
-                          >
-                            No
-                          </Label>
-                        </div>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-
                 <div>
                   <Label className="ms-2 mb-1">
                     Sub Component<span className="text-red-500">*</span>
@@ -1587,7 +1545,7 @@ const DocumentsCorner = ({ type = "" }) => {
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
                 <Label>
-                  Item Description<span className="text-red-500">*</span>
+                  Document Description<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
                   name="description"
@@ -1599,6 +1557,19 @@ const DocumentsCorner = ({ type = "" }) => {
                 />
               </div>
 
+              <div>
+                <Label>
+                  Folder No.<span className="text-red-500">*</span>
+                </Label>
+                <InputWithPencil
+                  name="indian_pattern"
+                  value={selectedRow.indian_pattern}
+                  onChange={handleEditChange}
+                  editable={editableFields.indian_pattern}
+                  onEdit={() => enableEdit("indian_pattern")}
+                  onBlur={() => disableEdit("indian_pattern")}
+                />
+              </div>
               <div>
                 <Label>
                   Equipment / System<span className="text-red-500">*</span>
@@ -1788,61 +1759,6 @@ const DocumentsCorner = ({ type = "" }) => {
                   </div>
                 )}
               </div>
-
-              {/* critical-special-price_unit-sub_component */}
-              {/* <div>
-                <Label className="ms-2 mb-1">Critical Spare</Label>
-                <RadioGroup defaultValue="no">
-                  <div className="flex gap-6 mt-2">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="yes" />
-                      <Label htmlFor="yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="no" />
-                      <Label htmlFor="no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div> */}
-
-              <div>
-                <Label className="ms-2 mb-1">
-                  Critical Spare<span className="text-red-500">*</span>
-                </Label>
-
-                <RadioGroup
-                  value={selectedRow.critical_spare == 1 ? "yes" : "no"}
-                  onValueChange={(value) =>
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      critical_spare: value == "yes" ? 1 : 0,
-                    }))
-                  }
-                  className="mt-2"
-                >
-                  <div className="flex gap-6">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="critical_yes" />
-                      <Label htmlFor="critical_yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="critical_no" />
-                      <Label htmlFor="critical_no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-
               <div>
                 <Label className="ms-2 mb-1">
                   Sub Component<span className="text-red-500">*</span>
