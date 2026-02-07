@@ -49,6 +49,7 @@ app.use("/api/v1/survey", require("./routes/survey.routes"));
 app.use("/api/v1/demand", require("./routes/demand.routes"));
 app.use("/api/v1/stock", require("./routes/stockUpdate.routes"));
 app.use("/api/v1/tyLoan", require("./routes/tyLoan.routes"));
+app.use("/api/v1/document", require("./routes/docCorner.routes"));
 
 app.listen(process.env.PORT || 7777, () => {
   console.log(

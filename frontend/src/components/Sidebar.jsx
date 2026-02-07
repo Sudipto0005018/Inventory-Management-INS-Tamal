@@ -98,7 +98,21 @@ const menuItems = [
       },
     ],
   },
-  { name: "Documents Corner", path: "/documents", icon: <IoDocumentSharp /> },
+  {
+    name: "Documents Corner",
+    path: "/documents",
+    icon: <IoDocumentSharp />,
+    submenu: [
+      {
+        name: "Documents",
+        path: "/documents",
+      },
+      {
+        name: "Documents Issue",
+        path: "/documents/issue",
+      },
+    ],
+  },
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {

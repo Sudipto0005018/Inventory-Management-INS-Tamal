@@ -30,6 +30,7 @@ import PendingProcurement from "../pages/PendingProcurement";
 import CompletedServays from "../pages/CompletedServays";
 import PendingSpecial from "../pages/PendingSpecial";
 import DocumentsCorner from "../pages/DocumentsCorner";
+import DocumentIssue from "../pages/DocumentsIssue";
 import TemporaryIssue from "../pages/TemporaryIssue";
 import PendingDemand from "../pages/PendingDemand";
 
@@ -125,6 +126,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <DocumentsCorner />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/documents/issue"
+          element={
+            <ProtectedRoute>
+              <DocumentIssue />
             </ProtectedRoute>
           }
         />

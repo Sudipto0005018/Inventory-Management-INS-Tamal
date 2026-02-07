@@ -6,6 +6,7 @@ export const pageTitles = {
   "/tools": "Tools & Accessories",
   "/tools/critical": "Critical Tools",
   "/documents": "Documents Corner",
+  "/documents/issue": "Documents for Issue",
   "/temporary/temporary-issue": "Temporary Issue Local",
   "/search": "Search",
   "/handheld": "Handheld Details",

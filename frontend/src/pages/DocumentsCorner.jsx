@@ -137,6 +137,7 @@ const DocumentsCorner = ({ type = "" }) => {
   const [inputs, setInputs] = useState({
     search: "",
     description: "",
+    folder_no: "",
     equipment_system: "",
     denos: "",
     obs_authorised: "",
@@ -144,6 +145,7 @@ const DocumentsCorner = ({ type = "" }) => {
     b_d_authorised: "",
     category: "",
     box_no: "",
+    item_distribution: "",
     substitute_name: [],
     local_terminology: [],
     item_code: "",
@@ -155,18 +157,16 @@ const DocumentsCorner = ({ type = "" }) => {
     remarks: "",
     oem: "",
     supplier: "",
-    critical_spare: "no",
+    nac_date: "",
   });
 
   const [isOpen, setIsOpen] = useState({
-    addSpare: false,
-    editSpare: false,
+    addDocument: false,
+    editDocument: false,
     deleteSpare: false,
     withdrawDialog: false,
   });
-  const [selectedRow, setSelectedRow] = useState({
-    critical_spare: "no",
-  });
+  const [selectedRow, setSelectedRow] = useState({});
   const [image, setImage] = useState({
     preview: null,
     file: null,
@@ -176,7 +176,6 @@ const DocumentsCorner = ({ type = "" }) => {
   const [panelProduct, setPanelProduct] = useState({
     description: "",
     imgUrl: "",
-    critical_spare: "no",
   });
   const [boxNo, setBoxNo] = useState([]);
   const [selectedIssue, setSelectedIssue] = useState("parmenent");
@@ -479,153 +478,101 @@ const DocumentsCorner = ({ type = "" }) => {
     }));
   };
 
-  const DUMMY_DOCUMENTS = [
-    {
-      id: 1,
-      description: "Hydraulic Pump Manual",
-      indian_pattern: "FOLDER-001",
-      equipment_system: "Hydraulic System",
-      obs_authorised: 5,
-      box_no: JSON.stringify([
-        { no: "BX-01", qn: 5, qtyHeld: 5, location: "RACK-A" },
-      ]),
-    },
-    {
-      id: 2,
-      description: "Electrical Wiring Diagram",
-      indian_pattern: "FOLDER-002",
-      equipment_system: "Electrical System",
-      obs_authorised: 3,
-      box_no: JSON.stringify([
-        { no: "BX-02", qn: 3, qtyHeld: 3, location: "RACK-B" },
-      ]),
-    },
-    {
-      id: 3,
-      description: "Engine Overhaul Instructions",
-      indian_pattern: "FOLDER-003",
-      equipment_system: "Engine System",
-      obs_authorised: 2,
-      box_no: JSON.stringify([
-        { no: "BX-03", qn: 2, qtyHeld: 2, location: "RACK-C" },
-      ]),
-    },
-  ];
-
-  const fetchdata = (searchValue = "", page = 1) => {
-    let filtered = DUMMY_DOCUMENTS;
-
-    if (searchValue) {
-      const s = searchValue.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.description.toLowerCase().includes(s) ||
-          item.indian_pattern.toLowerCase().includes(s) ||
-          item.equipment_system.toLowerCase().includes(s),
-      );
-    }
-
-    setFetchedData({
-      items: filtered,
-      totalItems: filtered.length,
-      totalPages: 1,
-      currentPage: 1,
-    });
-  };
-  // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
-  //   try {
-  //     const response = await apiService.get(
-  //       type ? "/spares/critical" : "/spares",
-  //       {
-  //         params: {
-  //           page,
-  //           search: searchValue,
-  //           limit: config.row_per_page,
-  //         },
-  //       },
-  //     );
-  //     setFetchedData(response.data);
-  //   } catch (error) {}
-  // };
-
-  const handleaddSpare = async () => {
+  const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
     try {
+      const response = await apiService.get("/document", {
+        params: {
+          page,
+          search: searchValue,
+          limit: config.row_per_page,
+        },
+      });
+      setFetchedData(response.data);
+    } catch (error) {}
+  };
+
+  const handleAddDocument = async () => {
+    try {
+      // Validation
       if (!inputs.description?.trim()) {
         toaster("error", "Description is required");
         return;
-      } else if (!inputs.equipment_system?.trim()) {
+      }
+
+      if (!inputs.equipment_system?.trim()) {
         toaster("error", "Equipment / System is required");
         return;
       }
-      const formData = new FormData();
-      if (image.file) {
-        formData.append("image", image.file);
-      }
-      formData.append("is_loose_spare", isLooseSpare);
-      formData.append("description", inputs.description || "");
-      formData.append("equipment_system", inputs.equipment_system || "");
-      formData.append("denos", inputs.denos || "");
-      formData.append("obs_authorised", inputs.obs_authorised || "");
-      formData.append("obs_held", inputs.obs_held || "");
-      formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", inputs.category || "");
-      formData.append("box_no", JSON.stringify(boxNo));
-      formData.append("storage_location", inputs.storage_location || "");
-      formData.append("item_code", inputs.item_code || "");
-      formData.append("price_unit", inputs.price_unit || "");
-      formData.append("sub_component", inputs.sub_component || "");
-      formData.append("indian_pattern", inputs.indian_pattern || "");
-      formData.append("remarks", inputs.remarks || "");
-      formData.append("oem", inputs.oem || "");
-      formData.append("substitute_name", inputs.substitute_name || "");
-      formData.append("local_terminology", inputs.local_terminology || "");
-      formData.append(
-        "critical_spare",
-        inputs.critical_spare == "yes" ? 1 : 0 || 0,
-      );
-      formData.append("supplier", inputs.supplier || "");
-      const response = await apiService.post("/spares", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      if (response.success) {
-        toaster("success", "Spare added successfully");
-        setIsOpen({ ...isOpen, addSpare: false });
+
+      const payload = {
+        description: inputs.description || "",
+        folder_no: inputs.folder_no || "", // NEW
+        equipment_system: inputs.equipment_system || "",
+        denos: inputs.denos || "",
+        obs_authorised: inputs.obs_authorised || "",
+        obs_authorised_new: inputs.obs_authorised || "", // if same
+        obs_held: inputs.obs_held || "",
+        b_d_authorised: inputs.b_d_authorised || "",
+        category: inputs.category || "",
+        box_no: JSON.stringify(boxNo || []),
+        item_distribution: inputs.item_distribution || "",
+        storage_location: inputs.storage_location || "",
+        item_code: inputs.item_code || "",
+        indian_pattern: inputs.indian_pattern || "",
+        remarks: inputs.remarks || "",
+        nac_date: inputs.nac_date || null,
+        uidoem: inputs.oem || "",
+        supplier: inputs.supplier || "",
+        substitute_name: inputs.substitute_name || "",
+        local_terminology: inputs.local_terminology || "",
+      };
+
+      const res = await apiService.post("/document", payload);
+
+      if (res.success) {
+        toaster("success", "Document added successfully");
+
+        // Close dialog
+        setIsOpen((prev) => ({ ...prev, addDocument: false }));
+
+        // Refresh table
         fetchdata();
+
+        // Reset form
         setInputs({
           description: "",
+          folder_no: "",
           equipment_system: "",
           denos: "",
           obs_authorised: "",
           obs_held: "",
           b_d_authorised: "",
           category: "",
-          box_no: "",
           storage_location: "",
           item_code: "",
-          price_unit: "",
-          sub_component: "",
           indian_pattern: "",
           remarks: "",
-          critical_spare: "",
+          nac_date: "",
           oem: "",
           supplier: "",
+          substitute_name: [],
+          local_terminology: [],
         });
-        setSelectedOem(null);
-        setSelectedAddSupplier(null);
+
         setBoxNo([]);
-        setImage({ file: null, preview: null });
-        setIsLooseSpare(false);
       } else {
-        toaster("error", response.message);
+        toaster("error", res.message || "Failed to add document");
       }
     } catch (error) {
-      const errMsg =
-        error.response?.data?.message || error.message || "Failed to add spare";
-      toaster("error", errMsg);
+      console.error(error);
+      toaster(
+        "error",
+        error.response?.data?.message || "Server error while adding document",
+      );
     }
   };
 
-  const handleEditSpare = async () => {
+  const handleEditDocument = async () => {
     try {
       let s = 0,
         s1 = 0;
@@ -756,21 +703,17 @@ const DocumentsCorner = ({ type = "" }) => {
       formData.append("oem", selectedRow.oem || "");
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
-      formData.append(
-        "critical_spare",
-        selectedRow.critical_spare == "yes" ? 1 : 0 || 0,
-      );
       formData.append("supplier", selectedRow.supplier || "");
       const response = await apiService.post(
-        "/spares/update/" + selectedRow.id,
+        "/document/update/" + selectedRow.id,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
       if (response.success) {
-        toaster("success", "Spare updated successfully");
-        setIsOpen({ ...isOpen, editSpare: false });
+        toaster("success", "Document updated successfully");
+        setIsOpen({ ...isOpen, editDocument: false });
         fetchdata();
       } else {
         toaster("error", response.message);
@@ -797,8 +740,6 @@ const DocumentsCorner = ({ type = "" }) => {
     setActualSearch("");
 
     setSelectedRowIndex(null);
-
-    setPanelProduct({ critical_spare: "no" });
 
     fetchdata("", 1);
   };
@@ -837,51 +778,6 @@ const DocumentsCorner = ({ type = "" }) => {
       setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
     } catch (err) {
       console.error(err);
-      toaster("error", "Server error");
-    }
-  };
-
-  const submitTyLoan = async (payload) => {
-    try {
-      const res = await apiService.post("/tyLoan/ty", payload);
-      if (res.success) {
-        toaster("success", "Ty Loan created successfully");
-        console.log(boxNo);
-
-        setBoxNo([{ withdraw: "" }]);
-        await fetchdata();
-      }
-
-      setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
-    } catch (err) {
-      console.error(err);
-      toaster("error", "Server error");
-    }
-  };
-
-  const submitPermanentIssue = async () => {
-    if (!selectedPerson?.person?.serviceNumber) {
-      toaster("error", "Service No is required");
-      return;
-    }
-    try {
-      const res = await apiService.post("/survey/create", {
-        box_no: boxNo,
-        spare_id: selectedRow.id,
-        withdrawl_qty: selectedRow.new_val,
-        withdrawl_date: formatDate(),
-        service_no: selectedPerson.person?.serviceNumber,
-        name: selectedPerson.person?.name,
-        issue_to: selectedRow.issue_to_text,
-      });
-      if (res.success) {
-        toaster("success", "Survey created successfully");
-        setBoxNo([{ withdraw: "" }]);
-        await fetchdata();
-        setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
-      }
-    } catch (error) {
-      console.error(error);
       toaster("error", "Server error");
     }
   };
@@ -959,7 +855,7 @@ const DocumentsCorner = ({ type = "" }) => {
             setSelectedRow(row);
             setSavedRow(JSON.parse(JSON.stringify(row)));
             setSavedHeld(Number(row.obs_held || 0));
-            setIsOpen((prev) => ({ ...prev, editSpare: true }));
+            setIsOpen((prev) => ({ ...prev, editDocument: true }));
           }}
           onWithdraw={(row) => {
             if (row.image) {
@@ -977,19 +873,6 @@ const DocumentsCorner = ({ type = "" }) => {
           }}
         />
       ),
-
-      // delete: (
-      //     <Button
-      //         variant="ghost"
-      //         className="text-red-600 hover:text-red-700 hover:bg-red-100"
-      //         onClick={() => {
-      //             setSelectedRow(row);
-      //             setIsOpen({ ...isOpen, deleteSpare: true });
-      //         }}
-      //     >
-      //         <HiTrash />
-      //     </Button>
-      // ),
     }));
 
     console.log("Transformed table data:", t);
@@ -1056,7 +939,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
           <Button
             onClick={() => {
-              setIsOpen({ ...isOpen, addSpare: true });
+              setIsOpen({ ...isOpen, addDocument: true });
               setBoxNo([{}]);
             }}
             className="cursor-pointer hover:bg-primary/85"
@@ -1147,9 +1030,9 @@ const DocumentsCorner = ({ type = "" }) => {
         )}
       </div>
       <Dialog
-        open={isOpen.addSpare}
+        open={isOpen.addDocument}
         onOpenChange={(set) =>
-          setIsOpen((prev) => ({ ...prev, addSpare: set }))
+          setIsOpen((prev) => ({ ...prev, addDocument: set }))
         }
       >
         <DialogContent
@@ -1173,7 +1056,9 @@ const DocumentsCorner = ({ type = "" }) => {
         >
           <button
             type="button"
-            onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
+            onClick={() =>
+              setIsOpen((prev) => ({ ...prev, addDocument: false }))
+            }
             className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
@@ -1369,7 +1254,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
             <div className="flex flex-col mt-5">
               <div className="mt-4">
-                <Label className="ms-2 mb-1">Loose Spare</Label>
+                <Label className="ms-2 mb-1">Loose Document</Label>
                 <RadioGroup
                   value={isLooseSpare ? "yes" : "no"}
                   onValueChange={(val) => setIsLooseSpare(val === "yes")}
@@ -1504,7 +1389,7 @@ const DocumentsCorner = ({ type = "" }) => {
           <DialogFooter>
             <Button
               onClick={() =>
-                setIsOpen((prev) => ({ ...prev, addSpare: false }))
+                setIsOpen((prev) => ({ ...prev, addDocument: false }))
               }
               variant="outline"
               className="cursor-pointer"
@@ -1513,7 +1398,7 @@ const DocumentsCorner = ({ type = "" }) => {
             </Button>
             <Button
               className="text-white hover:bg-primary/85 cursor-pointer"
-              onClick={handleaddSpare}
+              onClick={handleAddDocument}
             >
               Submit
             </Button>
@@ -1521,9 +1406,9 @@ const DocumentsCorner = ({ type = "" }) => {
         </DialogContent>
       </Dialog>
       <Dialog
-        open={isOpen.editSpare}
+        open={isOpen.editDocument}
         onOpenChange={(set) =>
-          setIsOpen((prev) => ({ ...prev, editSpare: set }))
+          setIsOpen((prev) => ({ ...prev, editDocument: set }))
         }
       >
         <DialogContent
@@ -1534,7 +1419,9 @@ const DocumentsCorner = ({ type = "" }) => {
         >
           <button
             type="button"
-            onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
+            onClick={() =>
+              setIsOpen((prev) => ({ ...prev, editDocument: false }))
+            }
             className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
@@ -1792,7 +1679,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
             <div className="flex flex-col mt-3">
               <div className="mt-4">
-                <Label className="ms-2 mb-1">Loose Spare</Label>
+                <Label className="ms-2 mb-1">Loose Document</Label>
                 <RadioGroup
                   value={isLooseSpare ? "yes" : "no"}
                   onValueChange={(val) => setIsLooseSpare(val === "yes")}
@@ -1943,7 +1830,7 @@ const DocumentsCorner = ({ type = "" }) => {
           <DialogFooter>
             <Button
               onClick={() =>
-                setIsOpen((prev) => ({ ...prev, editSpare: false }))
+                setIsOpen((prev) => ({ ...prev, editDocument: false }))
               }
               variant="outline"
               className="cursor-pointer"
@@ -1952,7 +1839,7 @@ const DocumentsCorner = ({ type = "" }) => {
             </Button>
             <Button
               className="text-white hover:bg-primary/85 cursor-pointer"
-              onClick={handleEditSpare}
+              onClick={handleEditDocument}
             >
               Submit
             </Button>
@@ -2320,9 +2207,7 @@ const DocumentsCorner = ({ type = "" }) => {
                   return;
                 }
 
-                if (selectedIssue === "permanent") {
-                  submitPermanentIssue();
-                } else if (selectedIssue === "temporary") {
+                if (selectedIssue === "temporary") {
                   const payload = {
                     a: selectedRow.id ? "spare" : "tool",
                     spare_id: selectedRow.id || null,
@@ -2342,27 +2227,6 @@ const DocumentsCorner = ({ type = "" }) => {
                     box_no: boxNo,
                   };
                   submitTemporaryIssue(payload);
-                } else if (selectedIssue === "ty") {
-                  const payload = {
-                    a: selectedRow.id ? "spare" : "tool",
-                    spare_id: selectedRow.id || null,
-                    qty_withdrawn:
-                      selectedRow.withdraw_type === "single"
-                        ? 1
-                        : Number(selectedRow.new_val),
-                    service_no: selectedPerson.loanPerson.serviceNumber || "",
-                    concurred_by:
-                      selectedRow.concurred_by_text || selectedRow.concurred_by,
-
-                    issue_date: getISTTimestamp(date),
-                    loan_duration: Number(selectedRow.loan_duration),
-
-                    return_date: null,
-                    qty_received: null,
-
-                    box_no: boxNo,
-                  };
-                  submitTyLoan(payload);
                 }
               }}
             >
