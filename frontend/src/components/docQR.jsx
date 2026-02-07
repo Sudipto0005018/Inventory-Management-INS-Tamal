@@ -16,7 +16,7 @@ import PaginationTable from "./PaginationTable";
 import apiService from "../utils/apiService";
 import toaster from "../utils/toaster";
 
-const GenerateStockQR = ({ open, setOpen, row, boxesData, updateDetails }) => {
+const GenerateQRDialog = ({ open, setOpen, row, boxesData, updateDetails }) => {
   const [boxes, setBoxes] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -67,13 +67,12 @@ const GenerateStockQR = ({ open, setOpen, row, boxesData, updateDetails }) => {
 
     try {
       const payload = {
-        tool_id: row.tool_id ? row.tool_id : null,
-        spare_id: row.spare_id ? row.spare_id : null,
+        id: row.id,
         boxes,
       };
 
       setLoading(true);
-      await apiService.downloadFile("/stock/genarate-qr", payload);
+      await apiService.downloadFile("/document/genarate-qr", payload);
       await updateDetails();
     } catch {
       toaster("error", "QR generation failed");
@@ -185,4 +184,4 @@ const GenerateStockQR = ({ open, setOpen, row, boxesData, updateDetails }) => {
   );
 };
 
-export default GenerateStockQR;
+export default GenerateQRDialog;

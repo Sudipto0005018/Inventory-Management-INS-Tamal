@@ -59,10 +59,10 @@ const GenerateQRDialog = ({ open, setOpen, row, boxesData, updateDetails }) => {
         toaster("error", `Fill all fields for Box ${box.box_no}`);
         return;
       }
-      if (parseInt(box.copy_count) <= 0) {
-        toaster("error", `Invalid copies for Box ${box.box_no}`);
-        return;
-      }
+      // if (parseInt(box.copy_count) <= 0) {
+      //   toaster("error", `Invalid copies for Box ${box.box_no}`);
+      //   return;
+      // }
     }
 
     try {

@@ -15,7 +15,7 @@ import {
 import BoxNoDeposit from "../components/BoxNoDeposit";
 import { MultiSelect } from "../components/ui/multi-select";
 
-import GenerateQRDialog from "../components/GenerateQRDialog";
+import GenerateQRDialog from "../components/docQR";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import {
   Dialog,
@@ -33,8 +33,9 @@ const PendingTempLoan = () => {
   const columns = useMemo(() => [
     { key: "description", header: "Document Description" },
     { key: "indian_pattern", header: "Folder No." },
-    { key: "category", header: "Category" },
+    { key: "equipment_system", header: "Equipment / System" },
     { key: "qty_withdrawn", header: "Issued Qty" },
+    { key: "issue_to", header: "Issued to" },
     { key: "service_no", header: "Service No." },
     { key: "concurred_by", header: "Concurred By" },
     { key: "issue_date_formated", header: "Issued Date" },
@@ -59,7 +60,11 @@ const PendingTempLoan = () => {
       ),
       width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
+    {
+      value: "equipment_system",
+      label: "Equipment / System",
+      width: "min-w-[40px]",
+    },
     { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
     {
       value: "survey_quantity",
@@ -99,7 +104,7 @@ const PendingTempLoan = () => {
   });
   const fetchdata = async () => {
     try {
-      const response = await apiService.get("/tyLoan/list", {
+      const response = await apiService.get("/document/list", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
@@ -247,7 +252,7 @@ const PendingTempLoan = () => {
     try {
       let response;
       /** ITEM RETURNED */
-      response = await apiService.put("/tyLoan/ty-list", {
+      response = await apiService.put("/document/doc-list", {
         id: selectedRow.id,
         qty_received: Number(inputs.quantity_received),
         return_date: formatSimpleDate(inputs.receive_date),
@@ -393,14 +398,27 @@ const PendingTempLoan = () => {
                   parsedBoxNo = row.box_no;
                 } else if (typeof row.box_no === "string") {
                   parsedBoxNo = JSON.parse(row.box_no);
+
+                  //Handle double-stringified JSON
+                  if (typeof parsedBoxNo === "string") {
+                    parsedBoxNo = JSON.parse(parsedBoxNo);
+                  }
+                }
+
+                if (!Array.isArray(parsedBoxNo)) {
+                  parsedBoxNo = [];
                 }
               } catch (e) {
                 console.error("Invalid box_no JSON", e);
+                parsedBoxNo = [];
               }
               setSelectedRow({
                 ...row,
                 quantity: issuedQty,
               });
+              console.log("RAW box_no =>", row.box_no);
+              console.log("PARSED box_no =>", parsedBoxNo);
+
               setBoxNo(parsedBoxNo);
               setIsOpen((prev) => ({ ...prev, receive: true }));
             }}

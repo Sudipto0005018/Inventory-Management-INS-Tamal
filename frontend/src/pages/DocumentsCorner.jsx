@@ -64,16 +64,16 @@ const DocumentsCorner = ({ type = "" }) => {
       {
         key: "description",
         header: "Document Description",
-        width: "w-[140px]",
+        width: "w-[160px]",
       },
       { key: "indian_pattern", header: "Folder No.", width: "w-[120px]" },
       {
         key: "equipment_system",
         header: (
-          <p>
+          <span>
             Equipment/
             <br /> System
-          </p>
+          </span>
         ),
         width: "w-[140px]",
       },
@@ -84,7 +84,11 @@ const DocumentsCorner = ({ type = "" }) => {
         width: "w-[140px]",
       },
       { key: "location", header: "Location of Storage", width: "w-[150px]" },
-      { key: "edit", header: "Actions", width: "w-[170px]" },
+      {
+        key: "edit",
+        header: <div className="text-center w-full">Actions</div>,
+        width: "w-[100px]",
+      },
     ],
     [],
   );
@@ -577,7 +581,7 @@ const DocumentsCorner = ({ type = "" }) => {
       let s = 0,
         s1 = 0;
 
-      const boxes = JSON.parse(selectedRow.box_no || "[]");
+      let boxes = boxNo;
 
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
@@ -654,8 +658,12 @@ const DocumentsCorner = ({ type = "" }) => {
       //Qty-Held
       let prevTotal = 0;
       let currentTotal = 0;
-      const prevBoxes = JSON.parse(savedRow.box_no);
-
+      let prevBoxes;
+      if (typeof savedRow.box_no == "string") {
+        prevBoxes = JSON.parse(savedRow.box_no);
+      } else {
+        prevBoxes = savedRow.box_no;
+      }
       for (let i = 0; i < prevBoxes.length; i++) {
         prevTotal += parseInt(prevBoxes[i]?.qtyHeld || 0);
         currentTotal += parseInt(boxes[i]?.qtyHeld || 0);
@@ -693,7 +701,7 @@ const DocumentsCorner = ({ type = "" }) => {
       formData.append("obs_held", selectedRow.obs_held || "");
       formData.append("b_d_authorised", selectedRow.b_d_authorised || "");
       formData.append("category", selectedRow.category || "");
-      formData.append("box_no", selectedRow.box_no || "");
+      formData.append("box_no", JSON.stringify(selectedRow.box_no) || "");
       formData.append("item_code", selectedRow.item_code || "");
       formData.append("price_unit", selectedRow.price_unit || "");
       formData.append("sub_component", selectedRow.sub_component || "");
@@ -704,6 +712,7 @@ const DocumentsCorner = ({ type = "" }) => {
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("supplier", selectedRow.supplier || "");
+
       const response = await apiService.post(
         "/document/update/" + selectedRow.id,
         formData,
@@ -757,16 +766,22 @@ const DocumentsCorner = ({ type = "" }) => {
   }, []);
 
   useEffect(() => {
-    setBoxNo(
-      selectedRow.box_no
-        ? JSON.parse(selectedRow.box_no)
-        : [{ no: "", qn: "", qtyHeld: "", location: "" }],
-    );
+    let selected = { ...selectedRow };
+    if (selected.box_no) {
+      if (typeof selected.box_no == "string") {
+        selected.box_no = JSON.parse(selected.box_no);
+      }
+    } else {
+      selected.box_no = [{ no: "", qn: "", qtyHeld: "", location: "" }];
+    }
+    setBoxNo(selected.box_no);
   }, [selectedRow.box_no]);
 
   const submitTemporaryIssue = async (payload) => {
     try {
-      const res = await apiService.post("/temporaryIssue/temporary", payload);
+      console.log("Payload =>", payload);
+      console.log("Selected Row =>", selectedRow);
+      const res = await apiService.post("/document/issue", payload);
       if (res.success) {
         toaster("success", "Temporary Issue created successfully");
         console.log(boxNo);
@@ -823,57 +838,58 @@ const DocumentsCorner = ({ type = "" }) => {
   }, [image.preview]);
 
   useEffect(() => {
-    const t = fetchedData.items.map((row) => ({
-      ...row,
-      imgUrl: imageBaseURL + row.image,
-      image: row.image ? (
-        <ImagePreviewDialog image={imageBaseURL + row.image} />
-      ) : null,
-      boxNo: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
-        ?.map((box) => box.no)
-        ?.join(", "),
-      itemDistribution: (row.box_no
-        ? JSON.parse(row.box_no)
-        : [{ no: "", qn: "" }]
-      )
-        ?.map((box) => box.qtyHeld)
-        ?.join(", "),
-      location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
-        ?.map((box) => box.location)
-        ?.join(", "),
+    const t = fetchedData.items.map((row) => {
+      let boxNo;
+      if (row.box_no) {
+        if (typeof row.box_no == "string") boxNo = JSON.parse(row.box_no);
+        else boxNo = row.box_no;
+      } else {
+        boxNo = [{ no: "", qn: "" }];
+      }
 
-      edit: (
-        <ActionIcons
-          row={row}
-          onEdit={(row) => {
-            if (row.image) {
-              setImage((prev) => ({
-                ...prev,
-                previewEdit: imageBaseURL + row.image,
-              }));
-            }
-            setSelectedRow(row);
-            setSavedRow(JSON.parse(JSON.stringify(row)));
-            setSavedHeld(Number(row.obs_held || 0));
-            setIsOpen((prev) => ({ ...prev, editDocument: true }));
-          }}
-          onWithdraw={(row) => {
-            if (row.image) {
-              setImage((prev) => ({
-                ...prev,
-                previewEdit: imageBaseURL + row.image,
-              }));
-            }
-            setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
-          }}
-          onShowQR={(row) => {
-            setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, qrDialog: true }));
-          }}
-        />
-      ),
-    }));
+      return {
+        ...row,
+        imgUrl: imageBaseURL + row.image,
+        image: row.image ? (
+          <ImagePreviewDialog image={imageBaseURL + row.image} />
+        ) : null,
+        boxNo: boxNo?.map((box) => box.no)?.join(", "),
+        itemDistribution: boxNo?.map((box) => box.qtyHeld)?.join(", "),
+        location: boxNo?.map((box) => box.location)?.join(", "),
+
+        edit: (
+          <ActionIcons
+            row={row}
+            onEdit={(row) => {
+              if (row.image) {
+                setImage((prev) => ({
+                  ...prev,
+                  previewEdit: imageBaseURL + row.image,
+                }));
+              }
+              setSelectedRow(row);
+              setSavedRow(JSON.parse(JSON.stringify(row)));
+              setSavedHeld(Number(row.obs_held || 0));
+              setIsOpen((prev) => ({ ...prev, editDocument: true }));
+            }}
+            onWithdraw={(row) => {
+              if (row.image) {
+                setImage((prev) => ({
+                  ...prev,
+                  previewEdit: imageBaseURL + row.image,
+                }));
+              }
+              setSelectedRow(row);
+              setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
+            }}
+            onShowQR={(row) => {
+              setSelectedRow(row);
+              setIsOpen((prev) => ({ ...prev, qrDialog: true }));
+            }}
+          />
+        ),
+      };
+    });
 
     console.log("Transformed table data:", t);
     setTableData(t);
@@ -973,7 +989,7 @@ const DocumentsCorner = ({ type = "" }) => {
       >
         {!panelProduct.description && (
           <div className="h-150 flex items-center justify-center">
-            <p className="text-sm text-gray-500">No spares is selected</p>
+            <p className="text-sm text-gray-500">No documents is selected</p>
           </div>
         )}
         {panelProduct.description && (
@@ -1707,7 +1723,7 @@ const DocumentsCorner = ({ type = "" }) => {
               </Label>
 
               <BoxNoInputs
-                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
+                value={boxNo}
                 onChange={(value) =>
                   setSelectedRow((prev) => ({
                     ...prev,
@@ -2209,8 +2225,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
                 if (selectedIssue === "temporary") {
                   const payload = {
-                    a: selectedRow.id ? "spare" : "tool",
-                    spare_id: selectedRow.id || null,
+                    doc_id: selectedRow.id || null,
                     qty_withdrawn:
                       selectedRow.withdraw_type === "single"
                         ? 1
@@ -2218,14 +2233,20 @@ const DocumentsCorner = ({ type = "" }) => {
                     service_no: selectedPerson.tempPerson.serviceNumber || "",
                     issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
 
+                    concurred_by: selectedRow.concurred_by,
                     issue_date: getISTTimestamp(date),
                     loan_duration: Number(selectedRow.loan_duration),
 
                     return_date: null,
                     qty_received: null,
 
-                    box_no: boxNo,
+                    box_no:
+                      typeof boxNo === "string" ? boxNo : JSON.stringify(boxNo),
                   };
+                  console.log("boxNo value →", boxNo);
+                  console.log("typeof boxNo →", typeof boxNo);
+                  console.log("isArray →", Array.isArray(boxNo));
+
                   submitTemporaryIssue(payload);
                 }
               }}

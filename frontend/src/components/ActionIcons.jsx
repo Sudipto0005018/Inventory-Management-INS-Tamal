@@ -32,7 +32,17 @@ const ActionIcons = ({ row, onEdit, onWithdraw, onShowQR, disabled = {} }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const box = JSON.parse(row.box_no).map((b) => b.no);
+    let boxNo;
+    if (row.box_no) {
+      if (typeof row.box_no == "string") {
+        boxNo = JSON.parse(row.box_no);
+      } else {
+        boxNo = row.box_no;
+      }
+    } else {
+      boxNo = [{ no: "", qn: "" }];
+    }
+    const box = boxNo.map((b) => b.no);
     setBoxes(box);
   }, [row]);
 
