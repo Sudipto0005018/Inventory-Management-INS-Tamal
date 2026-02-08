@@ -58,7 +58,11 @@ const PendingDemand = () => {
       header: "Surveyed / Utilised Qty",
       width: "max-w-[100px]",
     },
-    { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
+    {
+      key: "survey_date",
+      header: "Surveyed Date / Utilised Date",
+      width: "min-w-[40px]",
+    },
     { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [

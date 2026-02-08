@@ -99,6 +99,7 @@ const PermanentPendings = () => {
       { key: "demand_no", header: "Demand No." },
       { key: "demand_date", header: "Demand Date" },
       { key: "demand_quantity", header: "Demanded Qty" },
+      { key: "--", header: "Stocked In / NAC Qty" },
       { key: "processed", header: "Proceed" },
     ],
     [],
