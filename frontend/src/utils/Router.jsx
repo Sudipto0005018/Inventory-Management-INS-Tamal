@@ -33,6 +33,7 @@ import DocumentsCorner from "../pages/DocumentsCorner";
 import DocumentIssue from "../pages/DocumentsIssue";
 import TemporaryIssue from "../pages/TemporaryIssue";
 import PendingDemand from "../pages/PendingDemand";
+import LogsSurvey from "../pages/LogsSurvey";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -246,6 +247,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <CompletedServays />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/logs/pending-survey"
+          element={
+            <ProtectedRoute>
+              <LogsSurvey />
             </ProtectedRoute>
           }
         />

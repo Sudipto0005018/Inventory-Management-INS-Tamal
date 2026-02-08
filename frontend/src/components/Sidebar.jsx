@@ -12,6 +12,7 @@ import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { IoDocumentSharp } from "react-icons/io5";
 
 import logo1 from "../assets/logo1.png";
+import { LuLogs } from "react-icons/lu";
 
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -56,7 +57,7 @@ const menuItems = [
     ],
   },
   {
-    name: "Temporary Loan",
+    name: "TY Loan",
     path: "/temp-loan/pending",
     icon: <BsCartPlus />,
     submenu: [
@@ -111,6 +112,18 @@ const menuItems = [
         name: "Documents Issue",
         path: "/documents/issue",
       },
+    ],
+  },
+  {
+    name: "Logs & Records",
+    path: "/permanent/pending-survey",
+    icon: <LuLogs />,
+    submenu: [
+      { name: "Pending for Survey", path: "/logs/pending-survey" },
+      { name: "Pending for Demand", path: "/permanent/pending-demand" },
+      { name: "Pending for Issue", path: "/permanent/pending-issue" },
+      { name: "Pending for Procurement", path: "/permanent/procurement" },
+      { name: "Pending for Stock Update", path: "/permanent/stock-update" },
     ],
   },
 ];

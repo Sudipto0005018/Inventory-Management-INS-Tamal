@@ -11,6 +11,8 @@ export const pageTitles = {
   "/search": "Search",
   "/handheld": "Handheld Details",
 
+  "/logs/pending-survey": "Pending for Survey (Worklist)",
+
   "/permanent/pending-survey": "Pending for Survey",
   "/permanent/pending-demand": "Pending for Demand",
   "/permanent/pending-issue": "Pending for Issue",
