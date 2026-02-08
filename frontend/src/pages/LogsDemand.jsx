@@ -10,11 +10,10 @@ import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
-import toaster from "../utils/toaster";
 import { getFormatedDate, getTimeDate } from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
 
-const PendingSurvey = () => {
+const PendingDemand = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
@@ -34,22 +33,16 @@ const PendingSurvey = () => {
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
     {
-      key: "box_no",
-      header: "Box No.",
-    },
-    { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
-    {
-      key: "withdrawl_date_str",
-      header: "Withdrawal Date",
+      key: "survey_voucher_no",
+      header: "Survey Voucher No.",
       width: "min-w-[40px]",
     },
-    { key: "service_no", header: "Service No.", width: "min-w-[40px]" },
-    { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
     {
-      key: "survey_quantity",
-      header: "Surveyed Qty",
-      width: "max-w-[40px]",
+      key: "survey_qty",
+      header: "Surveyed / Utilised Qty",
+      width: "max-w-[100px]",
     },
+    { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
   const options = [
@@ -59,7 +52,7 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "vue",
+      value: "indian_pattern",
       label: (
         <span>
           <i>IN</i> Part No.
@@ -68,13 +61,17 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
+    { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
     {
       value: "survey_quantity",
-      label: "Surveyed Quantity",
+      label: "Surveyed / Consumable / Local Perchase Qty",
       width: "min-w-[40px]",
     },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    {
+      value: "survey_voucher_no",
+      label: "Survey Voucher No",
+      width: "min-w-[40px]",
+    },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -88,31 +85,32 @@ const PendingSurvey = () => {
   const [isLoading, setIsLoading] = useState({
     table: false,
     search: false,
-    survey: false,
+    submit: false,
   });
   const [actualSearch, setActualSearch] = useState("");
   const [inputs, setInputs] = useState({
     search: "",
-    voucher_no: "",
-    survey_calender: new Date(),
-    quantity: "",
+    demand_no: "",
+    demand_date: new Date(),
   });
   const [isOpen, setIsOpen] = useState({
-    survey: false,
-    survey_calender: false,
+    demand: false,
+    demand_date: false,
   });
+  const [selectedRow, setSelectedRow] = useState({});
 
+  // Placeholder fetch function as requested
   const fetchdata = async () => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
-      const response = await apiService.get("/survey/logs", {
+      const response = await apiService.get("/demand/logs", {
         params: {
           page: currentPage,
           search: inputs.search,
           limit: config.row_per_page,
-          status: "pending",
         },
       });
+
       setFetchedData(response.data);
     } catch (error) {
       console.log(error);
@@ -122,11 +120,11 @@ const PendingSurvey = () => {
         totalPages: 1,
         currentPage: 1,
       });
-      toaster.error(error.response.data.message);
     } finally {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
     if (searchTerm === actualSearch) {
@@ -148,6 +146,7 @@ const PendingSurvey = () => {
     setSelectedSearchFields([]);
     setCurrentPage(1);
     setActualSearch("");
+    // setSelectedRowIndex(null);
     setPanelProduct({ critical_spare: "no" });
     fetchdata("", 1);
   };
@@ -157,30 +156,12 @@ const PendingSurvey = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    const t = fetchedData.items.flatMap((row) => {
-      if (!row.box_details || row.box_details.length === 0) {
-        return [
-          {
-            ...row,
-            box_no: "-",
-            survey_quantity: row.survey_quantity || "0",
-            issue_date: getFormatedDate(row.issue_date),
-            withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-            created_at: getTimeDate(row.created_at),
-          },
-        ];
-      }
-
-      return row.box_details.map((box) => ({
-        ...row,
-        box_no: box.no,
-        survey_quantity: row.survey_quantity || "0",
-        issue_date: getFormatedDate(row.issue_date),
-        withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-        created_at: getTimeDate(row.created_at),
-        item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
-      }));
-    });
+    const t = fetchedData.items.map((row) => ({
+      ...row,
+      item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
+      survey_date: getFormatedDate(row.survey_date),
+      created_at: getTimeDate(row.created_at),
+    }));
     setTableData(t);
   }, [fetchedData]);
 
@@ -204,7 +185,7 @@ const PendingSurvey = () => {
       <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
-          placeholder="Search survey items"
+          placeholder="Search..."
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>
@@ -258,4 +239,4 @@ const PendingSurvey = () => {
   );
 };
 
-export default PendingSurvey;
+export default PendingDemand;

@@ -235,7 +235,9 @@ async function getLogSurveys(req, res) {
   const offset = (page - 1) * limit;
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
-  const status = req.query.status || "pending";
+
+  // ❌ REMOVE dynamic status
+  // const status = req.query.status || "pending";
 
   const columnMap = {
     description: ["sp.description", "t.description"],
@@ -247,9 +249,11 @@ async function getLogSurveys(req, res) {
   const connection = await pool.getConnection();
 
   try {
+    /* ---------- FORCE COMPLETED ---------- */
     let whereConditions = ["s.status = ?"];
-    let queryParams = [status];
+    let queryParams = ["complete"]; // 👈 FIXED STATUS
 
+    /* ---------- SEARCH ---------- */
     if (search) {
       let searchFragments = [];
       const validCols = rawCols.filter((col) => columnMap[col.trim()]);
@@ -293,7 +297,7 @@ async function getLogSurveys(req, res) {
       return new ApiResponse(
         200,
         { items: [], totalItems: 0, totalPages: 1, currentPage: page },
-        "No survey found",
+        "No completed survey found",
       ).send(res);
     }
 
@@ -309,7 +313,7 @@ async function getLogSurveys(req, res) {
        LEFT JOIN spares sp ON s.spare_id = sp.id
        LEFT JOIN tools t ON s.tool_id = t.id
        ${finalWhereClause}
-       ORDER BY s.id DESC
+       ORDER BY s.created_at DESC
        LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset],
     );
@@ -332,7 +336,7 @@ async function getLogSurveys(req, res) {
 
       return {
         ...row,
-        box_details: boxDetails, // 👈 IMPORTANT
+        box_details: boxDetails,
       };
     });
 
@@ -345,7 +349,7 @@ async function getLogSurveys(req, res) {
         totalPages: Math.ceil(totalDemand / limit),
         currentPage: page,
       },
-      "Survey retrieved successfully",
+      "Completed surveys retrieved successfully",
     ).send(res);
   } catch (error) {
     console.log("Error while getting survey: ", error);

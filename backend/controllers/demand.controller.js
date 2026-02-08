@@ -469,10 +469,117 @@ async function updatePendingIssue(req, res) {
   }
 }
 
+async function getDemandLogs(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? req.query.search.trim() : "";
+  const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+  // const status = req.query.status || "pending";
+
+  const columnMap = {
+    description: ["sp.description", "t.description"],
+    category: ["sp.category", "t.category"],
+    equipment_system: ["sp.equipment_system", "t.equipment_system"],
+    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+  };
+
+  const connection = await pool.getConnection();
+
+  try {
+    // Alias 'd' for demand table
+    let whereConditions = ["d.status = ?"];
+    let queryParams = ["complete"];
+
+    if (search) {
+      let searchFragments = [];
+      const validCols = rawCols.filter((col) => columnMap[col.trim()]);
+
+      if (validCols.length > 0) {
+        for (const colName of validCols) {
+          const dbColumns = columnMap[colName.trim()];
+          const subQuery = dbColumns
+            .map((dbCol) => {
+              queryParams.push(`%${search}%`);
+              return `${dbCol} LIKE ?`;
+            })
+            .join(" OR ");
+          searchFragments.push(`(${subQuery})`);
+        }
+      } else {
+        searchFragments.push(`(sp.description LIKE ? OR t.description LIKE ?)`);
+        queryParams.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (searchFragments.length > 0) {
+        whereConditions.push(`(${searchFragments.join(" OR ")})`);
+      }
+    }
+
+    const finalWhereClause =
+      whereConditions.length > 0
+        ? "WHERE " + whereConditions.join(" AND ")
+        : "";
+
+    const [totalCountRows] = await connection.query(
+      `SELECT COUNT(*) as count 
+             FROM demand d 
+             LEFT JOIN spares sp ON d.spare_id = sp.id 
+             LEFT JOIN tools t ON d.tool_id = t.id 
+             ${finalWhereClause}`,
+
+      queryParams,
+    );
+
+    const totalDemand = totalCountRows[0].count;
+
+    if (totalDemand === 0) {
+      return new ApiResponse(
+        200,
+        { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+        search ? "No matching demand found" : "No demand found",
+      ).send(res);
+    }
+
+    const [rows] = await connection.query(
+      `SELECT 
+                d.*,
+                COALESCE(sp.description, t.description) as description,
+                COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
+                COALESCE(sp.category, t.category) as category,
+                COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
+             FROM demand d
+             LEFT JOIN spares sp ON d.spare_id = sp.id
+             LEFT JOIN tools t ON d.tool_id = t.id
+             ${finalWhereClause} 
+             ORDER BY d.created_at DESC
+             LIMIT ? OFFSET ?`,
+      [...queryParams, limit, offset],
+    );
+
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems: totalDemand,
+        totalPages: Math.ceil(totalDemand / limit),
+        currentPage: page,
+      },
+      "Demands retrieved successfully",
+    ).send(res);
+  } catch (error) {
+    console.log("Error while getting demands: ", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   createDemand,
   getDemands,
   createPendingIssue,
   getPendingIssue,
   updatePendingIssue,
+  getDemandLogs,
 };
