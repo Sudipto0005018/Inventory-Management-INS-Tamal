@@ -48,6 +48,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
+    { key: "qty_received", header: "Returned Qty" },
     // { key: "received_quantity", header: "Qty returned" },
     // { key: "returned_date_formatted", header: "Returned Date" },
     { key: "status", header: "Status" },

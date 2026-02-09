@@ -134,7 +134,7 @@ const PermanentPendings = () => {
 
   const [inputs, setInputs] = useState({
     issue_type: "nac",
-
+    demand_quantity: "",
     nac_no: "",
     nac_calender: new Date(),
     validity: "",
@@ -182,6 +182,11 @@ const PermanentPendings = () => {
           className="bg-white text-black shadow border"
           onClick={() => {
             setSelectedRow(row);
+            setInputs((p) => ({
+              ...p,
+              issue_type: "nac",
+              demand_quantity: row.demand_quantity, // ✅ map here
+            }));
             setProcurementPending("no");
             setIsOpen((p) => ({ ...p, issue: true }));
           }}
@@ -366,6 +371,27 @@ const PermanentPendings = () => {
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label>Demanded Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Demanded Qty"
+                    value={inputs.demand_quantity}
+                  />
+                </div>
+                <div>
+                  <Label>NAC Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="NAC Qty"
+                    // value={inputs.nac_no}
+                    onChange={(e) =>
+                      setInputs((p) => ({ ...p, nac_no: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <Label>NAC No.</Label>
                   <Input
                     className="mt-3"
@@ -420,6 +446,27 @@ const PermanentPendings = () => {
           {/* ---------- STOCKING ---------- */}
           {inputs.issue_type === "stocking" && (
             <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Demanded Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Demanded Qty"
+                    value={inputs.demand_quantity}
+                  />
+                </div>
+                <div>
+                  <Label>Stocked In Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Stocked In Qty"
+                    // value={inputs.nac_no}
+                    onChange={(e) =>
+                      setInputs((p) => ({ ...p, nac_no: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>MO Gate Pass No.</Label>

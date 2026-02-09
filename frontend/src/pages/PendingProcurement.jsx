@@ -514,7 +514,7 @@ const Procurement = () => {
                 </div>
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Deposit Qty<span className="text-red-500">*</span>
+                    Returned Qty<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     className="mt-2"
@@ -539,7 +539,7 @@ const Procurement = () => {
                 </div>
                 <div className="">
                   <FormattedDatePicker
-                    label="Deposit Date *"
+                    label="Returned Date *"
                     className="w-full"
                     value={inputs.receive_date}
                     onChange={(date) => {
