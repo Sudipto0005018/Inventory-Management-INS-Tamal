@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { NavLink } from "react-router";
 import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
-import { FaRegClipboard, FaTools } from "react-icons/fa";
+import { FaInfoCircle, FaRegClipboard, FaTools } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
 
 import { FaGears, FaPeopleRoof, FaRegClock } from "react-icons/fa6";
@@ -17,6 +17,7 @@ import { LuLogs } from "react-icons/lu";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Context } from "../utils/Context";
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "./ui/dialog";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: <FaRegClipboard /> },
@@ -131,12 +132,13 @@ const menuItems = [
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useContext(Context);
   const [openMenu, setOpenMenu] = useState(null);
+  const [isDialogOpen, setDialogIsOpen] = useState(false);
 
   return (
     <aside
       className={cn(
         "fixed top-0 left-0 h-full w-64 bg-[#0a1025] text-white z-50",
-        "transform transition-transform duration-300 ease-in-out",
+        "transform transition-transform duration-300 ease-in-out flex flex-col",
         isOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
@@ -150,7 +152,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       </div>
 
       {/* Menu */}
-      <nav className="p-2 overflow-y-auto">
+      <nav className="p-2 overflow-y-auto flex-1">
         {menuItems.map((item) => {
           if (
             (item.superAdmin && user?.role !== "superadmin") ||
@@ -233,6 +235,48 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           );
         })}
       </nav>
+      <div className="fixed bottom-0 left-0 right-0 w-full bg-white/5 p-2">
+        <div
+          className="flex items-center gap-3 justify-center cursor-pointer"
+          onClick={() => setDialogIsOpen(true)}
+        >
+          <FaInfoCircle className="text-white" />
+          <p className="text-white text-lg font-bold">V 1.0.0</p>
+        </div>
+      </div>
+      <Dialog open={isDialogOpen} onOpenChange={setDialogIsOpen}>
+        <DialogContent
+          className=""
+          onPointerDownOutside={() => setDialogIsOpen(false)}
+        >
+          <DialogTitle>About</DialogTitle>
+
+          <div className="w-full bg-white p-2">
+            <p className="text-xs">
+              This Solution has been developed by{" "}
+              <a
+                className="text-primary font-semibold"
+                href="http://gbtsolutions.in/"
+                target="_blank"
+              >
+                GBT Tech Solutions Private Limited
+              </a>
+              .
+            </p>
+            <br />
+            <p className="text-xs">
+              For any query please drop a mail to our softwere support team:
+              <a
+                className="text-primary font-semibold"
+                href="mailto:softwere.support@gbtsolutions.in"
+              >
+                {" "}
+                softwere.support@gbtsolutions.in
+              </a>
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 };

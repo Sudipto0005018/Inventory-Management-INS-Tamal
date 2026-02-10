@@ -256,7 +256,6 @@ const PermanentPendings = () => {
       rate_unit: inputs.rate_unit,
 
       qty_withdrawn: inputs.nac_qty,
-
       status: "NAC_GENERATED",
     };
 
@@ -395,6 +394,7 @@ const PermanentPendings = () => {
               <Label>Stocking in Inventory</Label>
             </div>
           </RadioGroup>
+          {/* <p>{inputs.demand_quantity}</p> */}
 
           {/* ---------- NAC ---------- */}
           {inputs.issue_type === "nac" && (

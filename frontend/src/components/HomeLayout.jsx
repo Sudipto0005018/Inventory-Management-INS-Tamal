@@ -55,7 +55,7 @@ const HomeLayout = () => {
       </div>
 
       {/* Footer */}
-      <Footer />
+      {/* <Footer /> */}
 
       <Toaster position="top-right" />
     </div>

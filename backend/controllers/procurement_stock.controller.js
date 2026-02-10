@@ -89,11 +89,15 @@ async function getProcurementPending(req, res) {
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
         COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
 
-        'PROCUREMENT' AS source
+        'PROCUREMENT' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
 
       FROM procurement p
       LEFT JOIN spares sp ON p.spare_id = sp.id
       LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
 
       ${finalWhere}
 
@@ -207,11 +211,15 @@ async function getStockUpdatePending(req, res) {
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
 
-        'STOCK_UPDATE' AS source
+        'STOCK_UPDATE' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
 
       FROM stock_update s
       LEFT JOIN spares sp ON s.spare_id = sp.id
       LEFT JOIN tools t ON s.tool_id = t.id
+      LEFT JOIN pending_issue pi ON s.issued_id = pi.id
 
       ${finalWhere}
 
@@ -634,7 +642,7 @@ async function updateProcurement(req, res) {
     });
   } catch (error) {
     await connection.rollback();
-    console.error("UPDATE Procurement ERROR =>", error);
+    console.log("UPDATE Procurement ERROR =>", error);
 
     res.status(500).json({
       success: false,

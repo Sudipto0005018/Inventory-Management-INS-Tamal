@@ -43,9 +43,9 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    // { key: "demand_no", header: "Demand No." },
-    // { key: "demand_date", header: "Demand Date" },
-    // { key: "demand_qty", header: "Demanded Qty" },
+    { key: "demand_no", header: "Demand No." },
+    { key: "demand_date", header: "Demand Date" },
+    { key: "demand_quantity", header: "Demanded Qty" },
     { key: "stocked_in_qty", header: "Stocked In Qty" },
     // { key: "--", header: "Returned Qty" },
     { key: "mo_no", header: "MO Gate Pass No." },
@@ -181,7 +181,7 @@ const PermanentPendings = () => {
         approve: true,
       };
 
-      const response = await apiService.put("/stocks/procurement", payload);
+      const response = await apiService.put("/stocks/stock_in", payload);
 
       if (response.success) {
         toaster("success", "Item received successfully");

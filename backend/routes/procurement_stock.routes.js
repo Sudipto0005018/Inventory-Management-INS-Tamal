@@ -11,7 +11,7 @@ const {
 
 router.get("/procurement", authMiddleware, getProcurementPending);
 router.get("/stock_in", authMiddleware, getStockUpdatePending);
-router.put("/procurement", authMiddleware, updateStock);
-router.put("/stock_in", authMiddleware, updateProcurement);
+router.put("/stock_in", authMiddleware, updateStock);
+router.put("/procurement", authMiddleware, updateProcurement);
 
 module.exports = router;
