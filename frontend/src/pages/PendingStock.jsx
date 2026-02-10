@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdRefresh } from "react-icons/io";
+import Chip from "../components/Chip";
 
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -42,12 +43,16 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Stocked In Qty" },
-    { key: "--", header: "Returned Qty" },
+    // { key: "demand_no", header: "Demand No." },
+    // { key: "demand_date", header: "Demand Date" },
+    // { key: "demand_qty", header: "Demanded Qty" },
+    { key: "stocked_in_qty", header: "Stocked In Qty" },
+    // { key: "--", header: "Returned Qty" },
     { key: "mo_no", header: "MO Gate Pass No." },
     { key: "mo_date", header: "MO Date" },
+
+    { key: "qty_received", header: "Return Qty" },
+    { key: "statusBadge", header: "Status" },
     { key: "processed", header: "Proceed" },
   ]);
 
@@ -109,7 +114,7 @@ const PermanentPendings = () => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
-      const response = await apiService.get("/demand/pending-issue", {
+      const response = await apiService.get("/stocks/stock_in", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
@@ -176,10 +181,21 @@ const PermanentPendings = () => {
         approve: true,
       };
 
-      const response = await apiService.put("/stock/stock-update", payload);
+      const response = await apiService.put("/stocks/procurement", payload);
 
       if (response.success) {
         toaster("success", "Item received successfully");
+
+        if (
+          Number(inputs.quantity_received) +
+            Number(selectedRow.qty_received || 0) >=
+          Number(selectedRow.stocked_in_qty)
+        ) {
+          setFetchedData((prev) => ({
+            ...prev,
+            items: prev.items.filter((item) => item.id !== selectedRow.id),
+          }));
+        }
 
         setIsOpen((prev) => ({ ...prev, receive: false }));
         setInputs({
@@ -305,31 +321,42 @@ const PermanentPendings = () => {
   }, [selectedValues]);
 
   useEffect(() => {
-    const t = fetchedData.items.map((row) => ({
-      ...row,
-      survey_quantity: row.survey_quantity || "0",
-      demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
+    const t = fetchedData.items
+      .filter((row) => row.status !== "complete")
+      .map((row) => ({
+        ...row,
+        survey_quantity: row.survey_quantity || "0",
+        demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
+        qty_received:
+          row.qty_received && row.qty_received > 0 ? row.qty_received : null,
+        mo_date: row.mo_date ? getFormatedDate(row.mo_date) : "-",
+        statusBadge:
+          row.status === "pending" ? (
+            <Chip text="Pending" varient="info" />
+          ) : row.status === "partial" ? (
+            <Chip text="Partial" varient="danger" />
+          ) : (
+            <Chip text="Complete" varient="success" />
+          ),
+        processed: (
+          <Button
+            size="icon"
+            className="bg-white text-black shadow-md border hover:bg-gray-100"
+            onClick={() => {
+              setSelectedRow(row);
+              console.log(row);
 
-      mo_date: row.mo_date ? getFormatedDate(row.mo_date) : "-",
-      processed: (
-        <Button
-          size="icon"
-          className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            console.log(row);
+              const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
 
-            const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
+              setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
 
-            setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
-
-            setIsOpen((prev) => ({ ...prev, receive: true }));
-          }}
-        >
-          <FaChevronRight />
-        </Button>
-      ),
-    }));
+              setIsOpen((prev) => ({ ...prev, receive: true }));
+            }}
+          >
+            <FaChevronRight />
+          </Button>
+        ),
+      }));
     setTableData(t);
   }, [fetchedData]);
 
@@ -496,7 +523,17 @@ const PermanentPendings = () => {
 
             <DialogDescription className="hidden" />
             <div className="">
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                <div>
+                  <Label className="mb-1 ms-2">
+                    Item Description <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.description || "-"}
+                    readOnly
+                  />
+                </div>
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
                     Stocked In Qty<span className="text-red-500">*</span>
@@ -506,7 +543,7 @@ const PermanentPendings = () => {
                     id="quantity"
                     type="number"
                     placeholder="Quantity"
-                    value={selectedRow?.demand_quantity ?? 0}
+                    value={selectedRow?.stocked_in_qty ?? 0}
                     readOnly
                   />
                 </div>

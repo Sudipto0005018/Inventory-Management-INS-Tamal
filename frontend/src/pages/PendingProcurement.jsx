@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdRefresh } from "react-icons/io";
+import Chip from "../components/Chip";
 
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -42,13 +43,17 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Demanded Qty" },
+    // { key: "demand_no", header: "Demand No." },
+    // { key: "demand_date", header: "Demand Date" },
+    // { key: "demand_qty", header: "Demanded Qty" },
+    { key: "nac_qty", header: "NAC Qty" },
     { key: "nac_no", header: "NAC No." },
     { key: "nac_date", header: "NAC Date" },
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
+    { key: "qty_received", header: "Return Qty" },
+    { key: "statusBadge", header: "Status" },
+
     { key: "processed", header: "Proceed" },
   ]);
 
@@ -110,7 +115,7 @@ const Procurement = () => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
-      const response = await apiService.get("/demand/pending-issue", {
+      const response = await apiService.get("/stocks/procurement", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
@@ -177,11 +182,24 @@ const Procurement = () => {
         approve: true,
       };
 
-      const response = await apiService.put("/stock/stock-update", payload);
+      const response = await apiService.put("/stocks/procurement", payload);
 
       if (response.success) {
         toaster("success", "Item received successfully");
 
+        const returnedNow = Number(inputs.quantity_received || 0);
+        const alreadyReceived = Number(selectedRow.qty_received || 0);
+        const orderedQty = Number(selectedRow.nac_qty || 0);
+
+        const totalReceived = returnedNow + alreadyReceived;
+
+        // 🔥 Remove row instantly if complete
+        if (totalReceived >= orderedQty) {
+          setFetchedData((prev) => ({
+            ...prev,
+            items: prev.items.filter((item) => item.id !== selectedRow.id),
+          }));
+        }
         setIsOpen((prev) => ({ ...prev, receive: false }));
         setInputs({
           quantity_received: "",
@@ -226,7 +244,7 @@ const Procurement = () => {
       return;
     }
 
-    if (returnedQty > selectedRow.quantity) {
+    if (returnedQty > selectedRow.nac_qty) {
       toaster("error", "Quantity cannot be greater than issued quantity");
       return;
     }
@@ -306,32 +324,42 @@ const Procurement = () => {
   }, [selectedValues]);
 
   useEffect(() => {
-    const t = fetchedData.items.map((row) => ({
-      ...row,
-      survey_quantity: row.survey_quantity || "0",
-      demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
-      nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",
+    const t = fetchedData.items
+      .filter((row) => row.status !== "complete")
+      .map((row) => ({
+        ...row,
+        survey_quantity: row.survey_quantity || "0",
+        demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
+        nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",
+        qty_received:
+          row.qty_received && row.qty_received > 0 ? row.qty_received : null,
+        statusBadge:
+          row.status === "pending" ? (
+            <Chip text="Pending" varient="info" />
+          ) : row.status === "partial" ? (
+            <Chip text="Partial" varient="danger" />
+          ) : (
+            <Chip text="Complete" varient="success" />
+          ),
+        processed: (
+          <Button
+            size="icon"
+            className="bg-white text-black shadow-md border hover:bg-gray-100"
+            onClick={() => {
+              setSelectedRow(row);
+              console.log(row);
 
-      mo_date: row.mo_date ? getFormatedDate(row.mo_date) : "-",
-      processed: (
-        <Button
-          size="icon"
-          className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            console.log(row);
+              const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
 
-            const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
+              setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
 
-            setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
-
-            setIsOpen((prev) => ({ ...prev, receive: true }));
-          }}
-        >
-          <FaChevronRight />
-        </Button>
-      ),
-    }));
+              setIsOpen((prev) => ({ ...prev, receive: true }));
+            }}
+          >
+            <FaChevronRight />
+          </Button>
+        ),
+      }));
     setTableData(t);
   }, [fetchedData]);
 
@@ -498,23 +526,33 @@ const Procurement = () => {
 
             <DialogDescription className="hidden" />
             <div className="">
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                <div>
+                  <Label className="mb-1 ms-2">
+                    Item Description <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.description || "-"}
+                    readOnly
+                  />
+                </div>
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Stocked in Qty <span className="text-red-500">*</span>
+                    Qty Ordered <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     className="mt-2"
                     id="quantity"
                     type="number"
                     placeholder="Quantity"
-                    value={selectedRow?.demand_quantity ?? 0}
+                    value={selectedRow?.nac_qty ?? 0}
                     readOnly
                   />
                 </div>
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Returned Qty<span className="text-red-500">*</span>
+                    Qty Received<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     className="mt-2"
@@ -539,7 +577,7 @@ const Procurement = () => {
                 </div>
                 <div className="">
                   <FormattedDatePicker
-                    label="Returned Date *"
+                    label="Received Date *"
                     className="w-full"
                     value={inputs.receive_date}
                     onChange={(date) => {

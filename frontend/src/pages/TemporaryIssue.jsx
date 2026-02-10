@@ -49,8 +49,6 @@ const PendingTempLoan = () => {
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
     { key: "qty_received", header: "Returned Qty" },
-    // { key: "received_quantity", header: "Qty returned" },
-    // { key: "returned_date_formatted", header: "Returned Date" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
   ]);
@@ -542,7 +540,17 @@ const PendingTempLoan = () => {
 
               <DialogDescription className="hidden" />
               <div className="">
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <Label className="mb-1 ms-2">
+                      Item Description <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      className="mt-2"
+                      value={selectedRow?.description || "-"}
+                      readOnly
+                    />
+                  </div>
                   <div>
                     <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
                       Qty Issued<span className="text-red-500">*</span>

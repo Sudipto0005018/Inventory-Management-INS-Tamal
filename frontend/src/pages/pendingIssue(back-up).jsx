@@ -1,9 +1,9 @@
+//WITH PARTIAL HANDLING
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { IoMdRefresh } from "react-icons/io";
-import Chip from "../components/Chip";
 import {
   Dialog,
   DialogContent,
@@ -99,7 +99,7 @@ const PermanentPendings = () => {
       { key: "demand_no", header: "Demand No." },
       { key: "demand_date", header: "Demand Date" },
       { key: "demand_quantity", header: "Demanded Qty" },
-      { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
+      { key: "--", header: "Stocked In / NAC Qty" },
       { key: "status_badge", header: "Status" },
       { key: "processed", header: "Proceed" },
     ],
@@ -148,7 +148,7 @@ const PermanentPendings = () => {
 
   const [boxNo, setBoxNo] = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = async (page = currentPage) => {
     try {
       const res = await apiService.get("/issue/pending-issue", {
         params: {
@@ -170,17 +170,25 @@ const PermanentPendings = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(currentPage);
   }, [currentPage]);
 
   useEffect(() => {
-    const mapped = fetchedData.items.map((row) => {
+    const filtered = fetchedData.items.filter(
+      (row) => row.status === "pending" || row.status === "partial",
+    );
+    const mapped = filtered.map((row) => {
       const statusBadge =
-        row.status === "pending" ? (
-          <Chip text="Pending" varient="info" />
+        row.status === "partial" ? (
+          <span className="px-2 py-1 text-xs font-bold rounded bg-yellow-100 text-yellow-700">
+            PARTIAL
+          </span>
         ) : (
-          <Chip text="Partial" varient="danger" />
+          <span className="px-2 py-1 text-xs font-bold rounded bg-red-100 text-red-700">
+            PENDING
+          </span>
         );
+
       return {
         ...row,
         demand_date: getFormatedDate(row.demand_date),
@@ -249,7 +257,7 @@ const PermanentPendings = () => {
 
     const payload = {
       issue_type: "nac",
-      nac_qty: inputs.nac_qty,
+
       nac_no: inputs.nac_no,
       nac_date: formatSimpleDate(inputs.nac_calender),
       validity: inputs.validity,
@@ -265,7 +273,7 @@ const PermanentPendings = () => {
     if (updated) {
       toaster("success", "NAC saved successfully");
       setIsOpen((p) => ({ ...p, issue: false }));
-      fetchData();
+      fetchData(currentPage);
     }
 
     setIsLoading((p) => ({ ...p, nac: false }));
@@ -286,7 +294,7 @@ const PermanentPendings = () => {
 
     const payload = {
       issue_type: "stocking",
-      stocked_in_qty: inputs.stocked_qty,
+
       mo_no: inputs.mo_no,
       mo_date: formatSimpleDate(inputs.gate_pass_calender),
 
@@ -300,7 +308,7 @@ const PermanentPendings = () => {
     if (updated) {
       toaster("success", "Item stocked successfully");
       setIsOpen((p) => ({ ...p, issue: false }));
-      fetchData();
+      fetchData(currentPage);
     }
 
     setIsLoading((p) => ({ ...p, mo: false }));
