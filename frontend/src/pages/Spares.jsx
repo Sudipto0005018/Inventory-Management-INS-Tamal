@@ -1166,11 +1166,13 @@ const Spares = ({ type = "" }) => {
           <button
             type="button"
             onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Add Spare</DialogTitle>
+          <DialogTitle className="relative -mt-4 text-base">
+            Add Spare
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="space-y-4">
@@ -1563,11 +1565,13 @@ const Spares = ({ type = "" }) => {
           <button
             type="button"
             onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Update Spare</DialogTitle>
+          <DialogTitle className="relative text-base -mt-4">
+            Update Spare
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="grid grid-cols-4 gap-4 mt-3">

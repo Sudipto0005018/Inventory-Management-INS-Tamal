@@ -1160,11 +1160,13 @@ const Tools = ({ type = "" }) => {
           <button
             type="button"
             onClick={() => setIsOpen((prev) => ({ ...prev, addSpare: false }))}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0 ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Add Tools</DialogTitle>
+          <DialogTitle className="relative text-base -mt-4">
+            Add Tools
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="space-y-4">
@@ -1557,11 +1559,13 @@ const Tools = ({ type = "" }) => {
           <button
             type="button"
             onClick={() => setIsOpen((prev) => ({ ...prev, editSpare: false }))}
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Update Tools</DialogTitle>
+          <DialogTitle className="relative text-base -mt-4">
+            Update Tools
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="grid grid-cols-4 gap-4 mt-3">

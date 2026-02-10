@@ -46,8 +46,8 @@ const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "Equipment / System", value: "equipment_system" },
   { label: "Denos", value: "denos" },
-  { label: "OBS Authorised", value: "obs_authorised" },
-  { label: "OBS Held", value: "obs_held" },
+  { label: "Book Authorised", value: "obs_authorised" },
+  { label: "Book Held", value: "obs_held" },
   { label: "Item Storage Distribution", value: "boxNo" },
   { label: "Location of Storage", value: "storage_location" },
   { label: "Item Distribution", value: "item_distribution" },
@@ -633,7 +633,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
       // QN must match authorised
       if (s !== obsAuthorised) {
-        toaster("error", "Authorised Qty not matched with OBS Authorised");
+        toaster("error", "Authorised Qty not matched with Book Authorised");
         return;
       }
 
@@ -675,7 +675,7 @@ const DocumentsCorner = ({ type = "" }) => {
       }
       // Held must match OBS held
       if (s1 !== obsHeld) {
-        toaster("error", "Qty Held not matched with OBS Held");
+        toaster("error", "Qty Held not matched with Book Held");
         return;
       }
 
@@ -1075,11 +1075,13 @@ const DocumentsCorner = ({ type = "" }) => {
             onClick={() =>
               setIsOpen((prev) => ({ ...prev, addDocument: false }))
             }
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-0 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Add Document</DialogTitle>
+          <DialogTitle className="relative text-base -mt-4">
+            Add Document
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="space-y-4">
@@ -1138,7 +1140,7 @@ const DocumentsCorner = ({ type = "" }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
-                    OBS Authorised<span className="text-red-500">*</span>
+                    Book Authorised<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
@@ -1149,7 +1151,7 @@ const DocumentsCorner = ({ type = "" }) => {
                 </div>
                 <div>
                   <Label className="ms-2 mb-1">
-                    OBS Held<span className="text-red-500">*</span>
+                    Book Held<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
@@ -1438,11 +1440,13 @@ const DocumentsCorner = ({ type = "" }) => {
             onClick={() =>
               setIsOpen((prev) => ({ ...prev, editDocument: false }))
             }
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>
-          <DialogTitle className="">Update Document</DialogTitle>
+          <DialogTitle className="relative text-base -mt-4">
+            Update Document
+          </DialogTitle>
           <DialogDescription className="hidden" />
           <div>
             <div className="grid grid-cols-4 gap-4 mt-3">
@@ -1503,7 +1507,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
               <div>
                 <Label>
-                  OBS Authorised<span className="text-red-500">*</span>
+                  Book Authorised<span className="text-red-500">*</span>
                 </Label>
 
                 <InputWithPencil
@@ -1525,7 +1529,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
               <div>
                 <Label>
-                  OBS Held<span className="text-red-500">*</span>
+                  Book Held<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
                   name="obs_held"
@@ -2261,7 +2265,7 @@ const DocumentsCorner = ({ type = "" }) => {
         onOpenChange={(open) => setObsDialog((prev) => ({ ...prev, open }))}
       >
         <DialogContent className="!max-w-none w-[48vw] max-w-[950px]">
-          <DialogTitle>Confirm OBS Authorised Change</DialogTitle>
+          <DialogTitle>Confirm Book Authorised Change</DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
             <div>
               <Label>
