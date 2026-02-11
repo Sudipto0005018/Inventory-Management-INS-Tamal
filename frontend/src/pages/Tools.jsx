@@ -40,6 +40,7 @@ import SupplierFirm from "../components/Supplier";
 import ComboBox from "../components/ComboBox";
 import AsyncSelectBox from "../components/AsyncSelectBox";
 import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
+import ServicePersonnel from "../components/ServicePersonnel";
 
 //search fields
 const SEARCH_FIELDS = [
@@ -2048,7 +2049,7 @@ const Tools = ({ type = "" }) => {
             }));
           }}
         >
-          <div
+          {/* <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
                 px-4 py-2 border-b"
@@ -2066,8 +2067,19 @@ const Tools = ({ type = "" }) => {
             >
               ✕
             </button>
-          </div>
-
+          </div> */}
+          <button
+            type="button"
+            onClick={() =>
+              setIsOpen((prev) => ({ ...prev, withdrawSpare: false }))
+            }
+            className="sticky top-0 ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          >
+            ✕
+          </button>
+          <DialogTitle className="relative text-base -mt-4">
+            Manual Withdrawal
+          </DialogTitle>
           <div>
             <RadioGroup
               value={selectedIssue}
@@ -2269,7 +2281,7 @@ const Tools = ({ type = "" }) => {
                     isLooseSpare={isLooseSpare}
                   />
                 </div>
-                <ServicePersonnelSearch
+                <ServicePersonnel
                   options={selectedPerson.options}
                   value={selectedPerson.person}
                   onChange={(person) => {
@@ -2473,7 +2485,7 @@ const Tools = ({ type = "" }) => {
                   />
                 </div>
 
-                <ServicePersonnelSearch
+                <ServicePersonnel
                   options={selectedPerson.options}
                   value={selectedPerson.tempPerson}
                   onChange={(person) => {
@@ -2875,8 +2887,29 @@ const Tools = ({ type = "" }) => {
         open={obsDialog.open}
         onOpenChange={(open) => setObsDialog((prev) => ({ ...prev, open }))}
       >
-        <DialogContent className="!max-w-none w-[48vw] max-w-[950px]">
-          <DialogTitle>Confirm OBS Authorised Change</DialogTitle>
+        <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
+          className="!max-w-none w-[48vw] max-w-[950px]"
+        >
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="text-lg font-semibold">
+              Confirm OBS Authorised Change
+            </DialogTitle>
+
+            <button
+              type="button"
+              onClick={() => setObsDialog((prev) => ({ ...prev, open: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
             <div>
               <Label>
