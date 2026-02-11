@@ -2042,6 +2042,9 @@ const Spares = ({ type = "" }) => {
         <DialogContent
           unbounded
           className="w-[65vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onCloseAutoFocus={() => {
             setSelectedPerson((prev) => ({
               ...prev,
@@ -2051,7 +2054,25 @@ const Spares = ({ type = "" }) => {
             }));
           }}
         >
-          <DialogTitle>Manual Withdrawal</DialogTitle>
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="text-lg font-semibold">
+              Manual Withdrawal
+            </DialogTitle>
+
+            <button
+              type="button"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, withdrawSpare: false }))
+              }
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
 
           <div>
             <RadioGroup

@@ -374,6 +374,9 @@ const PendingSpecial = () => {
         onOpenChange={(set) => setIsOpen((prev) => ({ ...prev, issue: set }))}
       >
         <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onCloseAutoFocus={() => {
             setInputs({
               internal_demand_no: "",
@@ -385,10 +388,32 @@ const PendingSpecial = () => {
             });
           }}
         >
-          <DialogTitle className="capitalize">
-            {/* Issue {selectedRow.source == "spares" ? "spare" : "tool"} */}
-            Amend Special Demand
-          </DialogTitle>
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="text-lg font-semibold">
+              Amend Special Demand
+            </DialogTitle>
+
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, issue: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
+
+            <span className="text-gray-900 font-semibold ml-1">
+              {selectedRow?.description || "-"}
+            </span>
+          </div>
           <DialogDescription className="hidden" />
           <div>
             <>
@@ -399,7 +424,7 @@ const PendingSpecial = () => {
                     htmlFor="internal_demand_no"
                     className="ms-2 mb-2 mt-4"
                   >
-                    Internal Demand No.
+                    Internal Demand No. *
                   </Label>
                   <Input
                     type="text"
@@ -416,7 +441,7 @@ const PendingSpecial = () => {
                 </div>
                 <div className="w-full mt-3">
                   <FormattedDatePicker
-                    label="Internal Demand Date"
+                    label="Internal Demand Date *"
                     value={inputs.internal_demand_date}
                     onChange={(date) =>
                       setInputs((prev) => ({
@@ -432,7 +457,7 @@ const PendingSpecial = () => {
                 {/* Requisition No */}
                 <div className="w-full">
                   <Label htmlFor="requisition_no" className="ms-2 mb-2 mt-5">
-                    Requisition No.
+                    Requisition No. *
                   </Label>
                   <Input
                     type="text"
@@ -449,7 +474,7 @@ const PendingSpecial = () => {
                 </div>
                 <div className="w-full mt-4">
                   <FormattedDatePicker
-                    label="Requisition Date"
+                    label="Requisition Date *"
                     value={inputs.requisition_date}
                     onChange={(date) =>
                       setInputs((prev) => ({
@@ -465,7 +490,7 @@ const PendingSpecial = () => {
                 {/* MO Demand No */}
                 <div className="w-full">
                   <Label htmlFor="nmo_demand_no" className="ms-2 mb-2 mt-7">
-                    MO Demand No.
+                    MO Demand No. *
                   </Label>
                   <Input
                     type="text"
@@ -482,7 +507,7 @@ const PendingSpecial = () => {
                 </div>
                 <div className="w-full mt-6">
                   <FormattedDatePicker
-                    label="MO Demand Date"
+                    label="MO Demand Date *"
                     value={inputs.mo_demand_date}
                     onChange={(date) =>
                       setInputs((prev) => ({
@@ -566,293 +591,3 @@ const PendingSpecial = () => {
 };
 
 export default PendingSpecial;
-
-// import { useContext, useEffect, useMemo, useState } from "react";
-// import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
-
-// import { Input } from "../components/ui/input";
-// import { Button } from "../components/ui/button";
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogTitle,
-// } from "../components/ui/dialog";
-// import { Label } from "../components/ui/label";
-
-// import { Context } from "../utils/Context";
-// import apiService from "../utils/apiService";
-// import PaginationTable from "../components/PaginationTableTwo";
-// import SpinnerButton from "../components/ui/spinner-button";
-// import toaster from "../utils/toaster";
-// import { formatSimpleDate, getDate } from "../utils/helperFunctions";
-// import { MultiSelect } from "../components/ui/multi-select";
-// import { FormattedDatePicker } from "@/components/FormattedDatePicker";
-
-// const PendingSpecial = () => {
-//   const { config } = useContext(Context);
-
-//   /* ================= TABLE COLUMNS ================= */
-//   const columns = useMemo(
-//     () => [
-//       { key: "description", header: "Item Description" },
-//       { key: "indian_pattern", header: "IN Part No." },
-//       { key: "category", header: "Category" },
-//       { key: "quantity", header: "Qty" },
-//       { key: "demandno", header: "Internal Demand No" },
-//       { key: "demanddate", header: "Internal Demand Date" },
-//       { key: "requisition", header: "Requisition No" },
-//       { key: "Reqdate", header: "Requisition Date" },
-//       { key: "modemand", header: "MO Demand No" },
-//       { key: "modate", header: "MO Demand Date" },
-//       { key: "status", header: "Status" },
-//       { key: "processed", header: "Action" },
-//     ],
-//     [],
-//   );
-
-//   /* ================= STATE ================= */
-//   const [tableData, setTableData] = useState([]);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [selectedRow, setSelectedRow] = useState(null);
-
-//   const [isOpen, setIsOpen] = useState({ amend: false });
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   const [inputs, setInputs] = useState({
-//     internal_demand_no: "",
-//     internal_demand_date: null,
-//     requisition_no: "",
-//     requisition_date: null,
-//     mo_demand_no: "",
-//     mo_demand_date: null,
-//   });
-
-//   const [fetchedData, setFetchedData] = useState({
-//     items: [],
-//     totalPages: 1,
-//     currentPage: 1,
-//   });
-
-//   /* ================= FETCH ================= */
-//   const fetchdata = async () => {
-//     try {
-//       const res = await apiService.get("/pending/surveyed", {
-//         params: {
-//           page: currentPage,
-//           limit: config.row_per_page,
-//         },
-//       });
-
-//       if (res.success) setFetchedData(res.data);
-//       else toaster("error", res.message);
-//     } catch (err) {
-//       toaster("error", err.message);
-//     }
-//   };
-
-//   /* ================= STATUS DECIDER ================= */
-//   const getNextStatus = () => {
-//     const {
-//       internal_demand_no,
-//       internal_demand_date,
-//       requisition_no,
-//       requisition_date,
-//       mo_demand_no,
-//       mo_demand_date,
-//     } = inputs;
-
-//     if (
-//       !internal_demand_no &&
-//       !internal_demand_date &&
-//       !requisition_no &&
-//       !requisition_date &&
-//       !mo_demand_no &&
-//       !mo_demand_date
-//     )
-//       return "awaiting_internal_demand";
-
-//     if (
-//       internal_demand_no &&
-//       internal_demand_date &&
-//       !requisition_no &&
-//       !requisition_date
-//     )
-//       return "awaiting_requisition";
-
-//     if (requisition_no && requisition_date && !mo_demand_no && !mo_demand_date)
-//       return "awaiting_mo_demand";
-
-//     if (mo_demand_no && mo_demand_date) return "completed";
-
-//     return "awaiting_internal_demand";
-//   };
-
-//   /* ================= SUBMIT ================= */
-//   const handleSubmit = async () => {
-//     setIsLoading(true);
-
-//     try {
-//       const status = getNextStatus();
-
-//       const res = await apiService.post("/pending/amend-special-demand", {
-//         id: selectedRow.id,
-
-//         internal_demand_no: inputs.internal_demand_no,
-//         internal_demand_date: inputs.internal_demand_date
-//           ? formatSimpleDate(inputs.internal_demand_date)
-//           : null,
-
-//         requisition_no: inputs.requisition_no,
-//         requisition_date: inputs.requisition_date
-//           ? formatSimpleDate(inputs.requisition_date)
-//           : null,
-
-//         mo_demand_no: inputs.mo_demand_no,
-//         mo_demand_date: inputs.mo_demand_date
-//           ? formatSimpleDate(inputs.mo_demand_date)
-//           : null,
-
-//         status,
-//       });
-
-//       if (res.success) {
-//         toaster("success", "Special demand updated");
-//         setIsOpen({ amend: false });
-//         fetchdata();
-//       } else toaster("error", res.message);
-//     } catch (err) {
-//       toaster("error", err.message);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   /* ================= EFFECTS ================= */
-//   useEffect(() => {
-//     fetchdata();
-//   }, [currentPage]);
-
-//   useEffect(() => {
-//     const t = fetchedData.items.map((row) => ({
-//       ...row,
-//       demanddate: getDate(row.demanddate),
-//       Reqdate: getDate(row.Reqdate),
-//       modate: getDate(row.modate),
-//       status:
-//         row.status === "awaiting_internal_demand"
-//           ? "Awaiting for Internal Demand No"
-//           : row.status === "awaiting_requisition"
-//             ? "Awaiting for Requisition No"
-//             : row.status === "awaiting_mo_demand"
-//               ? "Awaiting for MO Demand No"
-//               : row.status === "completed"
-//                 ? "Completed"
-//                 : row.status,
-//       processed: (
-//         <Button
-//           size="icon"
-//           variant="outline"
-//           onClick={() => {
-//             setSelectedRow(row);
-//             setInputs({
-//               internal_demand_no: row.demandno || "",
-//               internal_demand_date: row.demanddate || null,
-//               requisition_no: row.requisition || "",
-//               requisition_date: row.Reqdate || null,
-//               mo_demand_no: row.modemand || "",
-//               mo_demand_date: row.modate || null,
-//             });
-//             setIsOpen({ amend: true });
-//           }}
-//         >
-//           <FaChevronRight />
-//         </Button>
-//       ),
-//     }));
-
-//     setTableData(t);
-//   }, [fetchedData]);
-
-//   /* ================= UI ================= */
-//   return (
-//     <>
-//       <PaginationTable
-//         data={tableData}
-//         columns={columns}
-//         currentPage={fetchedData.currentPage}
-//         totalPages={fetchedData.totalPages}
-//         onPageChange={setCurrentPage}
-//       />
-
-//       {/* ================= AMEND DIALOG ================= */}
-//       <Dialog
-//         open={isOpen.amend}
-//         onOpenChange={() => setIsOpen({ amend: false })}
-//       >
-//         <DialogContent>
-//           <DialogTitle>Amend Special Demand</DialogTitle>
-//           <DialogDescription />
-
-//           {/* Internal Demand */}
-//           <Label>Internal Demand No</Label>
-//           <Input
-//             value={inputs.internal_demand_no}
-//             onChange={(e) =>
-//               setInputs((p) => ({ ...p, internal_demand_no: e.target.value }))
-//             }
-//           />
-//           <FormattedDatePicker
-//             label="Internal Demand Date"
-//             value={inputs.internal_demand_date}
-//             onChange={(d) =>
-//               setInputs((p) => ({ ...p, internal_demand_date: d }))
-//             }
-//           />
-
-//           {/* Requisition */}
-//           <Label className="mt-3">Requisition No</Label>
-//           <Input
-//             value={inputs.requisition_no}
-//             onChange={(e) =>
-//               setInputs((p) => ({ ...p, requisition_no: e.target.value }))
-//             }
-//           />
-//           <FormattedDatePicker
-//             label="Requisition Date"
-//             value={inputs.requisition_date}
-//             onChange={(d) => setInputs((p) => ({ ...p, requisition_date: d }))}
-//           />
-
-//           {/* MO Demand */}
-//           <Label className="mt-3">MO Demand No</Label>
-//           <Input
-//             value={inputs.mo_demand_no}
-//             onChange={(e) =>
-//               setInputs((p) => ({ ...p, mo_demand_no: e.target.value }))
-//             }
-//           />
-//           <FormattedDatePicker
-//             label="MO Demand Date"
-//             value={inputs.mo_demand_date}
-//             onChange={(d) => setInputs((p) => ({ ...p, mo_demand_date: d }))}
-//           />
-
-//           <div className="flex justify-end gap-4 mt-6">
-//             <Button
-//               variant="outline"
-//               onClick={() => setIsOpen({ amend: false })}
-//             >
-//               Cancel
-//             </Button>
-//             <SpinnerButton loading={isLoading} onClick={handleSubmit}>
-//               Submit
-//             </SpinnerButton>
-//           </div>
-//         </DialogContent>
-//       </Dialog>
-//     </>
-//   );
-// };
-
-// export default PendingSpecial;

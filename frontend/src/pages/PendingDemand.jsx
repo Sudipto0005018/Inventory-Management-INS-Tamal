@@ -306,6 +306,9 @@ const PendingDemand = () => {
         }
       >
         <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}
@@ -317,10 +320,45 @@ const PendingDemand = () => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">Demand Details</DialogTitle>
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="capitalize">Demand Details</DialogTitle>
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, demand: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
+
+            <span className="text-gray-900 font-medium ml-1">
+              {selectedRow?.description || "-"}
+            </span>
+          </div>
           <DialogDescription className="hidden" />
           <div>
             <Label htmlFor="demand_no" className="mb-2 gap-1">
+              Surveyed / Utilised Qty
+            </Label>
+            <Input
+              id="survey_qty"
+              type="text"
+              placeholder="Enter Demand No."
+              name="survey_qty"
+              value={selectedRow?.survey_qty}
+              onChange={(e) =>
+                setInputs((prev) => ({ ...prev, survey_qty: e.target.value }))
+              }
+            />
+            <Label htmlFor="demand_no" className="mb-2 mt-4 gap-1">
               Demand No.<span className="text-red-500">*</span>
             </Label>
             <Input

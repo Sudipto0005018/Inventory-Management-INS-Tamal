@@ -179,7 +179,7 @@ const PermanentPendings = () => {
         row.status === "pending" ? (
           <Chip text="Pending" varient="info" />
         ) : (
-          <Chip text="Partial" varient="danger" />
+          <Chip text="Partial" varient="success" />
         );
       return {
         ...row,
@@ -376,8 +376,29 @@ const PermanentPendings = () => {
         open={isOpen.issue}
         onOpenChange={(set) => setIsOpen((p) => ({ ...p, issue: set }))}
       >
-        <DialogContent className="max-w-xl">
-          <DialogTitle>Item Issue Details</DialogTitle>
+        <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
+          className="w-full !max-w-4xl"
+        >
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="text-lg font-semibold">
+              Item Issue Details
+            </DialogTitle>
+
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, issue: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
           <DialogDescription className="hidden" />
 
           <RadioGroup
@@ -399,7 +420,23 @@ const PermanentPendings = () => {
           {/* ---------- NAC ---------- */}
           {inputs.issue_type === "nac" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label className="mb-1 ms-2">Item Description</Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.description || "-"}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label>Previous NAC Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Previous NAC Qty"
+                    value={selectedRow?.stocked_nac_qty}
+                  />
+                </div>
                 <div>
                   <Label>Demanded Qty</Label>
                   <Input
@@ -409,10 +446,12 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>NAC Qty</Label>
+                  <Label>
+                    NAC Qty <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
-                    placeholder="NAC Qty"
+                    placeholder="Enter NAC Qty"
                     type="number"
                     value={inputs.nac_qty}
                     onChange={(e) =>
@@ -421,37 +460,28 @@ const PermanentPendings = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label>NAC No.</Label>
+                  <Label>
+                    NAC No. <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
-                    placeholder="NAC No."
+                    placeholder="Enter NAC No."
                     value={inputs.nac_no}
                     onChange={(e) =>
                       setInputs((p) => ({ ...p, nac_no: e.target.value }))
                     }
                   />
                 </div>
-
                 <div>
-                  <FormattedDatePicker
-                    label="NAC Date"
-                    value={inputs.nac_calender}
-                    onChange={(d) =>
-                      setInputs((p) => ({ ...p, nac_calender: d }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Validity (days)</Label>
+                  <Label>
+                    Validity (days) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
                     type="number"
-                    placeholder="Validity (days)"
+                    placeholder="Enter Validity (days)"
                     value={inputs.validity}
                     onChange={(e) =>
                       setInputs((p) => ({ ...p, validity: e.target.value }))
@@ -459,14 +489,26 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Rate / Unit</Label>
+                  <Label>
+                    Rate / Unit <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
                     type="number"
-                    placeholder="Rate / Unit"
+                    placeholder="Enter Rate / Unit"
                     value={inputs.rate_unit}
                     onChange={(e) =>
                       setInputs((p) => ({ ...p, rate_unit: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <FormattedDatePicker
+                    className="w-full"
+                    label="NAC Date *"
+                    value={inputs.nac_calender}
+                    onChange={(d) =>
+                      setInputs((p) => ({ ...p, nac_calender: d }))
                     }
                   />
                 </div>
@@ -477,7 +519,23 @@ const PermanentPendings = () => {
           {/* ---------- STOCKING ---------- */}
           {inputs.issue_type === "stocking" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="mb-1 ms-2">Item Description</Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.description || "-"}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label>Previous Stocked In Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Previous Stocked In Qty"
+                    value={selectedRow?.stocked_nac_qty}
+                  />
+                </div>
                 <div>
                   <Label>Demanded Qty</Label>
                   <Input
@@ -486,11 +544,15 @@ const PermanentPendings = () => {
                     value={inputs.demand_quantity}
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Stocked In Qty</Label>
+                  <Label>
+                    Stocked In Qty <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
-                    placeholder="Stocked In Qty"
+                    placeholder="Enter Stocked In Qty"
                     type="number"
                     value={inputs.stocked_qty}
                     onChange={(e) =>
@@ -498,13 +560,13 @@ const PermanentPendings = () => {
                     }
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>MO Gate Pass No.</Label>
+                  <Label>
+                    MO Gate Pass No. <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     className="mt-3"
-                    placeholder="MO Gate Pass No."
+                    placeholder="Enter MO Gate Pass No."
                     value={inputs.mo_no}
                     onChange={(e) =>
                       setInputs((p) => ({ ...p, mo_no: e.target.value }))
@@ -513,7 +575,8 @@ const PermanentPendings = () => {
                 </div>
                 <div>
                   <FormattedDatePicker
-                    label="MO Date"
+                    className="w-full"
+                    label="MO Date *"
                     value={inputs.gate_pass_calender}
                     onChange={(d) =>
                       setInputs((p) => ({ ...p, gate_pass_calender: d }))

@@ -384,10 +384,10 @@ const PendingTempLoan = () => {
         received_quantity: row.qty_received ?? 0,
 
         status:
-          row.status?.toLowerCase() == "pending" ? (
-            <Chip text="Completed" varient="success" />
-          ) : (
+          row.status === "pending" ? (
             <Chip text="Pending" varient="info" />
+          ) : (
+            <Chip text="Partial" varient="success" />
           ),
         receive: (
           <Button
@@ -518,6 +518,9 @@ const PendingTempLoan = () => {
         <DialogContent
           unbounded
           className="w-[55vw] p-6"
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onPointerDownOutside={(e) => {
             // e.preventDefault();
           }}
@@ -527,28 +530,47 @@ const PendingTempLoan = () => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">
-            TY Loan - Item Returned Details
-          </DialogTitle>
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="capitalize">
+              TY Loan (other units)
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, receive: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
 
+            <span className="text-gray-900 font-medium ml-1">
+              {selectedRow?.description || "-"}
+            </span>
+          </div>
           <>
             <div className="grid grid-cols-3 gap-4"></div>
             <DialogDescription className="hidden" />
             <div className="">
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
-                  <Label className="mb-1 ms-2">
-                    Item Description <span className="text-red-500">*</span>
-                  </Label>
+                  <Label className="mb-1 ms-2">Previously Received Qty</Label>
                   <Input
                     className="mt-2"
-                    value={selectedRow?.description || "-"}
+                    value={selectedRow?.qty_received ?? 0}
                     readOnly
                   />
                 </div>
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Qty Issued<span className="text-red-500">*</span>
+                    Qty Issued
                   </Label>
                   <Input
                     className="mt-2"
@@ -614,9 +636,7 @@ const PendingTempLoan = () => {
                 }}
               />
               <div className="mt-4">
-                <Label className="ms-2 mb-2 block">
-                  Generate QR <span className="text-red-500">*</span>
-                </Label>
+                <Label className="ms-2 mb-2 block">Generate QR</Label>
 
                 <div className="flex gap-6 ms-2">
                   <label className="flex items-center gap-2">

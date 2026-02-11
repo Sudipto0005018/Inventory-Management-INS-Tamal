@@ -38,9 +38,9 @@ const PendingSurvey = () => {
     {
       key: "indian_pattern",
       header: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },
@@ -311,6 +311,10 @@ const PendingSurvey = () => {
         }
       >
         <DialogContent
+          className="unbounded w-full !max-w-2xl"
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onPointerDownOutside={(e) => {
             e.preventDefault();
           }}
@@ -323,98 +327,149 @@ const PendingSurvey = () => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">
-            Issue {selectedRow.spare_id ? "spare" : "tool"}
-          </DialogTitle>
-          <DialogDescription className="hidden" />
-          <div>
-            <Label htmlFor="servay_quantity" className="mb-2 gap-1">
-              Survey Quantity<span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="servay_quantity"
-              type="text"
-              placeholder="Survey Quantity"
-              name="quantity"
-              value={inputs.quantity}
-              onChange={(e) =>
-                setInputs((prev) => ({ ...prev, quantity: e.target.value }))
-              }
-            />
-            <Label htmlFor="voucher_no" className="mt-4 mb-2 gap-1">
-              Survey Voucher No.<span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="text"
-              placeholder="Enter Survey Voucher No."
-              name="voucher_no"
-              value={inputs.voucher_no}
-              onChange={(e) =>
-                setInputs((prev) => ({ ...prev, voucher_no: e.target.value }))
-              }
-            />
-            <Label htmlFor="servay_number" className="mb-2 mt-4 gap-1">
-              Survey Date<span className="text-red-500">*</span>
-            </Label>
-            <Popover
-              open={isOpen.survey_calender}
-              onOpenChange={(set) => {
-                setIsOpen((prev) => ({ ...prev, survey_calender: set }));
-              }}
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+                px-4 py-2 border-b"
+          >
+            <DialogTitle className="capitalize">
+              Issue {selectedRow.spare_id ? "spare" : "tool"}
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, survey: false }))}
+              className="justify-self-end rounded-md p-1 transition"
             >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  id="date"
-                  className="w-full justify-between font-normal"
-                >
-                  {inputs.survey_calender
-                    ? getFormatedDate(inputs.survey_calender)
-                    : "Select date"}
-                  <ChevronDownIcon />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto overflow-hidden p-0"
-                align="start"
-              >
-                <Calendar
-                  mode="single"
-                  selected={inputs.survey_calender}
-                  captionLayout="dropdown"
-                  onSelect={(date) => {
-                    setInputs((prev) => ({
-                      ...prev,
-                      survey_calender: date,
-                    }));
-                    setIsOpen((prev) => ({
-                      ...prev,
-                      survey_calender: false,
-                    }));
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
+              ✕
+            </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
+
+            <span className="text-gray-900 font-medium ml-1">
+              {selectedRow?.description || "-"}
+            </span>
+          </div>
+          <DialogDescription className="hidden" />
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <div className="flex items-center mt-4 gap-4 justify-end">
-                <Button
-                  variant="destructive"
-                  onClick={() =>
-                    setIsOpen((prev) => ({ ...prev, survey: false }))
-                  }
+              <Label className="mb-1 ms-2">Withdrawal Qty</Label>
+              <Input
+                className="mt-2"
+                value={selectedRow?.withdrawl_qty ?? 0}
+                readOnly
+              />
+            </div>
+            <div>
+              <Label className="mb-1 ms-2" htmlFor="quantity">
+                Previously Surveyed Qty
+              </Label>
+              <Input
+                className="mt-2"
+                id="quantity"
+                type="number"
+                placeholder="Quantity"
+                value={selectedRow?.survey_quantity ?? 0}
+                readOnly
+              />
+            </div>
+            <div>
+              <Label htmlFor="survey_quantity" className="mb-3 ms-2 ">
+                Survey Qty<span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="survey_quantity"
+                type="text"
+                placeholder="Enter Survey Quantity"
+                name="quantity"
+                value={inputs.quantity}
+                onChange={(e) =>
+                  setInputs((prev) => ({ ...prev, quantity: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="voucher_no" className="mt-4 mb-2 gap-1">
+                Survey Voucher No.<span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                placeholder="Enter Survey Voucher No."
+                name="voucher_no"
+                value={inputs.voucher_no}
+                onChange={(e) =>
+                  setInputs((prev) => ({ ...prev, voucher_no: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="servay_number" className="mb-2 mt-4 gap-1">
+                Survey Date<span className="text-red-500">*</span>
+              </Label>
+              <Popover
+                open={isOpen.survey_calender}
+                onOpenChange={(set) => {
+                  setIsOpen((prev) => ({ ...prev, survey_calender: set }));
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    id="date"
+                    className="w-full justify-between font-normal"
+                  >
+                    {inputs.survey_calender
+                      ? getFormatedDate(inputs.survey_calender)
+                      : "Select date"}
+                    <ChevronDownIcon />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-auto overflow-hidden p-0"
+                  align="start"
                 >
-                  Cancel
-                </Button>
-                <SpinnerButton
-                  loading={isLoading.servay}
-                  disabled={isLoading.survey}
-                  loadingText="Submitting..."
-                  className="text-white hover:bg-primary/85 cursor-pointer"
-                  onClick={handleServay}
-                >
-                  Submit
-                </SpinnerButton>
-              </div>
+                  <Calendar
+                    mode="single"
+                    selected={inputs.survey_calender}
+                    captionLayout="dropdown"
+                    onSelect={(date) => {
+                      setInputs((prev) => ({
+                        ...prev,
+                        survey_calender: date,
+                      }));
+                      setIsOpen((prev) => ({
+                        ...prev,
+                        survey_calender: false,
+                      }));
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center mt-4 gap-4 justify-end">
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  setIsOpen((prev) => ({ ...prev, survey: false }))
+                }
+              >
+                Cancel
+              </Button>
+              <SpinnerButton
+                loading={isLoading.servay}
+                disabled={isLoading.survey}
+                loadingText="Submitting..."
+                className="text-white hover:bg-primary/85 cursor-pointer"
+                onClick={handleServay}
+              >
+                Submit
+              </SpinnerButton>
             </div>
           </div>
         </DialogContent>
