@@ -1165,11 +1165,11 @@ const Tools = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Add Tools
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-4">
             <div className="space-y-4">
               {/* Row 1 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1564,11 +1564,11 @@ const Tools = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Update Tools
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-6">
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
                 <Label>
@@ -2049,25 +2049,6 @@ const Tools = ({ type = "" }) => {
             }));
           }}
         >
-          {/* <div
-            className="sticky top-0 z-10 bg-background 
-                grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
-          >
-            <DialogTitle className="text-lg font-semibold">
-              Manual Withdrawal
-            </DialogTitle>
-
-            <button
-              type="button"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, withdrawSpare: false }))
-              }
-              className="justify-self-end rounded-md p-1 transition"
-            >
-              ✕
-            </button>
-          </div> */}
           <button
             type="button"
             onClick={() =>
@@ -2077,10 +2058,10 @@ const Tools = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Manual Withdrawal
           </DialogTitle>
-          <div>
+          <div className="-mt-2">
             <RadioGroup
               value={selectedIssue}
               onValueChange={(e) => {
@@ -2901,7 +2882,7 @@ const Tools = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Confirm OBS Authorised Change
           </DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">

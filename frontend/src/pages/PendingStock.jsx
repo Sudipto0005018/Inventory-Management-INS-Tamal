@@ -552,16 +552,8 @@ const PermanentPendings = () => {
             <div className="">
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
-                  <Label className="mb-1 ms-2">Previously Received Qty</Label>
-                  <Input
-                    className="mt-2"
-                    value={selectedRow?.qty_received ?? 0}
-                    readOnly
-                  />
-                </div>
-                <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Stocked In Qty
+                    Demanded Qty
                   </Label>
                   <Input
                     className="mt-2"
@@ -573,8 +565,16 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
+                  <Label className="mb-1 ms-2">Previously Deposited Qty</Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.qty_received ?? 0}
+                    readOnly
+                  />
+                </div>
+                <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Returned Qty<span className="text-red-500">*</span>
+                    Deposit Qty<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     className="mt-2"
@@ -599,7 +599,7 @@ const PermanentPendings = () => {
                 </div>
                 <div className="">
                   <FormattedDatePicker
-                    label="Returned Date *"
+                    label="Deposit Date *"
                     className="w-full"
                     value={inputs.receive_date}
                     onChange={(date) => {

@@ -387,7 +387,7 @@ const PendingTempLoan = () => {
           row.status === "pending" ? (
             <Chip text="Pending" varient="info" />
           ) : (
-            <Chip text="Partial" varient="success" />
+            <Chip text="Pending" varient="info" />
           ),
         receive: (
           <Button
@@ -561,14 +561,6 @@ const PendingTempLoan = () => {
             <div className="">
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
-                  <Label className="mb-1 ms-2">Previously Received Qty</Label>
-                  <Input
-                    className="mt-2"
-                    value={selectedRow?.qty_received ?? 0}
-                    readOnly
-                  />
-                </div>
-                <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
                     Qty Issued
                   </Label>
@@ -578,6 +570,14 @@ const PendingTempLoan = () => {
                     type="number"
                     placeholder="Quantity"
                     value={selectedRow?.quantity ?? 0}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 ms-2">Previously Received Qty</Label>
+                  <Input
+                    className="mt-2"
+                    value={selectedRow?.qty_received ?? 0}
                     readOnly
                   />
                 </div>

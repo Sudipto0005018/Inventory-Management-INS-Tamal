@@ -1079,11 +1079,11 @@ const DocumentsCorner = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Add Document
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-4">
             <div className="space-y-4">
               {/* Row 1 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1444,11 +1444,11 @@ const DocumentsCorner = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Update Document
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-6">
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
                 <Label>

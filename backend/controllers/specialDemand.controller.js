@@ -17,6 +17,7 @@ async function createSpecialDemand(req, res) {
       requisition_date,
       mo_demand_no,
       mo_demand_date,
+      box_no,
     } = req.body;
 
     console.log("REQ.BODY =>", req.body);
@@ -69,17 +70,11 @@ async function createSpecialDemand(req, res) {
         userId,
         transaction_id,
       ]);
-
-      return res.json({
-        success: true,
-        message: "Inserted directly into Pending Issue",
-      });
-    }
-
-    /* =====================================================
-       CASE 2: Any field missing → INSERT INTO special_demand
-       ===================================================== */
-    const specialDemandQuery = `
+    } else {
+      /* =====================================================
+         CASE 2: Any field missing → INSERT INTO special_demand
+         ===================================================== */
+      const specialDemandQuery = `
       INSERT INTO special_demand (
         spare_id,
         tool_id,
@@ -94,26 +89,35 @@ async function createSpecialDemand(req, res) {
         created_by,
         created_by_name
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+      `;
 
-    await pool.query(specialDemandQuery, [
-      spare_id || null,
-      tool_id || null,
-      obs_authorised,
-      obs_increase_qty,
-      internal_demand_no || null,
-      internal_demand_date || null,
-      requisition_no || null,
-      requisition_date || null,
-      mo_demand_no || null,
-      mo_demand_date || null,
-      userId,
-      name,
-    ]);
+      await pool.query(specialDemandQuery, [
+        spare_id || null,
+        tool_id || null,
+        obs_authorised,
+        obs_increase_qty,
+        internal_demand_no || null,
+        internal_demand_date || null,
+        requisition_no || null,
+        requisition_date || null,
+        mo_demand_no || null,
+        mo_demand_date || null,
+        userId,
+        name,
+      ]);
+    }
+    await pool.query(
+      `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ?, obs_authorised=? WHERE id = ?`,
+      [
+        typeof box_no == "string" ? box_no : JSON.stringify(box_no),
+        obs_authorised,
+        spare_id || tool_id,
+      ],
+    );
 
     res.json({
       success: true,
-      message: "Special Demand created successfully",
+      message: "Inserted directly into Pending Issue",
     });
   } catch (err) {
     console.error(err);

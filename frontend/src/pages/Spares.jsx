@@ -315,29 +315,10 @@ const Spares = ({ type = "" }) => {
     }));
   };
 
-  const [newVendor, setNewVendor] = useState({
-    vendor: "",
-    address: "",
-    contacts: [""],
-    persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
-  });
-
   const [imagePayload, setImagePayload] = useState({
     imageStatus: [],
     newImageFiles: {},
   });
-
-  const addNewUserField = () => {
-    setUsers((prev) => [
-      ...prev,
-      { service_no: "", name: "", isNewUser: false },
-    ]);
-  };
-  const removeUserField = (index) => {
-    setUsers((prev) =>
-      prev.length === 1 ? prev : prev.filter((_, i) => i !== index),
-    );
-  };
 
   const enableEdit = (field) => {
     setEditableFields((prev) => ({
@@ -956,6 +937,9 @@ const Spares = ({ type = "" }) => {
               }));
             }
             setSelectedRow(row);
+            console.log();
+
+            setBoxNo(JSON.parse(row.box_no));
             setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
           }}
           onShowQR={(row) => {
@@ -1171,11 +1155,11 @@ const Spares = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative -mt-4 text-base">
+          <DialogTitle className="relative -mt-10 text-base">
             Add Spare
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-4">
             <div className="space-y-4">
               {/* Row 1 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1570,11 +1554,11 @@ const Spares = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Update Spare
           </DialogTitle>
           <DialogDescription className="hidden" />
-          <div>
+          <div className="-mt-6">
             <div className="grid grid-cols-4 gap-4 mt-3">
               <div>
                 <Label>
@@ -2055,25 +2039,6 @@ const Spares = ({ type = "" }) => {
             }));
           }}
         >
-          {/* <div
-            className="sticky top-0 z-10 bg-background 
-                grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
-          >
-            <DialogTitle className="text-lg font-semibold">
-              Manual Withdrawal
-            </DialogTitle>
-
-            <button
-              type="button"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, withdrawSpare: false }))
-              }
-              className="justify-self-end rounded-md p-1 transition"
-            >
-              ✕
-            </button>
-          </div> */}
           <button
             type="button"
             onClick={() =>
@@ -2083,10 +2048,10 @@ const Spares = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="text-base -mt-4">
+          <DialogTitle className="text-base -mt-10">
             Manual Withdrawal
           </DialogTitle>
-          <div>
+          <div className="-mt-2">
             <RadioGroup
               value={selectedIssue}
               onValueChange={(e) => {
@@ -2907,7 +2872,7 @@ const Spares = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-10">
             Confirm OBS Authorised Change
           </DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
@@ -3161,7 +3126,7 @@ const Spares = ({ type = "" }) => {
             </Button>
 
             <Button
-              onClick={() => {
+              onClick={async () => {
                 // Qty validation (required)
                 if (!obsDialog.quantity || Number(obsDialog.quantity) == 0) {
                   toaster("error", "Qty (Increase / Decrease) is required");
@@ -3232,9 +3197,13 @@ const Spares = ({ type = "" }) => {
                   mo_demand_date: obsDialog.moDemandDate
                     ? getISTTimestamp(obsDialog.moDemandDate)
                     : null,
+                  box_no: boxNo,
                 };
 
-                apiService.post("/specialDemand/special", payload);
+                await apiService.post("/specialDemand/special", payload);
+                await fetchdata();
+                payload.box_no =
+                  typeof boxNo == "string" ? boxNo : JSON.stringify(boxNo);
 
                 //new-logic
                 setSelectedRow((prev) => ({

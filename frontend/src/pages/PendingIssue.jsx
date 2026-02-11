@@ -388,7 +388,7 @@ const PermanentPendings = () => {
                 px-4 py-2 border-b"
           >
             <DialogTitle className="text-lg font-semibold">
-              Item Issue Details
+              Updation for Qty NAC / Issued
             </DialogTitle>
 
             <button
@@ -398,6 +398,15 @@ const PermanentPendings = () => {
             >
               ✕
             </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
+
+            <span className="text-gray-900 font-medium ml-1">
+              {selectedRow?.description || "-"}
+            </span>
           </div>
           <DialogDescription className="hidden" />
 
@@ -422,11 +431,11 @@ const PermanentPendings = () => {
             <>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label className="mb-1 ms-2">Item Description</Label>
+                  <Label>Demanded Qty</Label>
                   <Input
-                    className="mt-2"
-                    value={selectedRow?.description || "-"}
-                    readOnly
+                    className="mt-3"
+                    placeholder="Demanded Qty"
+                    value={inputs.demand_quantity}
                   />
                 </div>
                 <div>
@@ -434,15 +443,7 @@ const PermanentPendings = () => {
                   <Input
                     className="mt-3"
                     placeholder="Previous NAC Qty"
-                    value={selectedRow?.stocked_nac_qty}
-                  />
-                </div>
-                <div>
-                  <Label>Demanded Qty</Label>
-                  <Input
-                    className="mt-3"
-                    placeholder="Demanded Qty"
-                    value={inputs.demand_quantity}
+                    value={selectedRow?.stocked_nac_qty ?? 0}
                   />
                 </div>
                 <div>
@@ -459,8 +460,6 @@ const PermanentPendings = () => {
                     }
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label>
                     NAC No. <span className="text-red-500">*</span>
@@ -474,6 +473,8 @@ const PermanentPendings = () => {
                     }
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label>
                     Validity (days) <span className="text-red-500">*</span>
@@ -521,22 +522,6 @@ const PermanentPendings = () => {
             <>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="mb-1 ms-2">Item Description</Label>
-                  <Input
-                    className="mt-2"
-                    value={selectedRow?.description || "-"}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <Label>Previous Stocked In Qty</Label>
-                  <Input
-                    className="mt-3"
-                    placeholder="Previous Stocked In Qty"
-                    value={selectedRow?.stocked_nac_qty}
-                  />
-                </div>
-                <div>
                   <Label>Demanded Qty</Label>
                   <Input
                     className="mt-3"
@@ -544,8 +529,14 @@ const PermanentPendings = () => {
                     value={inputs.demand_quantity}
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Previous Stocked In Qty</Label>
+                  <Input
+                    className="mt-3"
+                    placeholder="Previous Stocked In Qty"
+                    value={selectedRow?.stocked_nac_qty ?? 0}
+                  />
+                </div>
                 <div>
                   <Label>
                     Stocked In Qty <span className="text-red-500">*</span>
@@ -560,6 +551,8 @@ const PermanentPendings = () => {
                     }
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>
                     MO Gate Pass No. <span className="text-red-500">*</span>
