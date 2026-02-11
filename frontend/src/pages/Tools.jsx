@@ -2888,28 +2888,22 @@ const Tools = ({ type = "" }) => {
         onOpenChange={(open) => setObsDialog((prev) => ({ ...prev, open }))}
       >
         <DialogContent
+          unbounded
           onInteractOutside={(e) => {
             e.preventDefault(); // 🚫 Prevent outside click close
           }}
-          className="!max-w-none w-[48vw] max-w-[950px]"
+          className="w-[55vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
         >
-          <div
-            className="sticky top-0 z-10 bg-background 
-                grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+          <button
+            type="button"
+            onClick={() => setObsDialog((prev) => ({ ...prev, open: false }))}
+            className="sticky top-0 ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
-            <DialogTitle className="text-lg font-semibold">
-              Confirm OBS Authorised Change
-            </DialogTitle>
-
-            <button
-              type="button"
-              onClick={() => setObsDialog((prev) => ({ ...prev, open: false }))}
-              className="justify-self-end rounded-md p-1 transition"
-            >
-              ✕
-            </button>
-          </div>
+            ✕
+          </button>
+          <DialogTitle className="relative text-base -mt-4">
+            Confirm OBS Authorised Change
+          </DialogTitle>
           <div className="grid grid-cols-4 gap-4 items-end text-sm">
             <div>
               <Label>
@@ -2974,6 +2968,16 @@ const Tools = ({ type = "" }) => {
           </div>
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
+              <div className="space-y-4">
+                <BoxNoInputsSimple
+                  value={boxNo}
+                  onChange={(val) => {
+                    setBoxNo(val);
+                  }}
+                  isLooseSpare={isLooseSpare}
+                  isBoxnumberDisable={false}
+                />
+              </div>
               <p className="font-medium text-sm mb-2">
                 Quote Authority<span className="text-red-500"> *</span>
               </p>
