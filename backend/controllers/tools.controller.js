@@ -33,7 +33,7 @@ const createTool = async (req, res) => {
     const isCriticalTool = critical_tool === "yes" ? 1 : 0;
     const query = `
             INSERT INTO tools
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, image, uid, oem, substitute_name, local_terminology)
+                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, image, uid, oem, substitute_name, local_terminology, critical_tool)
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
@@ -91,7 +91,7 @@ async function getTools(req, res) {
     }
     const [totalCount] = await pool.query(
       `SELECT COUNT(*) as count FROM tools ${whereClause}`,
-      params
+      params,
     );
     const totalSpares = totalCount[0].count;
     if (totalSpares === 0) {
@@ -104,8 +104,8 @@ async function getTools(req, res) {
             totalPages: 1,
             currentPage: page,
           },
-          search ? "No matching tools found" : "No tools found"
-        )
+          search ? "No matching tools found" : "No tools found",
+        ),
       );
     }
 
@@ -125,8 +125,8 @@ async function getTools(req, res) {
           totalPages: Math.ceil(totalSpares / limit),
           currentPage: page,
         },
-        "Tools retrieved successfully"
-      )
+        "Tools retrieved successfully",
+      ),
     );
   } catch (error) {
     console.log("Error while getting tools: ", error);
@@ -163,7 +163,9 @@ async function getCriticalTools(req, res) {
             totalPages: 1,
             currentPage: page,
           },
-          search ? "No matching critical tools found" : "No critical tools found",
+          search
+            ? "No matching critical tools found"
+            : "No critical tools found",
         ),
       );
     }
@@ -232,7 +234,7 @@ async function getCriticalTools(req, res) {
 //     );
 //     const data = r[0];
 //     if (data.obs_authorised_new != null) {
-      
+
 //       return res
 //         .status(400)
 //         .json(new ApiErrorResponse(400, {}, "Approval pending"));
@@ -330,7 +332,7 @@ async function updateTool(req, res) {
     /* 1️⃣ Fetch current spare */
     const [[tool]] = await pool.query(
       `SELECT obs_authorised, image FROM tools WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!tool) {
@@ -350,7 +352,7 @@ async function updateTool(req, res) {
           AND field_name = 'obs_authorised'
           AND status = 'pending'
         `,
-        [id]
+        [id],
       );
 
       if (pending.count > 0) {
@@ -367,7 +369,7 @@ async function updateTool(req, res) {
         VALUES
           (?, ?, 'obs_authorised', ?, ?, 'pending')
         `,
-        [id, req.user.id, tool.obs_authorised, obs_authorised]
+        [id, req.user.id, tool.obs_authorised, obs_authorised],
       );
     }
 
@@ -413,7 +415,7 @@ async function updateTool(req, res) {
         local_terminology || null,
         isCriticalTool,
         id,
-      ]
+      ],
     );
 
     oldImg = tool.image;
@@ -426,8 +428,8 @@ async function updateTool(req, res) {
           {},
           tool.obs_authorised != obs_authorised
             ? "Tool updated. Approval request sent."
-            : "Tool updated successfully"
-        )
+            : "Tool updated successfully",
+        ),
       );
   } catch (error) {
     console.error("Error while updating tool:", error);
@@ -475,12 +477,12 @@ async function approveObsAuth(req, res) {
       return res
         .status(400)
         .json(
-          new ApiErrorResponse(400, {}, "Already approved or not requested")
+          new ApiErrorResponse(400, {}, "Already approved or not requested"),
         );
     }
     const [result] = await pool.query(
       `UPDATE tools SET obs_authorised = ?, obs_authorised_new = ? WHERE id = ?`,
-      [tool.obs_authorised_new, null, id]
+      [tool.obs_authorised_new, null, id],
     );
     return res.status(200).json(new ApiResponse(200, result, "Approved"));
   } catch (error) {
@@ -498,7 +500,7 @@ async function getOBSAuthApprovalPending(req, res) {
 
   try {
     const [total] = await pool.query(
-      `SELECT COUNT(*) AS total FROM tools WHERE obs_authorised_new IS NOT NULL`
+      `SELECT COUNT(*) AS total FROM tools WHERE obs_authorised_new IS NOT NULL`,
     );
     if (total[0].total == 0) {
       return res.status(200).json(
@@ -510,13 +512,13 @@ async function getOBSAuthApprovalPending(req, res) {
             totalPages: 1,
             currentPage: page,
           },
-          "No product found"
-        )
+          "No product found",
+        ),
       );
     }
     const [rows] = await pool.query(
       `SELECT * FROM tools WHERE obs_authorised_new IS NOT NULL LIMIT ? OFFSET ?;`,
-      [limit, offset]
+      [limit, offset],
     );
     res.status(200).json(
       new ApiResponse(
@@ -527,8 +529,8 @@ async function getOBSAuthApprovalPending(req, res) {
           totalPages: Math.ceil(total[0].total / limit),
           currentPage: page,
         },
-        "Tools retrieved successfully"
-      )
+        "Tools retrieved successfully",
+      ),
     );
   } catch (error) {
     console.log(error);
@@ -553,13 +555,13 @@ async function rejectObsAuth(req, res) {
       return res
         .status(400)
         .json(
-          new ApiErrorResponse(400, {}, "Already rejected or not requested")
+          new ApiErrorResponse(400, {}, "Already rejected or not requested"),
         );
     }
 
     const [result] = await pool.query(
       `UPDATE tools SET obs_authorised_new = ? WHERE id = ?`,
-      [null, id]
+      [null, id],
     );
 
     return res.status(200).json(new ApiResponse(200, result, "Rejected"));

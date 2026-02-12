@@ -11,7 +11,7 @@ import {
 function BoxNoWithdrawl({
   value,
   onChange,
-  isLooseSpare = false, 
+  isLooseSpare = false,
   isBoxnumberDisable = false,
 }) {
   const handleInputChange = (index, fieldName, fieldValue) => {
@@ -119,7 +119,8 @@ function BoxNoWithdrawl({
               <TableCell>
                 <Input
                   placeholder="Withdrawn Qty"
-                  type="text"
+                  type="number"
+                  min="0"
                   value={row.withdraw}
                   onChange={(e) =>
                     handleInputChange(index, "withdraw", e.target.value)

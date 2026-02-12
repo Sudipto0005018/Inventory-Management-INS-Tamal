@@ -1764,27 +1764,6 @@ const Spares = ({ type = "" }) => {
                 )}
               </div>
 
-              {/* critical-special-price_unit-sub_component */}
-              {/* <div>
-                <Label className="ms-2 mb-1">Critical Spare</Label>
-                <RadioGroup defaultValue="no">
-                  <div className="flex gap-6 mt-2">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="yes" />
-                      <Label htmlFor="yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="no" />
-                      <Label htmlFor="no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div> */}
-
               <div>
                 <Label className="ms-2 mb-1">
                   Critical Spare<span className="text-red-500">*</span>
@@ -2940,16 +2919,28 @@ const Spares = ({ type = "" }) => {
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
               <div className="space-y-4">
-                <BoxNoInputsSimple
+                {/* <BoxNoInputsSimple
                   value={boxNo}
                   onChange={(val) => {
                     setBoxNo(val);
                   }}
                   isLooseSpare={isLooseSpare}
                   isBoxnumberDisable={false}
+                /> */}
+                <BoxNoInputs
+                  value={
+                    selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
+                  }
+                  onChange={(value) =>
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      box_no: JSON.stringify(value),
+                    }))
+                  }
+                  isLooseSpare={isLooseSpare}
                 />
               </div>
-              <p className="font-medium text-sm mb-2">
+              <p className="font-medium text-sm mb-2 mt-2">
                 Quote Authority<span className="text-red-500"> *</span>
               </p>
 
@@ -3106,13 +3097,23 @@ const Spares = ({ type = "" }) => {
 
           {obsDialog.action === "decrease" && (
             <div className="pt-3 border-t space-y-4">
-              <BoxNoInputsSimple
+              {/* <BoxNoInputsSimple
                 value={boxNo}
                 onChange={(val) => {
                   setBoxNo(val);
                 }}
                 isLooseSpare={isLooseSpare}
                 isBoxnumberDisable={false}
+              /> */}
+              <BoxNoInputs
+                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
+                onChange={(value) =>
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    box_no: JSON.stringify(value),
+                  }))
+                }
+                isLooseSpare={isLooseSpare}
               />
             </div>
           )}

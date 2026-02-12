@@ -2950,16 +2950,20 @@ const Tools = ({ type = "" }) => {
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
               <div className="space-y-4">
-                <BoxNoInputsSimple
-                  value={boxNo}
-                  onChange={(val) => {
-                    setBoxNo(val);
-                  }}
+                <BoxNoInputs
+                  value={
+                    selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
+                  }
+                  onChange={(value) =>
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      box_no: JSON.stringify(value),
+                    }))
+                  }
                   isLooseSpare={isLooseSpare}
-                  isBoxnumberDisable={false}
                 />
               </div>
-              <p className="font-medium text-sm mb-2">
+              <p className="font-medium text-sm mb-2 mt-2">
                 Quote Authority<span className="text-red-500"> *</span>
               </p>
 
@@ -3116,13 +3120,15 @@ const Tools = ({ type = "" }) => {
 
           {obsDialog.action === "decrease" && (
             <div className="pt-3 border-t space-y-4">
-              <BoxNoInputsSimple
-                value={boxNo}
-                onChange={(val) => {
-                  setBoxNo(val);
-                }}
+              <BoxNoInputs
+                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
+                onChange={(value) =>
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    box_no: JSON.stringify(value),
+                  }))
+                }
                 isLooseSpare={isLooseSpare}
-                isBoxnumberDisable={false}
               />
             </div>
           )}
@@ -3136,7 +3142,7 @@ const Tools = ({ type = "" }) => {
             </Button>
 
             <Button
-              onClick={() => {
+              onClick={async () => {
                 // Qty validation (required)
                 if (!obsDialog.quantity || Number(obsDialog.quantity) == 0) {
                   toaster("error", "Qty (Increase / Decrease) is required");
@@ -3207,10 +3213,13 @@ const Tools = ({ type = "" }) => {
                   mo_demand_date: obsDialog.moDemandDate
                     ? getISTTimestamp(obsDialog.requisitionDate)
                     : null,
+                  box_no: boxNo,
                 };
 
-                apiService.post("/specialDemand/special", payload);
-
+                await apiService.post("/specialDemand/special", payload);
+                await fetchdata();
+                payload.box_no =
+                  typeof boxNo == "string" ? boxNo : JSON.stringify(boxNo);
                 //new-logic
                 setSelectedRow((prev) => ({
                   ...prev,
