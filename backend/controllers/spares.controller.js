@@ -2,6 +2,7 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { unlinkFile } = require("../middlewares/file");
+const ExcelJS = require("exceljs");
 
 const createSpare = async (req, res) => {
   const {
@@ -830,6 +831,283 @@ async function generateQRCode(req, res) {
   }
 }
 
+async function generateExcel(req, res) {
+  const { module } = req.query;
+
+  try {
+    let rows = [];
+
+    if (module === "tools") {
+      [rows] = await pool.query(`
+        SELECT description, indian_pattern, equipment_system, category,
+        denos,
+        obs_authorised,
+        obs_held,
+        box_no,
+        item_distribution,
+        storage_location
+        FROM tools
+      `);
+    }
+
+    if (module === "spares") {
+      [rows] = await pool.query(`
+        SELECT description, indian_pattern, equipment_system, category,
+        denos,
+        obs_authorised,
+        obs_held,
+        box_no,
+        item_distribution,
+        storage_location
+        FROM spares
+      `);
+    }
+
+    if (module === "procurement") {
+      [rows] = await pool.query(`
+        SELECT nac_qty, nac_no,
+        validity,
+        rate_unit,
+        box_no,
+        qty_received
+        FROM procurement
+      `);
+    }
+    // Workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(module);
+    const {
+      spares: spareHeaders,
+      procurement: procurementHeaders,
+      tools: toolHeaders,
+    } = require("../utils/workbookHeaderas");
+
+    if (module === "procurement") {
+      worksheet.columns = procurementHeaders;
+    } else if (module === "spares") {
+      worksheet.columns = spareHeaders;
+    } else if (module === "tools") {
+      worksheet.columns = toolHeaders;
+    }
+
+    rows.forEach((row) => {
+      let boxNo = [];
+
+      if (row.box_no) {
+        try {
+          boxNo =
+            typeof row.box_no === "string"
+              ? JSON.parse(row.box_no)
+              : row.box_no;
+        } catch {
+          boxNo = [];
+        }
+      }
+
+      row.boxes = boxNo.map((box) => box.no).join(", ");
+
+      row.itemDistribution = boxNo
+        .map((box) => box.qtyHeld || box.qn || "")
+        .join(", ");
+
+      worksheet.addRow(row);
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    res.set({
+      "Content-Length": buffer.length,
+      "Content-Disposition": `attachment; filename=${module}_${Date.now()}.xlsx`,
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    res.send(buffer);
+    // const fs = require("fs");
+    // const path = require("path");
+
+    // const saveDir = path.join(__dirname, "xl");
+    // const filename = `${module}_${Date.now()}.xlsx`;
+    // const filePath = path.join(saveDir, filename);
+
+    // if (!fs.existsSync(saveDir)) {
+    //   fs.mkdirSync(saveDir);
+    // }
+
+    // rows.forEach((row) => worksheet.addRow(row));
+    // await workbook.xlsx.writeFile(filePath);
+    console.log("MODULE:", module);
+    console.log("ROWS:", rows.length);
+    console.log("PATH:", location.pathname);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+}
+
+async function getDaashboardData(req, res) {
+  let tenantId = req?.user?.tenantId;
+  if (!tenantId) {
+    return res
+      .status(400)
+      .json(new ApiErrorResponce(400, {}, "Tenant ID is required"));
+  }
+  const { expiredFrom, expiredTo, upcommingFrom, upcommingTo, selected } =
+    req.body;
+  try {
+    const [totalAsset] = await pool.query(
+      `SELECT COUNT(*) AS total from assets_${tenantId} ${selected == "all" ? "" : selected == "it" ? "WHERE asset_type = 'it'" : "WHERE asset_type = 'admin'"}`,
+    );
+    const total_asset = totalAsset[0].total;
+    const [taggedAsset] = await pool.query(
+      `SELECT COUNT(t.id) AS total FROM taggings_${tenantId} t
+            LEFT JOIN assets_${tenantId} a ON a.id = t.asset_id
+            ${selected == "all" ? "" : selected == "it" ? "WHERE a.asset_type = 'it'" : "WHERE a.asset_type = 'admin'"}
+      `,
+    );
+    const total_tagged = taggedAsset[0].total;
+    // const [detaggedAsset] = await pool.query(
+    //     `SELECT COUNT(DISTINCT h.asset_id) AS total FROM history_${tenantId} h
+    //     LEFT JOIN assets_${tenantId} a ON a.id = h.asset_id
+    //     ${selected == "all" ? "" : selected == "it" ? "WHERE a.asset_type = 'it'" : "WHERE a.asset_type = 'admin'"}
+    //     `
+    // );
+    // const total_detagged = detaggedAsset[0].total;
+    // const not_assigned = total_asset - (total_tagged + total_detagged);
+
+    const [assetStatusCounts] = await pool.query(`
+            SELECT 
+                COUNT(CASE WHEN t.asset_id IS NULL AND h.asset_id IS NULL THEN 1 END) as unusedAssets,
+                COUNT(DISTINCT CASE WHEN t.asset_id IS NULL AND h.asset_id IS NOT NULL THEN a.id END) as historyOnlyAssets
+            FROM assets_${tenantId} a
+            LEFT JOIN taggings_${tenantId} t ON a.id = t.asset_id
+            LEFT JOIN history_${tenantId} h ON a.id = h.asset_id
+            ${selected == "all" ? "" : selected == "it" ? "WHERE a.asset_type = 'it'" : "WHERE a.asset_type = 'admin'"}
+        `);
+    const total_detagged = assetStatusCounts[0].historyOnlyAssets;
+    const not_assigned = assetStatusCounts[0].unusedAssets;
+
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0);
+    d.setMinutes(0);
+    d.setSeconds(0);
+    d.setMilliseconds(0);
+    const [upcommingExp] = await pool.query(
+      `
+                SELECT asset_id,model_no,type,serial,exp_date,asset_code FROM assets_${tenantId} 
+                WHERE
+                    exp_date IS NOT NULL
+                    ${selected == "all" ? "" : selected == "it" ? "AND asset_type = 'it'" : "AND asset_type = 'admin'"}
+                    AND exp_date BETWEEN ? AND ?
+                ORDER BY exp_date ASC
+            `,
+      [upcommingFrom, upcommingTo],
+    );
+
+    const [upcommingSubmission] = await pool.query(
+      `
+                SELECT asset_id,model_no,type,serial,exp_date,asset_code FROM assets_${tenantId} 
+                    WHERE
+                        exp_date IS NOT NULL
+                        ${selected == "all" ? "" : selected == "it" ? "AND asset_type = 'it'" : "AND asset_type = 'admin'"}
+                        AND exp_date BETWEEN ? AND ?
+                    ORDER BY exp_date ASC
+            `,
+      [expiredFrom, expiredTo],
+    );
+
+    let [monthData] = await pool.query(
+      `SELECT
+                (MONTH(exp_date) - 1) AS month_no,
+                COUNT(id) AS total
+            FROM assets_${tenantId}
+            WHERE exp_date IS NOT NULL
+            ${selected == "all" ? "" : selected == "it" ? "AND asset_type = 'it'" : "AND asset_type = 'admin'"}
+            AND exp_date > ?
+            AND exp_date < DATE_ADD(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY month_no
+            ORDER BY month_no`,
+      [getISTString(d)],
+    );
+    const monthNos = new Set();
+    for (let i = 0; i < monthData.length; i++) {
+      monthNos.add(monthData[i].month_no);
+    }
+
+    for (let i = 0; i < 12; i++) {
+      if (!monthNos.has(i)) {
+        monthData.push({
+          month_no: i,
+          total: 0,
+        });
+      }
+    }
+
+    monthData.sort((a, b) => a.month_no - b.month_no);
+    const day = new Date();
+    day.setDate(1);
+    day.setHours(0, 0, 0, 0);
+    day.setSeconds(day.getSeconds() - 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [expThisMon] = await pool.query(
+      `SELECT COUNT(*) AS total from assets_${tenantId} WHERE (exp_date BETWEEN ? AND ?) ${selected == "all" ? "" : selected == "it" ? "AND asset_type = 'it'" : "AND asset_type = 'admin'"}`,
+      [getSqlDate(day), getSqlDate(today)],
+    );
+    const currentMonth = today.getMonth();
+    if (expThisMon[0].total > 0) {
+      for (let i = 0; i < monthData.length; i++) {
+        if (monthData[i].month_no == currentMonth) {
+          monthData[i].total -= expThisMon[0].total;
+          break;
+        }
+      }
+    }
+
+    const p1 = monthData.slice(0, currentMonth);
+    const p2 = monthData.slice(currentMonth, 12);
+    monthData = [...p2, ...p1];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+    for (let i = 0; i < monthData.length; i++) {
+      monthData[i].month_name = months[monthData[i].month_no];
+      delete monthData[i].month_no;
+    }
+    const data = {
+      total_asset,
+      total_tagged,
+      total_detagged,
+      not_assigned,
+      upcommingExp,
+      upcommingSubmission,
+      monthData: [...p2, ...p1],
+    };
+    res.status(200).json(new ApiResponse(200, data, "Dashboard data fetched"));
+  } catch (error) {
+    console.log(error);
+
+    return res
+      .status(500)
+      .json(
+        new ApiErrorResponce(500, {}, error.message || "Internal server error"),
+      );
+  }
+}
+
 module.exports = {
   createSpare,
   getSpares,
@@ -842,4 +1120,5 @@ module.exports = {
   getCriticalSpares,
   updateSpecialDemand,
   generateQRCode,
+  generateExcel,
 };

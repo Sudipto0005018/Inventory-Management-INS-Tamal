@@ -15,6 +15,7 @@ const {
   getCriticalSpares,
   updateSpecialDemand,
   generateQRCode,
+  generateExcel,
 } = require("../controllers/spares.controller");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateSpare);
@@ -28,5 +29,6 @@ router.get("/approval-pending", getOBSAuthApprovalPending);
 router.get("/approval-pending-all", getAllApprovalPendings);
 router.delete("/:id", authMiddleware, deleteSpare);
 router.post("/genarate-qr", generateQRCode);
+router.get("/excel", generateExcel);
 
 module.exports = router;

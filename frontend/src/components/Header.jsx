@@ -6,7 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useContext, useState, useEffect } from "react";
 import { FiMenu } from "react-icons/fi";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { FaFileExcel, FaBook } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 
@@ -15,9 +15,20 @@ import apiService from "../utils/apiService";
 import { navigateTo, navigateToLogin, setNavigate } from "../utils/navigate";
 import { makeAvatarName } from "../utils/helperFunctions";
 import logo1 from "../assets/logo1.png";
+import { useMemo } from "react";
 
 const Header = ({ onSidebarOpen }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const map = useMemo(
+    () => ({
+      "/spares": "spares",
+      "/tools": "tools",
+      "/permanent/procurement": "procurement",
+    }),
+    [],
+  );
+
   const { user, setUser, setLoading, setConfig } = useContext(Context);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -34,15 +45,49 @@ const Header = ({ onSidebarOpen }) => {
     }
   };
 
-  const handleExportExcel = () => {
-    setIsOpen(false);
+  // const handleExportExcel = () => {
+  //   setIsOpen(false);
+  // };
+
+  // const handleExportExcel = async () => {
+  //   try {
+  //     setIsOpen(false);
+
+  //     console.log("xyz");
+  //     const response = await apiService.get("/spares/excel", {
+  //       responseType: "blob",
+  //     });
+
+  //     const url = window.URL.createObjectURL(new Blob([response.data]));
+
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.setAttribute("download", `Items_${Date.now()}.xlsx`);
+
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //   } catch (error) {
+  //     console.error("Excel export failed:", error);
+  //   }
+  // };
+
+  const handleExportExcel = async () => {
+    try {
+      setIsOpen(false);
+
+      const module = map[location.pathname];
+
+      await apiService.downloadExcel(`/spares/excel?module=${module}`);
+    } catch (error) {
+      console.error("Excel export failed:", error);
+    }
   };
 
   const handleUserManual = () => {
     window.open("/user-manual.pdf", "_blank");
     setIsOpen(false);
   };
-
 
   async function fetchConfig() {
     try {

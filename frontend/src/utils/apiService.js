@@ -140,6 +140,42 @@ class ApiService {
     }
   }
 
+  async downloadExcel(endpoint, params = {}, config = {}) {
+    try {
+      const response = await apiClient.get(endpoint, {
+        ...config,
+        params: params,
+        responseType: "blob",
+      });
+
+      const disposition = response.headers["content-disposition"];
+      let filename = "report.xlsx";
+
+      if (disposition && disposition.includes("filename=")) {
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
+      }
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async openPdfForPrint(endpoint, data = {}, config = {}) {
     try {
       const response = await apiClient.post(endpoint, data, {
