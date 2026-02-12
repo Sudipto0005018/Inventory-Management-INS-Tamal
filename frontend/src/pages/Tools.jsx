@@ -141,6 +141,7 @@ const Tools = ({ type = "" }) => {
     moDemandNo: "",
     // moDemandDate: new Date(),
     moDemandDate: null,
+    quoteAuthority: "",
   });
 
   const [isLooseSpare, setIsLooseSpare] = useState(false);
@@ -3184,6 +3185,23 @@ const Tools = ({ type = "" }) => {
                   }
                 }
 
+                let parsedBox = [];
+
+                try {
+                  parsedBox =
+                    typeof selectedRow.box_no === "string"
+                      ? JSON.parse(selectedRow.box_no)
+                      : selectedRow.box_no || [];
+                } catch (err) {
+                  toaster("error", "Invalid Box No data");
+                  return;
+                }
+
+                // Calculate total box qty
+                const totalBoxQty = parsedBox.reduce(
+                  (sum, box) => sum + Number(box.qn || 0),
+                  0,
+                );
                 // Calculate final value
                 const finalValue =
                   obsDialog.action === "increase"
@@ -3191,6 +3209,13 @@ const Tools = ({ type = "" }) => {
                     : Number(originalObsAuthorised) -
                       Number(obsDialog.quantity);
 
+                if (totalBoxQty !== finalValue) {
+                  toaster(
+                    "error",
+                    `Authorised Qty (${finalValue}) not matched with Box Qty (${totalBoxQty})`,
+                  );
+                  return;
+                }
                 //payload
                 const payload = {
                   tool_id: selectedRow.id,
@@ -3214,6 +3239,7 @@ const Tools = ({ type = "" }) => {
                     ? getISTTimestamp(obsDialog.requisitionDate)
                     : null,
                   box_no: boxNo,
+                  quoteAuthority: obsDialog.quoteAuthority,
                 };
 
                 await apiService.post("/specialDemand/special", payload);

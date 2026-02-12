@@ -18,6 +18,7 @@ async function createSpecialDemand(req, res) {
       mo_demand_no,
       mo_demand_date,
       box_no,
+      quoteAuthority,
     } = req.body;
 
     console.log("REQ.BODY =>", req.body);
@@ -47,11 +48,12 @@ async function createSpecialDemand(req, res) {
           requisition_date,
           mo_no,
           mo_date,
+          quote_authority,  
           created_by,
           created_at,
           status,
           transaction_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
       `;
 
       await pool.query(pendingIssueQuery, [
@@ -67,6 +69,7 @@ async function createSpecialDemand(req, res) {
         mo_demand_no,
         mo_demand_date,
 
+        quoteAuthority || null,
         userId,
         transaction_id,
       ]);
@@ -86,9 +89,10 @@ async function createSpecialDemand(req, res) {
         requisition_date,
         mo_demand_no,
         mo_demand_date,
+        quote_authority, 
         created_by,
         created_by_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       await pool.query(specialDemandQuery, [
@@ -102,6 +106,7 @@ async function createSpecialDemand(req, res) {
         requisition_date || null,
         mo_demand_no || null,
         mo_demand_date || null,
+        quoteAuthority || null,
         userId,
         name,
       ]);
@@ -228,38 +233,6 @@ async function getSpecialDemandList(req, res) {
     });
   }
 }
-
-// async function updateSpecialDemand(req, res) {
-//   const {
-//     spare_id,
-//     tool_id,
-//     internal_demand_no,
-//     internal_demand_date,
-//     requisition_no,
-//     requisition_date,
-//     mo_demand_no,
-//     mo_demand_date,
-//   } = req.body;
-//   try {
-//     const query = `UPDATE special_demand SET internal_demand_no = ?, internal_demand_date = ?, requisition_no = ?, requisition_date = ?, mo_demand_no = ?, mo_demand_date = ? WHERE id = ?`;
-//     await pool.query(query, [
-//       internal_demand_no,
-//       internal_demand_date,
-//       requisition_no || null,
-//       requisition_date || null,
-//       mo_demand_no || null,
-//       mo_demand_date || null,
-//       spare_id,
-//       tool_id,
-//     ]);
-//     res.status(200).json(new ApiResponse(200, {}, "Updated successfully"));
-//   } catch (error) {
-//     console.log(error);
-//     res
-//       .status(500)
-//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
-//   }
-// }
 
 async function updateSpecialDemand(req, res) {
   const {
