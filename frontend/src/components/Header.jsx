@@ -25,6 +25,10 @@ const Header = ({ onSidebarOpen }) => {
       "/spares": "spares",
       "/tools": "tools",
       "/permanent/procurement": "procurement",
+      "/permanent/stock-update": "stock_update",
+      "/permanent/pending-survey": "survey",
+      "/permanent/pending-demand": "demand",
+      "/permanent/pending-issue": "issue",
     }),
     [],
   );
@@ -47,29 +51,6 @@ const Header = ({ onSidebarOpen }) => {
 
   // const handleExportExcel = () => {
   //   setIsOpen(false);
-  // };
-
-  // const handleExportExcel = async () => {
-  //   try {
-  //     setIsOpen(false);
-
-  //     console.log("xyz");
-  //     const response = await apiService.get("/spares/excel", {
-  //       responseType: "blob",
-  //     });
-
-  //     const url = window.URL.createObjectURL(new Blob([response.data]));
-
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.setAttribute("download", `Items_${Date.now()}.xlsx`);
-
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     link.remove();
-  //   } catch (error) {
-  //     console.error("Excel export failed:", error);
-  //   }
   // };
 
   const handleExportExcel = async () => {

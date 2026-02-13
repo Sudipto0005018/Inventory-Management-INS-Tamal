@@ -5,6 +5,10 @@ import apiService from "../utils/apiService";
 import { Button } from "../components/ui/button";
 import { IoMdRefresh } from "react-icons/io";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
+import { FaTriangleExclamation } from "react-icons/fa6";
+import { FaBell } from "react-icons/fa";
+import { FaClock } from "react-icons/fa";
+
 import Chip from "../components/Chip";
 import {
   addDate,
@@ -47,6 +51,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
+    { key: "days_until_return", header: "Days Until Return" },
     { key: "qty_received", header: "Returned Qty" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
@@ -166,6 +171,38 @@ const PendingTempLoan = () => {
     fetchdata("", 1);
   };
 
+  const getDaysUntilReturn = (
+    issueDate,
+    loanDuration,
+    qtyWithdrawn,
+    qtyReceived,
+  ) => {
+    if (!issueDate || loanDuration == null) return "-";
+
+    // If fully returned
+    if (Number(qtyReceived || 0) >= Number(qtyWithdrawn || 0)) {
+      return "Returned";
+    }
+
+    const issue = new Date(issueDate);
+
+    const expected = new Date(issue);
+    expected.setDate(expected.getDate() + Number(loanDuration));
+
+    const today = new Date();
+
+    // Remove time for accurate diff
+    expected.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = expected - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) return `+${diffDays} days`;
+    if (diffDays === 0) return "0 days";
+    return `${diffDays} days`; // negative → overdue
+  };
+
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
 
@@ -195,20 +232,69 @@ const PendingTempLoan = () => {
 
         received_quantity: row.qty_received ?? 0,
 
-        /** ✅ STATUS FROM BACKEND */
+        days_until_return: (() => {
+          const result = getDaysUntilReturn(
+            row.issue_date,
+            row.loan_duration,
+            row.qty_withdrawn,
+            row.qty_received,
+          );
+
+          /** 🔹 UI Styling like screenshot */
+          if (result === "Returned") {
+            return <span className="text-gray-500 font-medium">Returned</span>;
+          }
+
+          const days = parseInt(result);
+
+          if (!isNaN(days)) {
+            if (days < 0) {
+              // Overdue
+              return (
+                <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-red-600 font-semibold">
+                  <FaTriangleExclamation className="text-sm relative top-[1px] ml-5" />
+                  <span>{result}</span>
+                </span>
+              );
+            }
+
+            if (days <= 1) {
+              // Reminder (1 day / today)
+              return (
+                <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-blue-500 font-semibold">
+                  <FaBell className="text-sm relative top-[1px] ml-5" />
+                  <span>{result}</span>
+                </span>
+              );
+            }
+
+            // Safe
+            return (
+              <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-green-600 font-medium">
+                <FaClock className="text-sm relative top-[1px] ml-5" />
+                <span>{result}</span>
+              </span>
+            );
+          }
+
+          return result;
+        })(),
         status: (() => {
           const s = row.loan_status?.toLowerCase();
-
           if (s === "pending") {
             return <Chip text="Pending" varient="info" />;
           }
 
           if (s === "partial") {
-            return <Chip text="Partial" varient="warning" />;
+            return <Chip text="Partial" varient="success" />;
           }
 
           if (s === "complete") {
             return <Chip text="Completed" varient="success" />;
+          }
+
+          if (s === "overdue") {
+            return <Chip text="Overdue" varient="danger" />;
           }
 
           return <Chip text="Unknown" varient="default" />;
@@ -293,7 +379,7 @@ const PendingTempLoan = () => {
       const returnedQty = Number(inputs.quantity_received);
       const depositQty = Number(getDepositQty());
 
-      // 🔴 No field should be less than zero
+      // No field should be less than zero
       const fieldsToValidate = [
         { value: returnedQty, label: "Returned quantity" },
         { value: depositQty, label: "Deposit quantity" },
@@ -349,78 +435,6 @@ const PendingTempLoan = () => {
   useEffect(() => {
     fetchdata();
   }, [currentPage]);
-
-  useEffect(() => {
-    if (!Array.isArray(fetchedData.items)) return;
-
-    const t = fetchedData.items.map((row) => {
-      const issuedQty = Number(row.qty_withdrawn || 0);
-
-      return {
-        ...row,
-
-        quantity: issuedQty,
-
-        concurred_by: row.concurred_by?.toUpperCase() || "-",
-
-        loan_duration: row.loan_duration ?? "-",
-        returned_date_formatted: getFormatedDate(row.return_date),
-
-        loan_status:
-          Number(row.qty_received || 0) >= issuedQty ? "Completed" : "Pending",
-
-        service_no: row.service_no || "-",
-
-        issue_date_formated: row.issue_date
-          ? getFormatedDate(row.issue_date)
-          : "-",
-
-        submission_date: row.issue_date
-          ? getFormatedDate(
-              addDate(row.issue_date, parseInt(row.loan_duration || 0)),
-            )
-          : "-",
-
-        received_quantity: row.qty_received ?? 0,
-
-        status:
-          row.status === "pending" ? (
-            <Chip text="Pending" varient="info" />
-          ) : (
-            <Chip text="Pending" varient="info" />
-          ),
-        receive: (
-          <Button
-            size="icon"
-            className="bg-white text-black shadow-md border hover:bg-gray-100"
-            onClick={() => {
-              let parsedBoxNo = [];
-
-              try {
-                if (Array.isArray(row.box_no)) {
-                  parsedBoxNo = row.box_no;
-                } else if (typeof row.box_no === "string") {
-                  parsedBoxNo = JSON.parse(row.box_no);
-                }
-              } catch (e) {
-                console.error("Invalid box_no JSON", e);
-              }
-              setSelectedRow({
-                ...row,
-                quantity: issuedQty,
-              });
-              setBoxNo(parsedBoxNo);
-              setIsOpen((prev) => ({ ...prev, receive: true }));
-            }}
-          >
-            <FaChevronRight />
-          </Button>
-        ),
-      };
-    });
-
-    setTableData(t);
-  }, [fetchedData]);
 
   const updateTablePreview = (updates) => {
     setTableData((prev) =>
@@ -696,179 +710,3 @@ const PendingTempLoan = () => {
 };
 
 export default PendingTempLoan;
-
-// import { useContext, useEffect, useMemo, useState } from "react";
-// import PaginationTable from "../components/PaginationTableTwo";
-// import { Context } from "../utils/Context";
-// import toaster from "../utils/toaster";
-// import apiService from "../utils/apiService";
-// import { addDate, formatSimpleDate, getDate, getDateStrToDate } from "../utils/helperFunctions";
-// import { Button } from "../components/ui/button";
-// import { FaChevronRight } from "react-icons/fa6";
-// import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../components/ui/dialog";
-// import {
-//     Table,
-//     TableBody,
-//     TableCell,
-//     TableHead,
-//     TableHeader,
-//     TableRow,
-// } from "../components/ui/table";
-
-// const CompletedTempLoan = () => {
-//     const { config } = useContext(Context);
-//     const columns = useMemo(() => [
-//         { key: "concurred_by", header: "Issued To" },
-//         { key: "loan_duration", header: "Loan Duration" },
-//         { key: "loan_status", header: "Status" },
-//         { key: "quantity", header: "Quantity" },
-//         { key: "issue_date_formated", header: "Issue Date" },
-//         { key: "submission_date", header: "Max Return Date" },
-//         { key: "details", header: "Details" },
-//     ]);
-//     const [tableData, setTableData] = useState([]);
-//     const [currentPage, setCurrentPage] = useState(1);
-//     const [fetchedData, setFetchedData] = useState({
-//         items: [],
-//         totalItems: 0,
-//         totalPages: 1,
-//         currentPage: 1,
-//     });
-//     const [selectedRow, setSelectedRow] = useState({});
-//     const [isOpen, setIsOpen] = useState({
-//         details: false,
-//     });
-//     const [receiveHistory, setReceiveHistory] = useState([]);
-
-//     const fetchdata = async () => {
-//         try {
-//             const response = await apiService.get("/loan/temp-loans-completed", {
-//                 params: {
-//                     page: currentPage,
-//                     limit: config.row_per_page,
-//                 },
-//             });
-//             if (response.success) {
-//                 setFetchedData(response.data);
-//             } else {
-//                 toaster("error", response.message);
-//             }
-//         } catch (error) {
-//             console.log(error);
-//             const errMsg = error.response?.data?.message || error.message || "Failed to fetch data";
-//             toaster("error", errMsg);
-//         }
-//     };
-//     const fetchLoanReceiveHistory = async () => {
-//         try {
-//             const response = await apiService.get("/loan/temp-loans-history/" + selectedRow.id);
-//             if (response.success) {
-//                 setReceiveHistory(response.data);
-//                 console.log(response.data);
-//             } else {
-//                 setReceiveHistory([]);
-//             }
-//             console.log(response);
-//         } catch (error) {
-//             toaster("error", error.message);
-//         }
-//     };
-
-//     useEffect(() => {
-//         if (isOpen.details) {
-//             fetchLoanReceiveHistory();
-//         }
-//     }, [isOpen.details]);
-//     useEffect(() => {
-//         fetchdata();
-//     }, [currentPage]);
-//     useEffect(() => {
-//         const t = fetchedData.items.map((row) => ({
-//             ...row,
-//             concurred_by: row.concurred_by.toUpperCase(),
-//             loan_status: row.loan_status == "pending" ? "Pending" : "Completed",
-//             issue_date_formated: getDate(row.issue_date),
-//             submission_date: getDate(
-//                 formatSimpleDate(
-//                     addDate(getDateStrToDate(row.issue_date), parseInt(row.loan_duration))
-//                 )
-//             ),
-//             details: (
-//                 <Button
-//                     size="icon"
-//                     className="bg-white text-black shadow-md border hover:bg-gray-100"
-//                     onClick={() => {
-//                         setSelectedRow(row);
-//                         setIsOpen((prev) => ({ ...prev, details: true }));
-//                     }}
-//                 >
-//                     <FaChevronRight />
-//                 </Button>
-//             ),
-//         }));
-//         setTableData(t);
-//     }, [fetchedData]);
-
-//     return (
-//         <>
-//             <div className="w-full h-full rounded-md bg-white">
-//                 <PaginationTable
-//                     data={tableData}
-//                     columns={columns}
-//                     currentPage={fetchedData.currentPage || 1}
-//                     pageSize={fetchedData.items?.length || 10}
-//                     totalPages={fetchedData.totalPages || 1}
-//                     onPageChange={setCurrentPage}
-//                     hasSearch={false}
-//                 />
-//             </div>
-//             <Dialog
-//                 open={isOpen.details}
-//                 onOpenChange={(set) =>
-//                     setIsOpen((prev) => {
-//                         return { ...prev, details: set };
-//                     })
-//                 }
-//             >
-//                 <DialogContent
-//                     onPointerDownOutside={(e) => {
-//                         // e.preventDefault();
-//                     }}
-//                     className="max-h-[90%] overflow-y-auto"
-//                     onCloseAutoFocus={() => {}}
-//                 >
-//                     <DialogTitle className="capitalize">Returned details</DialogTitle>
-//                     <DialogDescription className="hidden" />
-//                     {receiveHistory.length > 0 && (
-//                         <Table>
-//                             <TableHeader>
-//                                 <TableRow>
-//                                     <TableHead>Returned Quantity</TableHead>
-//                                     <TableHead>Returned Date</TableHead>
-//                                 </TableRow>
-//                             </TableHeader>
-//                             <TableBody>
-//                                 {receiveHistory.map((row, idx) => (
-//                                     <TableRow key={idx}>
-//                                         <TableCell>{row.quantity}</TableCell>
-//                                         <TableCell>{getDate(row.date)}</TableCell>
-//                                     </TableRow>
-//                                 ))}
-//                             </TableBody>
-//                         </Table>
-//                     )}
-//                     <div className="flex items-center mt-4 gap-4 justify-end">
-//                         <Button
-//                             onClick={() => setIsOpen((prev) => ({ ...prev, details: false }))}
-//                             variant="outline"
-//                         >
-//                             Close
-//                         </Button>
-//                     </div>
-//                 </DialogContent>
-//             </Dialog>
-//         </>
-//     );
-// };
-
-// export default CompletedTempLoan;

@@ -11,7 +11,7 @@ async function getTemporaryIssueList(req, res) {
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
-      `SELECT COUNT(*) AS count FROM temporary_issue_local  WHERE status IN ('pending', 'partial')`,
+      `SELECT COUNT(*) AS count FROM temporary_issue_local  WHERE status IN ('pending', 'partial', 'overdue')`,
     );
 
     const total = countResult[0].count;
@@ -59,7 +59,6 @@ async function getTemporaryIssueList(req, res) {
         u2.name AS approved_by_name,
         til.approved_at,
         til.box_no,
-        til.status AS loan_status,
 
         CASE
           WHEN til.spare_id IS NOT NULL THEN 'spare'
@@ -89,14 +88,21 @@ async function getTemporaryIssueList(req, res) {
           WHEN til.spare_id IS NOT NULL THEN s.equipment_system
           WHEN til.tool_id IS NOT NULL THEN t.equipment_system
           ELSE NULL
-        END AS equipment_system
+        END AS equipment_system,
+
+        CASE
+          WHEN til.status IN ('pending','partial')
+          AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
+          THEN 'overdue'
+          ELSE til.status
+        END AS loan_status
 
       FROM temporary_issue_local til
       LEFT JOIN spares s ON s.id = til.spare_id
       LEFT JOIN tools t ON t.id = til.tool_id
       LEFT JOIN users u1 ON u1.id = til.created_by
       LEFT JOIN users u2 ON u2.id = til.approved_by
-      WHERE til.status IN ('pending','partial')
+      WHERE til.status IN ('pending','partial','overdue')
       
       ORDER BY til.created_at DESC
       LIMIT ? OFFSET ?
@@ -384,7 +390,8 @@ async function updateTemporaryIssue(req, res) {
   try {
     /** 1. Fetch issue */
     const [[issue]] = await pool.query(
-      `SELECT spare_id, tool_id, transaction_id, qty_withdrawn, qty_received FROM temporary_issue_local WHERE id = ?`,
+      `SELECT spare_id, tool_id, transaction_id, qty_withdrawn, qty_received,
+      issue_date, loan_duration FROM temporary_issue_local WHERE id = ?`,
       [id],
     );
 
@@ -414,7 +421,17 @@ async function updateTemporaryIssue(req, res) {
       });
     }
 
-    /** Decide status */
+    /** 🔹 Expected return date */
+    const issueDate = new Date(issue.issue_date);
+    const expectedReturnDate = new Date(issueDate);
+    expectedReturnDate.setDate(
+      expectedReturnDate.getDate() + parseInt(issue.loan_duration || 0),
+    );
+
+    /** 🔹 Actual return date */
+    const actualReturnDate = new Date(return_date);
+
+    /** 🔹 Base status from quantity */
     let status = "pending";
 
     if (totalReturned === 0) {
@@ -423,6 +440,11 @@ async function updateTemporaryIssue(req, res) {
       status = "partial";
     } else {
       status = "complete";
+    }
+
+    /** 🔴 OVERDUE CHECK */
+    if (actualReturnDate > expectedReturnDate && totalReturned < withdrawnQty) {
+      status = "overdue";
     }
 
     /** 2. Fetch inventory */

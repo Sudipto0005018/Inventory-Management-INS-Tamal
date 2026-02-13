@@ -14,7 +14,7 @@ async function getTyLoanList(req, res) {
       `
       SELECT COUNT(*) AS count
       FROM ty_loan
-      WHERE status IN ('pending', 'partial')
+      WHERE status IN ('pending', 'partial', 'overdue')
       `,
     );
 
@@ -62,7 +62,6 @@ async function getTyLoanList(req, res) {
         u2.name AS approved_by_name,
         ty.approved_at,
         ty.box_no,
-        ty.status AS loan_status,
 
         CASE
           WHEN ty.spare_id IS NOT NULL THEN 'spare'
@@ -83,7 +82,14 @@ async function getTyLoanList(req, res) {
         CASE
           WHEN ty.spare_id IS NOT NULL THEN s.category
           WHEN ty.tool_id IS NOT NULL THEN t.category
-        END AS category
+        END AS category,
+
+        CASE
+          WHEN ty.status IN ('pending','partial')
+          AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
+          THEN 'overdue'
+          ELSE ty.status
+        END AS loan_status
 
       FROM ty_loan ty
       LEFT JOIN spares s ON s.id = ty.spare_id
@@ -91,7 +97,7 @@ async function getTyLoanList(req, res) {
       LEFT JOIN users u1 ON u1.id = ty.created_by
       LEFT JOIN users u2 ON u2.id = ty.approved_by
 
-      WHERE ty.status IN ('pending','partial')
+      WHERE ty.status IN ('pending','partial','overdue')
 
       ORDER BY ty.created_at DESC
       LIMIT ? OFFSET ?
@@ -258,7 +264,7 @@ async function updateTyLoan(req, res) {
     /** 1. Fetch loan issue */
     const [[issue]] = await pool.query(
       `SELECT spare_id, tool_id, transaction_id,
-              qty_withdrawn, qty_received
+       qty_withdrawn, qty_received, issue_date, loan_duration
        FROM ty_loan
        WHERE id = ?`,
       [id],
@@ -290,7 +296,17 @@ async function updateTyLoan(req, res) {
       });
     }
 
-    /** Decide status */
+    /** 🔹 Expected return date */
+    const issueDate = new Date(issue.issue_date);
+    const expectedReturnDate = new Date(issueDate);
+    expectedReturnDate.setDate(
+      expectedReturnDate.getDate() + parseInt(issue.loan_duration || 0),
+    );
+
+    /** 🔹 Actual return date */
+    const actualReturnDate = new Date(return_date);
+
+    /** 🔹 Base status from quantity */
     let status = "pending";
 
     if (totalReturned === 0) {
@@ -300,6 +316,15 @@ async function updateTyLoan(req, res) {
     } else {
       status = "complete";
     }
+
+    /** 🔴 OVERDUE CHECK */
+    if (actualReturnDate > expectedReturnDate && totalReturned < withdrawnQty) {
+      status = "overdue";
+    }
+
+    // if (actualReturnDate > expectedReturnDate) {
+    //   status = "overdue";
+    // }
 
     /** 2. Fetch inventory */
     const [[inventory]] = await pool.query(

@@ -6,6 +6,9 @@ import { Button } from "../components/ui/button";
 import { IoMdRefresh } from "react-icons/io";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import Chip from "../components/Chip";
+import { FaTriangleExclamation } from "react-icons/fa6";
+import { FaBell } from "react-icons/fa";
+import { FaClock } from "react-icons/fa";
 import {
   addDate,
   formatSimpleDate,
@@ -48,6 +51,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
+    { key: "days_until_return", header: "Days Until Return" },
     { key: "qty_received", header: "Returned Qty" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
@@ -167,6 +171,38 @@ const PendingTempLoan = () => {
     fetchdata("", 1);
   };
 
+  const getDaysUntilReturn = (
+    issueDate,
+    loanDuration,
+    qtyWithdrawn,
+    qtyReceived,
+  ) => {
+    if (!issueDate || loanDuration == null) return "-";
+
+    // If fully returned
+    if (Number(qtyReceived || 0) >= Number(qtyWithdrawn || 0)) {
+      return "Returned";
+    }
+
+    const issue = new Date(issueDate);
+
+    const expected = new Date(issue);
+    expected.setDate(expected.getDate() + Number(loanDuration));
+
+    const today = new Date();
+
+    // Remove time for accurate diff
+    expected.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = expected - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) return `+${diffDays} days`;
+    if (diffDays === 0) return "0 days";
+    return `${diffDays} days`; // negative → overdue
+  };
+
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
 
@@ -190,12 +226,27 @@ const PendingTempLoan = () => {
 
       received_quantity: row.qty_received ?? 0,
 
-      status:
-        row.status?.toLowerCase() == "pending" ? (
-          <Chip text="Pending" varient="info" />
-        ) : (
-          <Chip text="Completed" varient="success" />
-        ),
+      status: (() => {
+        const s = row.loan_status?.toLowerCase();
+        if (s === "pending") {
+          return <Chip text="Pending" varient="info" />;
+        }
+
+        if (s === "partial") {
+          return <Chip text="Partial" varient="success" />;
+        }
+
+        if (s === "complete") {
+          return <Chip text="Completed" varient="success" />;
+        }
+
+        if (s === "overdue") {
+          return <Chip text="Overdue" varient="danger" />;
+        }
+
+        return <Chip text="Unknown" varient="default" />;
+      })(),
+
       receive: (
         <Button
           size="icon"
@@ -360,12 +411,75 @@ const PendingTempLoan = () => {
 
         received_quantity: row.qty_received ?? 0,
 
-        status:
-          row.status === "pending" ? (
-            <Chip text="Pending" varient="info" />
-          ) : (
-            <Chip text="Pending" varient="info" />
-          ),
+        days_until_return: (() => {
+          const result = getDaysUntilReturn(
+            row.issue_date,
+            row.loan_duration,
+            row.qty_withdrawn,
+            row.qty_received,
+          );
+
+          /** 🔹 UI Styling like screenshot */
+          if (result === "Returned") {
+            return <span className="text-gray-500 font-medium">Returned</span>;
+          }
+
+          const days = parseInt(result);
+
+          if (!isNaN(days)) {
+            if (days < 0) {
+              // Overdue
+              return (
+                <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-red-600 font-semibold">
+                  <FaTriangleExclamation className="text-sm relative top-[1px] ml-5" />
+                  <span>{result}</span>
+                </span>
+              );
+            }
+
+            if (days <= 1) {
+              // Reminder (1 day / today)
+              return (
+                <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-blue-500 font-semibold">
+                  <FaBell className="text-sm relative top-[1px] ml-5" />
+                  <span>{result}</span>
+                </span>
+              );
+            }
+
+            // Safe
+            return (
+              <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-green-600 font-medium">
+                <FaClock className="text-sm relative top-[1px] ml-5" />
+                <span>{result}</span>
+              </span>
+            );
+          }
+
+          return result;
+        })(),
+
+        status: (() => {
+          const s = row.loan_status?.toLowerCase();
+          if (s === "pending") {
+            return <Chip text="Pending" varient="info" />;
+          }
+
+          if (s === "partial") {
+            return <Chip text="Partial" varient="success" />;
+          }
+
+          if (s === "complete") {
+            return <Chip text="Completed" varient="success" />;
+          }
+
+          if (s === "overdue") {
+            return <Chip text="Overdue" varient="danger" />;
+          }
+
+          return <Chip text="Unknown" varient="default" />;
+        })(),
+
         receive: (
           <Button
             size="icon"

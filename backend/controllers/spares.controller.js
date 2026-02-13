@@ -839,38 +839,56 @@ async function generateExcel(req, res) {
 
     if (module === "tools") {
       [rows] = await pool.query(`
-        SELECT description, indian_pattern, equipment_system, category,
-        denos,
-        obs_authorised,
-        obs_held,
-        box_no,
-        item_distribution,
-        storage_location
+        SELECT description, indian_pattern, equipment_system, category, denos,
+        obs_authorised, obs_held, box_no, item_distribution, storage_location
         FROM tools
       `);
     }
 
     if (module === "spares") {
       [rows] = await pool.query(`
-        SELECT description, indian_pattern, equipment_system, category,
-        denos,
-        obs_authorised,
-        obs_held,
-        box_no,
-        item_distribution,
-        storage_location
+        SELECT description, indian_pattern, equipment_system, category, denos,
+        obs_authorised, obs_held, box_no, item_distribution, storage_location
         FROM spares
       `);
     }
 
     if (module === "procurement") {
       [rows] = await pool.query(`
-        SELECT nac_qty, nac_no,
-        validity,
-        rate_unit,
-        box_no,
-        qty_received
+        SELECT nac_qty, nac_no, nac_date, validity, rate_unit, issue_date,
+        box_no, qty_received, created_at
         FROM procurement
+      `);
+    }
+
+    if (module === "stock_update") {
+      [rows] = await pool.query(`
+        SELECT stocked_in_qty, mo_no, mo_date, issue_date,
+        box_no, qty_received, created_at
+        FROM stock_update
+      `);
+    }
+
+    if (module === "survey") {
+      [rows] = await pool.query(`
+        SELECT issue_to, survey_quantity, withdrawl_qty, withdrawl_date,
+        service_no, name, box_no, created_at
+        FROM survey
+      `);
+    }
+
+    if (module === "demand") {
+      [rows] = await pool.query(`
+        SELECT issue_to, survey_qty, survey_voucher_no, survey_date, created_at
+        FROM demand
+      `);
+    }
+
+    if (module === "issue") {
+      [rows] = await pool.query(`
+        SELECT stocked_nac_qty, quote_authority, box_no, demand_no, demand_date, requisition_no,
+        requisition_date, mo_no, mo_date, demand_quantity, qty_received, return_date, created_at
+        FROM pending_issue
       `);
     }
     // Workbook
@@ -880,6 +898,10 @@ async function generateExcel(req, res) {
       spares: spareHeaders,
       procurement: procurementHeaders,
       tools: toolHeaders,
+      stock_update: stockHeaders,
+      survey: surveyHeaders,
+      demand: demandHeaders,
+      issue: issueHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -888,6 +910,14 @@ async function generateExcel(req, res) {
       worksheet.columns = spareHeaders;
     } else if (module === "tools") {
       worksheet.columns = toolHeaders;
+    } else if (module === "stock_update") {
+      worksheet.columns = stockHeaders;
+    } else if (module === "survey") {
+      worksheet.columns = surveyHeaders;
+    } else if (module === "demand") {
+      worksheet.columns = demandHeaders;
+    } else if (module === "issue") {
+      worksheet.columns = issueHeaders;
     }
 
     rows.forEach((row) => {
@@ -936,9 +966,6 @@ async function generateExcel(req, res) {
 
     // rows.forEach((row) => worksheet.addRow(row));
     // await workbook.xlsx.writeFile(filePath);
-    console.log("MODULE:", module);
-    console.log("ROWS:", rows.length);
-    console.log("PATH:", location.pathname);
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
