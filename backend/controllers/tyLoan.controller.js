@@ -89,7 +89,13 @@ async function getTyLoanList(req, res) {
           AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
           THEN 'overdue'
           ELSE ty.status
-        END AS loan_status
+        END AS loan_status,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.days_untill_return
+          WHEN ty.tool_id IS NOT NULL THEN t.days_untill_return
+        END AS days_untill_return
+
 
       FROM ty_loan ty
       LEFT JOIN spares s ON s.id = ty.spare_id

@@ -86,6 +86,31 @@ export default function Dashboard() {
     },
   ];
 
+  /* ================= ATTENTION MOCK DATA ================= */
+  const attentionMock = {
+    lowStockItems: [
+      { id: 1, name: "Hydraulic Pump Assembly", min: 5, current: 3 },
+      { id: 3, name: "Torque Wrench Set", min: 4, current: 1 },
+    ],
+
+    temporaryOverdue: [
+      { id: 1, issue_no: "TMP-101" },
+      { id: 2, issue_no: "TMP-102" },
+      { id: 3, issue_no: "TMP-103" },
+      { id: 4, issue_no: "TMP-104" },
+      { id: 5, issue_no: "TMP-105" },
+    ],
+
+    loanOverdue: [{ id: 1, loan_no: "LN-778" }],
+
+    docOverdue: [{ id: 1, loan_no: "LN-855" }],
+  };
+
+  const lowStockCount = attentionMock.lowStockItems.length;
+  const tempOverdueCount = attentionMock.temporaryOverdue.length;
+  const loanOverdueCount = attentionMock.loanOverdue.length;
+  const docOverdueCount = attentionMock.docOverdue.length;
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* ================= HEADER ================= */}
@@ -178,12 +203,12 @@ export default function Dashboard() {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-        <Card
+        {/* <Card
           title="Total Pending"
           value="8"
           subtitle="items in workflow"
           icon={<FaClock className="text-gray-600" />}
-        />
+        /> */}
 
         <Card
           title="Pending Survey"
@@ -215,7 +240,7 @@ export default function Dashboard() {
         <Card
           title="Pending Stock In"
           value="2"
-          subtitle="items pending"
+          subtitle="to be stocked in"
           icon={<FaClock className="text-gray-600" />}
           valueColor="text-red-500"
           onClick={() => navigateTo("/permanent/stock-update")}
@@ -227,6 +252,15 @@ export default function Dashboard() {
           subtitle="to be procured"
           icon={<FaClock className="text-gray-600" />}
           valueColor="text-blue-500"
+          onClick={() => navigateTo("/permanent/procurement")}
+        />
+
+        <Card
+          title="Pending NAC"
+          value="2"
+          subtitle="items pending"
+          icon={<FaClock className="text-gray-800" />}
+          valueColor="text-blue-900"
           onClick={() => navigateTo("/permanent/procurement")}
         />
       </div>
@@ -300,7 +334,59 @@ export default function Dashboard() {
           </div>
         </BigCard>
       </div>
-      {/* ================= D&87 TABLE ================= */}
+      {/* ================= ATTENTION REQUIRED ================= */}
+      <div className="mb-6 mt-6">
+        <div className="bg-red-100 border border-red-200 rounded-2xl p-5">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <FaExclamationCircle className="text-red-600" size={18} />
+            <h3 className="text-red-700 font-semibold text-sm">
+              Attention Required
+            </h3>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-3">
+            The following items require immediate attention
+          </p>
+
+          {/* Alerts */}
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-gray-700">
+              <FaBoxOpen className="text-red-500" />
+              <span>
+                <strong>{lowStockCount}</strong> items are below minimum stock
+                level
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-gray-700">
+              <FaClock className="text-red-500" />
+              <span>
+                <strong>{tempOverdueCount}</strong> temporary issues are overdue
+                for return
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-gray-700">
+              <FaClock className="text-red-500" />
+              <span>
+                <strong>{loanOverdueCount}</strong> loan issues are overdue for
+                return
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-gray-700">
+              <FaClock className="text-red-500" />
+              <span>
+                <strong>{docOverdueCount}</strong> document issues are overdue
+                for return
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= D787 TABLE ================= */}
       <h2 className="text-lg font-semibold text-gray-800 mt-10 mb-3">
         D787 Amendment
       </h2>

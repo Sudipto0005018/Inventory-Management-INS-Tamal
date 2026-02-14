@@ -17,12 +17,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
-import { CustomComboBox } from "../components/CustomCombobox";
 
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
-import { CustomComboBoxService } from "../components/CustomComboBoxService";
 
 import PaginationTable from "../components/PaginationTableTwo";
 import toaster from "../utils/toaster";
@@ -33,10 +31,8 @@ import ImagePreviewDialog from "../components/ImagePreviewDialog";
 import { Table, TableBody, TableCell, TableRow } from "../components/ui/table";
 import { cn } from "../lib/utils";
 import BoxNoInputs from "../components/BoxNoInputs";
-import BoxNoInputsSimple from "../components/BoxNoInputsSimple";
 import DynamicInputList from "../components/DynamicInputList";
 import MultiImageSelect from "../components/MultiImageSelect";
-import TestDialog from "../components/TestDialog";
 import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
 import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
@@ -44,6 +40,7 @@ import ComboBox from "../components/ComboBox";
 import AsyncSelectBox from "../components/AsyncSelectBox";
 import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 import ServicePersonnel from "../components/ServicePersonnel";
+import BoxNoConfirmObs from "../components/BoxNoConfirmObs";
 
 //search fields
 const SEARCH_FIELDS = [
@@ -132,6 +129,9 @@ const Spares = ({ type = "" }) => {
 
   const [open, setOpen] = useState(false);
   const [originalObsAuthorised, setOriginalObsAuthorised] = useState(null);
+
+  //state for BoxNoConfirmObs
+  const [boxRows, setBoxRows] = useState([]);
 
   const [obsDialog, setObsDialog] = useState({
     open: false,
@@ -1240,17 +1240,24 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">
-                    Category<span className="text-red-500">*</span>
+                  <Label className="mb-2">
+                    Category <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    type="text"
+                  <select
                     name="category"
-                    value={inputs.category}
-                    onChange={handleChange}
-                  />
+                    value={selectedRow.category || ""}
+                    onChange={handleEditChange}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    // value={inputs.category}
+                    // onChange={handleChange}
+                  >
+                    <option value="P">P</option>
+                    <option value="R">R</option>
+                    <option value="C">C</option>
+                    <option value="LP">LP</option>
+                    <option value="NA">NA</option>
+                  </select>
                 </div>
-
                 <div>
                   <Label className="ms-2 mb-1">
                     Item Code<span className="text-red-500">*</span>
@@ -1654,17 +1661,24 @@ const Spares = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>
-                  Category<span className="text-red-500">*</span>
+                <Label className="mb-2">
+                  Category <span className="text-red-500">*</span>
                 </Label>
-                <InputWithPencil
+                <select
                   name="category"
-                  value={selectedRow.category}
+                  value={selectedRow.category || ""}
                   onChange={handleEditChange}
                   editable={editableFields.category}
                   onEdit={() => enableEdit("category")}
                   onBlur={() => disableEdit("category")}
-                />
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="P">P</option>
+                  <option value="R">R</option>
+                  <option value="C">C</option>
+                  <option value="LP">LP</option>
+                  <option value="NA">NA</option>
+                </select>
               </div>
 
               <div>
@@ -2098,19 +2112,17 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1">
@@ -2302,19 +2314,17 @@ const Spares = ({ type = "" }) => {
                   </div>
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
                 </div>
 
@@ -2509,19 +2519,17 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
                   <div>
                     <Label className="mb-2">
@@ -2928,7 +2936,7 @@ const Spares = ({ type = "" }) => {
                   isLooseSpare={isLooseSpare}
                   isBoxnumberDisable={false}
                 /> */}
-                <BoxNoInputs
+                <BoxNoConfirmObs
                   value={
                     selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
                   }
@@ -2939,7 +2947,21 @@ const Spares = ({ type = "" }) => {
                     }))
                   }
                   isLooseSpare={isLooseSpare}
+                  action={obsDialog.action}
                 />
+
+                {/* <BoxNoInputs
+                  value={
+                    selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
+                  }
+                  onChange={(value) =>
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      box_no: JSON.stringify(value),
+                    }))
+                  }
+                  isLooseSpare={isLooseSpare}
+                /> */}
               </div>
               <p className="font-medium text-sm mb-2 mt-2">
                 Quote Authority<span className="text-red-500"> *</span>
@@ -3106,7 +3128,7 @@ const Spares = ({ type = "" }) => {
                 isLooseSpare={isLooseSpare}
                 isBoxnumberDisable={false}
               /> */}
-              <BoxNoInputs
+              <BoxNoConfirmObs
                 value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
                 onChange={(value) =>
                   setSelectedRow((prev) => ({
@@ -3115,7 +3137,19 @@ const Spares = ({ type = "" }) => {
                   }))
                 }
                 isLooseSpare={isLooseSpare}
+                action={obsDialog.action}
               />
+
+              {/* <BoxNoInputs
+                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
+                onChange={(value) =>
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    box_no: JSON.stringify(value),
+                  }))
+                }
+                isLooseSpare={isLooseSpare}
+              /> */}
             </div>
           )}
 

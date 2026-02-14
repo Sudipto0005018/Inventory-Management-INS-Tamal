@@ -1075,7 +1075,7 @@ const DocumentsCorner = ({ type = "" }) => {
             onClick={() =>
               setIsOpen((prev) => ({ ...prev, addDocument: false }))
             }
-            className="sticky top-0  ml-auto block z-0 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            className="sticky top-0  ml-auto block z-10 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
             ✕
           </button>

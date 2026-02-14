@@ -31,7 +31,7 @@ import ImagePreviewDialog from "../components/ImagePreviewDialog";
 import { Table, TableBody, TableCell, TableRow } from "../components/ui/table";
 import { cn } from "../lib/utils";
 import BoxNoInputs from "../components/BoxNoInputs";
-import BoxNoInputsSimple from "../components/BoxNoInputsSimple";
+import BoxNoConfirmObs from "../components/BoxNoConfirmObs";
 import DynamicInputList from "../components/DynamicInputList";
 import MultiImageSelect from "../components/MultiImageSelect";
 import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
@@ -1250,15 +1250,21 @@ const Tools = ({ type = "" }) => {
                 </div>
 
                 <div>
-                  <Label className="ms-2 mb-1">
-                    Category<span className="text-red-500">*</span>
+                  <Label className="mb-2">
+                    Category <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    type="text"
+                  <select
                     name="category"
-                    value={inputs.category}
-                    onChange={handleChange}
-                  />
+                    value={selectedRow.category || ""}
+                    onChange={handleEditChange}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="P">P</option>
+                    <option value="R">R</option>
+                    <option value="C">C</option>
+                    <option value="LP">LP</option>
+                    <option value="NA">NA</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1664,17 +1670,24 @@ const Tools = ({ type = "" }) => {
               </div>
 
               <div>
-                <Label>
-                  Category<span className="text-red-500">*</span>
+                <Label className="mb-2">
+                  Category <span className="text-red-500">*</span>
                 </Label>
-                <InputWithPencil
+                <select
                   name="category"
-                  value={selectedRow.category}
+                  value={selectedRow.category || ""}
                   onChange={handleEditChange}
                   editable={editableFields.category}
                   onEdit={() => enableEdit("category")}
                   onBlur={() => disableEdit("category")}
-                />
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="P">P</option>
+                  <option value="R">R</option>
+                  <option value="C">C</option>
+                  <option value="LP">LP</option>
+                  <option value="NA">NA</option>
+                </select>
               </div>
 
               <div>
@@ -2129,19 +2142,17 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1">
@@ -2333,19 +2344,17 @@ const Tools = ({ type = "" }) => {
                   </div>
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
                 </div>
 
@@ -2540,19 +2549,17 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category<span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <Input
+                      readOnly
                       name="category"
-                      value={selectedRow.category || ""}
+                      value={selectedRow.category}
                       onChange={handleEditChange}
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value="P">P</option>
-                      <option value="R">R</option>
-                      <option value="C">C</option>
-                      <option value="LP">LP</option>
-                    </select>
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                    />
                   </div>
                   <div>
                     <Label className="mb-2">
@@ -2951,7 +2958,7 @@ const Tools = ({ type = "" }) => {
           {obsDialog.action === "increase" && (
             <div className="pt-3 border-t">
               <div className="space-y-4">
-                <BoxNoInputs
+                <BoxNoConfirmObs
                   value={
                     selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
                   }
@@ -2962,6 +2969,7 @@ const Tools = ({ type = "" }) => {
                     }))
                   }
                   isLooseSpare={isLooseSpare}
+                  action={obsDialog.action}
                 />
               </div>
               <p className="font-medium text-sm mb-2 mt-2">
@@ -3121,7 +3129,7 @@ const Tools = ({ type = "" }) => {
 
           {obsDialog.action === "decrease" && (
             <div className="pt-3 border-t space-y-4">
-              <BoxNoInputs
+              {/* <BoxNoInputs
                 value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
                 onChange={(value) =>
                   setSelectedRow((prev) => ({
@@ -3130,6 +3138,17 @@ const Tools = ({ type = "" }) => {
                   }))
                 }
                 isLooseSpare={isLooseSpare}
+              /> */}
+              <BoxNoConfirmObs
+                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
+                onChange={(value) =>
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    box_no: JSON.stringify(value),
+                  }))
+                }
+                isLooseSpare={isLooseSpare}
+                action={obsDialog.action}
               />
             </div>
           )}
