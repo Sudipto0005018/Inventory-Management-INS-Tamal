@@ -95,7 +95,12 @@ async function getTemporaryIssueList(req, res) {
           AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
           THEN 'overdue'
           ELSE til.status
-        END AS loan_status
+        END AS loan_status,
+
+         CASE
+          WHEN til.spare_id IS NOT NULL THEN s.days_untill_return
+          WHEN til.tool_id IS NOT NULL THEN t.days_untill_return
+        END AS days_untill_return
 
       FROM temporary_issue_local til
       LEFT JOIN spares s ON s.id = til.spare_id

@@ -437,7 +437,8 @@ const PendingTempLoan = () => {
               );
             }
 
-            if (days <= 1) {
+            // if (days <= 1) {
+            if (days <= row.days_untill_return) {
               // Reminder (1 day / today)
               return (
                 <span className="flex items-center justify-start gap-1 leading-none whitespace-nowrap text-blue-500 font-semibold">
