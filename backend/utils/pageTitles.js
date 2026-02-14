@@ -1,5 +1,5 @@
 export const pageTitles = {
-  "/dashboard": "Dashboard",
+  // "/dashboard": "Dashboard",
 
   "/spares": "Spares",
   "/spares/critical": "Critical Spares",

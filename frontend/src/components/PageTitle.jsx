@@ -18,9 +18,6 @@
 
 // export default PageTitle;
 
-
-
-
 import { useLocation } from "react-router";
 import { pageTitles } from "../../../backend/utils/pageTitles";
 
@@ -45,9 +42,9 @@ const PageTitle = () => {
   }
 
   // Fallback
-  if (!title) {
-    title = "Worklist"
-  }
+  // if (!title) {
+  //   title = "Worklist"
+  // }
 
   return (
     <div className="py-2 mt-[-8px] flex items-center justify-center">

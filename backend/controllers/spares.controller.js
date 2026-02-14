@@ -871,26 +871,105 @@ async function generateExcel(req, res) {
 
     if (module === "survey") {
       [rows] = await pool.query(`
-        SELECT issue_to, survey_quantity, withdrawl_qty, withdrawl_date,
-        service_no, name, box_no, created_at
-        FROM survey
-      `);
+    SELECT 
+      s.issue_to,
+      s.survey_quantity,
+      s.withdrawl_qty,
+      s.withdrawl_date,
+      s.service_no,
+      s.name,
+      s.box_no,
+      s.created_at,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
+
+    FROM survey s
+    LEFT JOIN spares sp ON s.spare_id = sp.id
+    LEFT JOIN tools t ON s.tool_id = t.id
+  `);
     }
 
     if (module === "demand") {
       [rows] = await pool.query(`
-        SELECT issue_to, survey_qty, survey_voucher_no, survey_date, created_at
-        FROM demand
-      `);
+    SELECT 
+      d.issue_to,
+      d.survey_qty,
+      d.survey_voucher_no,
+      d.survey_date,
+      d.created_at,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
+
+    FROM demand d
+    LEFT JOIN spares sp ON d.spare_id = sp.id
+    LEFT JOIN tools t ON d.tool_id = t.id
+  `);
     }
 
     if (module === "issue") {
       [rows] = await pool.query(`
-        SELECT stocked_nac_qty, quote_authority, box_no, demand_no, demand_date, requisition_no,
-        requisition_date, mo_no, mo_date, demand_quantity, qty_received, return_date, created_at
-        FROM pending_issue
-      `);
+    SELECT 
+      pi.stocked_nac_qty,
+      pi.quote_authority,
+      COALESCE(sp.box_no, t.box_no) AS box_no,
+      pi.demand_no,
+      pi.demand_date,
+      pi.requisition_no,
+      pi.requisition_date,
+      pi.mo_no,
+      pi.mo_date,
+      pi.demand_quantity,
+      pi.qty_received,
+      pi.return_date,
+      pi.created_at,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
+
+    FROM pending_issue pi
+    LEFT JOIN spares sp ON pi.spare_id = sp.id
+    LEFT JOIN tools t ON pi.tool_id = t.id
+    ORDER BY pi.id DESC
+  `);
+
+      rows = rows.map((row) => {
+        let boxNo = [];
+
+        if (row.box_no) {
+          if (typeof row.box_no === "string") {
+            try {
+              const parsed = JSON.parse(row.box_no);
+
+              if (Array.isArray(parsed)) {
+                boxNo = parsed.map((b) => `${b.no} (${b.qn})`).join(", ");
+              } else {
+                boxNo = row.box_no;
+              }
+            } catch {
+              boxNo = row.box_no;
+            }
+          } else if (Array.isArray(row.box_no)) {
+            boxNo = row.box_no.map((b) => `${b.no} (${b.qn})`).join(", ");
+          } else {
+            boxNo = row.box_no;
+          }
+        }
+
+        return {
+          ...row,
+          box_no: boxNo || "—",
+        };
+      });
     }
+
     // Workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(module);

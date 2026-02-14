@@ -2,24 +2,99 @@ import {
   FaTools,
   FaExclamationCircle,
   FaBoxOpen,
-  FaClipboardList,
   FaClock,
 } from "react-icons/fa";
+import { IoDocument } from "react-icons/io5";
 import { FaGears } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { navigateTo } from "../utils/navigate";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const d787Data = [
+    {
+      item_description: "Hydraulic Pump Assembly",
+      part_no: "HP-4587",
+      category: "P",
+      type: "Spare",
+      prev_obs: 2,
+      inc_qty: 1,
+      current_obs: 3,
+      quote_authority: "CWE",
+      internal_demand: "IDN-1023",
+      internal_demand_date: "12-02-2026",
+      requisition_no: "REQ-7781",
+      requisition_date: "12-02-2026",
+      mo_demand_no: "MO-5562",
+      mo_demand_date: "12-02-2026",
+      created_by: "Sudipto Dutta",
+      created_on: "12-02-2026",
+    },
+    {
+      item_description: "Torque Wrench Set",
+      part_no: "TW-2231",
+      category: "C",
+      type: "Tool",
+      prev_obs: 5,
+      inc_qty: 3,
+      current_obs: 8,
+      quote_authority: "SSE",
+      internal_demand: "IDN-1045",
+      internal_demand_date: "12-02-2026",
+      requisition_no: "REQ-7810",
+      requisition_date: "12-02-2026",
+      mo_demand_no: "MO-5599",
+      mo_demand_date: "12-02-2026",
+      created_by: "Sudipto Dutta",
+      created_on: "10-02-2026",
+    },
+    {
+      item_description: "Bearing Kit",
+      part_no: "BK-9087",
+      category: "R",
+      type: "Spare",
+      prev_obs: 10,
+      inc_qty: 2,
+      current_obs: 12,
+      quote_authority: "DEE",
+      internal_demand: "IDN-1102",
+      internal_demand_date: "12-02-2026",
+      requisition_no: "REQ-7921",
+      requisition_date: "12-02-2026",
+      mo_demand_no: "MO-5633",
+      mo_demand_date: "12-02-2026",
+      created_by: "Xyz",
+      created_on: "08-02-2026",
+    },
+    {
+      item_description: "Insulation Tester",
+      part_no: "IT-3320",
+      category: "LP",
+      type: "Tool",
+      prev_obs: 1,
+      inc_qty: 1,
+      current_obs: 2,
+      quote_authority: "AEN",
+      internal_demand: "IDN-1188",
+      internal_demand_date: "12-02-2026",
+      requisition_no: "REQ-8014",
+      requisition_date: "12-02-2026",
+      mo_demand_no: "MO-5701",
+      mo_demand_date: "12-02-2026",
+      created_by: "Xyz",
+      created_on: "05-02-2026",
+    },
+  ];
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* ================= HEADER ================= */}
-      <div className="mb-6">
+      <div className="mb-6 text-center">
         <h1 className="text-2xl font-semibold text-gray-900">
           Dashboard Overview
         </h1>
         <p className="text-sm text-gray-500">
-          Complete inventory management summary
+          Complete Inventory Management Summary
         </p>
       </div>
 
@@ -28,41 +103,73 @@ export default function Dashboard() {
         Inventory Summary
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        {/* Total Items */}
-        <Card
-          title="Total Items"
-          value="14"
-          subtitle="in inventory"
-          icon={<FaBoxOpen />}
-        />
-
-        {/* Low Stock */}
-        <Card
-          title="Low Stock Items"
-          value="4"
-          subtitle="below minimum"
-          icon={<FaExclamationCircle />}
-          valueColor="text-red-500"
-        />
-
-        {/* Spares */}
-        <Card
+      {/* ===== BIG CARDS ROW ===== */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* ================= TOTAL SPARES ================= */}
+        <BigCard
           title="Spares"
-          value="5"
-          subtitle="spare parts"
-          icon={<FaGears size={25} />}
-          onClick={() => navigateTo("/spares")}
-        />
+          icon={<FaGears size={22} className="text-gray-700" />}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card
+              title="Total Spares"
+              value="5"
+              subtitle="total spares"
+              icon={<FaGears size={22} className="text-blue-700" />}
+              onClick={() => navigateTo("/spares")}
+            />
 
-        {/* Tools */}
-        <Card
-          title="Tools"
-          value="5"
-          subtitle="tools available"
-          icon={<FaTools />}
-          onClick={() => navigateTo("/tools")}
-        />
+            <Card
+              title="Critical Spares"
+              value="2"
+              subtitle="critical items"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-blue-700"
+              onClick={() => navigateTo("/spares/critical")}
+            />
+
+            <Card
+              title="Low Stock Spares"
+              value="1"
+              subtitle="below minimum"
+              icon={<FaBoxOpen className="text-red-500" />}
+              valueColor="text-red-500"
+            />
+          </div>
+        </BigCard>
+
+        {/* ================= TOTAL TOOLS ================= */}
+        <BigCard
+          title="Tools & Accessories"
+          icon={<FaTools size={22} className="text-gray-700" />}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card
+              title="Total Tools"
+              value="5"
+              subtitle="available tools"
+              icon={<FaTools className="text-blue-700" />}
+              onClick={() => navigateTo("/tools")}
+            />
+
+            <Card
+              title="Critical / Special Tools"
+              value="2"
+              subtitle="critical tools"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-blue-700"
+              onClick={() => navigateTo("/tools/critical")}
+            />
+
+            <Card
+              title="Low Stock Tools"
+              value="1"
+              subtitle="below minimum"
+              icon={<FaBoxOpen className="text-red-500" />}
+              valueColor="text-red-500"
+            />
+          </div>
+        </BigCard>
       </div>
 
       {/* ================= PERMANENT ISSUE WORKFLOW ================= */}
@@ -70,20 +177,20 @@ export default function Dashboard() {
         Permanent Issue Workflow
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <Card
           title="Total Pending"
           value="8"
           subtitle="items in workflow"
-          icon={<FaClipboardList />}
+          icon={<FaClock className="text-gray-600" />}
         />
 
         <Card
           title="Pending Survey"
           value="2"
           subtitle="awaiting survey"
-          icon={<FaClipboardList />}
-          valueColor="text-orange-500"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-red-900"
           onClick={() => navigateTo("/permanent/pending-survey")}
         />
 
@@ -91,7 +198,7 @@ export default function Dashboard() {
           title="Pending Demand"
           value="1"
           subtitle="items pending"
-          icon={<FaClipboardList />}
+          icon={<FaClock className="text-gray-600" />}
           valueColor="text-purple-500"
           onClick={() => navigateTo("/permanent/pending-demand")}
         />
@@ -100,7 +207,7 @@ export default function Dashboard() {
           title="Pending Issue"
           value="1"
           subtitle="items pending"
-          icon={<FaClipboardList />}
+          icon={<FaClock className="text-gray-600" />}
           valueColor="text-blue-600"
           onClick={() => navigateTo("/permanent/pending-issue")}
         />
@@ -109,7 +216,7 @@ export default function Dashboard() {
           title="Pending Stock In"
           value="2"
           subtitle="items pending"
-          icon={<FaClipboardList />}
+          icon={<FaClock className="text-gray-600" />}
           valueColor="text-red-500"
           onClick={() => navigateTo("/permanent/stock-update")}
         />
@@ -118,56 +225,151 @@ export default function Dashboard() {
           title="Pending Procurement"
           value="2"
           subtitle="to be procured"
-          icon={<FaClipboardList />}
+          icon={<FaClock className="text-gray-600" />}
           valueColor="text-blue-500"
           onClick={() => navigateTo("/permanent/procurement")}
         />
       </div>
 
       {/* ================= TEMPORARY & LOAN ================= */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">
-        Temporary & Loan Issues
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* ===== TEMPORARY ISSUE LOCAL ===== */}
+        <BigCard title="Temporary Issue (Local)" icon={<FaClock />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active Temporary Issue"
+              value="5"
+              subtitle="currently issued"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/temporary/temporary-issue")}
+            />
+
+            <Card
+              title="Overdue Temporary Issue"
+              value="5"
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigateTo("/temporary/temporary-issue")}
+            />
+          </div>
+        </BigCard>
+
+        {/* ===== TY LOAN ===== */}
+        <BigCard title="TY Loan (Other Units)" icon={<FaClock />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active TY Loan"
+              value="4"
+              subtitle="currently on loan"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/temp-loan/pending")}
+            />
+
+            <Card
+              title="Overdue TY Loan"
+              value="1"
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigateTo("/temp-loan/pending")}
+            />
+          </div>
+        </BigCard>
+
+        {/* ===== DOCUMENTS ISSUE ===== */}
+        <BigCard title="Documents Issue" icon={<IoDocument size={20} />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active Documents"
+              value="3"
+              subtitle="currently issued"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/documents")}
+            />
+
+            <Card
+              title="Overdue Documents"
+              value="1"
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigateTo("/documents/issue")}
+            />
+          </div>
+        </BigCard>
+      </div>
+      {/* ================= D&87 TABLE ================= */}
+      <h2 className="text-lg font-semibold text-gray-800 mt-10 mb-3">
+        D787 Amendment
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card
-          title="Active Temporary"
-          value="5"
-          subtitle="currently issued"
-          icon={<FaClock />}
-          onClick={() => navigateTo("/temporary/temporary-issue")}
-        />
+      <div
+        onClick={() => navigateTo("/permanent/special-demand")}
+        className="bg-white border rounded-2xl shadow-sm p-6 overflow-x-auto"
+      >
+        <table className="min-w-full text-sm text-left border">
+          <thead className="bg-gray-100 text-gray-700">
+            <tr>
+              <th className="p-3 border">Item Description</th>
+              <th className="p-3 border">
+                <i>IN</i> Part No.
+              </th>
+              <th className="p-3 border">Category</th>
+              <th className="p-3 border">Type</th>
+              <th className="p-3 border">
+                <span>
+                  Previous OBS <br />
+                  Authorised
+                </span>
+              </th>
+              <th className="p-3 border">Incraese Qty</th>
+              <th className="p-3 border">
+                Current OBS <br />
+                Authorised
+              </th>
+              <th className="p-3 border">Quote Authority</th>
+              <th className="p-3 border">Internal Demand No.</th>
+              {/* <th className="p-3 border">Internal Demand Date</th> */}
+              <th className="p-3 border">Requisition No.</th>
+              {/* <th className="p-3 border">Requisition Date</th> */}
+              <th className="p-3 border">MO Demand No.</th>
+              {/* <th className="p-3 border">MO Demand Date</th> */}
+              <th className="p-3 border">Created By Name</th>
+              <th className="p-3 border">Created On</th>
+            </tr>
+          </thead>
 
-        <Card
-          title="Overdue Temporary"
-          value="5"
-          subtitle="overdue returns"
-          icon={<FaExclamationCircle />}
-          valueColor="text-red-500"
-          onClick={() => navigateTo("/temporary/temporary-issue")}
-        />
-
-        <Card
-          title="Active Loans"
-          value="4"
-          subtitle="currently on loan"
-          icon={<FaClock />}
-          onClick={() => navigateTo("/temp-loan/pending")}
-        />
-
-        <Card
-          title="Overdue Loans"
-          value="1"
-          subtitle="overdue returns"
-          icon={<FaExclamationCircle />}
-          valueColor="text-red-500"
-          onClick={() => navigateTo("/temp-loan/pending")}
-        />
+          <tbody>
+            {d787Data.map((item, index) => (
+              <tr key={index} className="hover:bg-gray-50">
+                <td className="p-3 border">{item.item_description}</td>
+                <td className="p-3 border">{item.part_no}</td>
+                <td className="p-3 border">{item.category}</td>
+                <td className="p-3 border">{item.type}</td>
+                <td className="p-3 border">{item.prev_obs}</td>
+                <td className="p-3 border">{item.inc_qty}</td>
+                <td className="p-3 border">{item.current_obs}</td>
+                <td className="p-3 border">{item.quote_authority}</td>
+                <td className="p-3 border">{item.internal_demand}</td>
+                {/* <td className="p-3 border">{item.internal_demand_date}</td> */}
+                <td className="p-3 border">{item.requisition_no}</td>
+                {/* <td className="p-3 border">{item.requisition_date}</td> */}
+                <td className="p-3 border">{item.mo_demand_no}</td>
+                {/* <td className="p-3 border">{item.mo_demand_date}</td> */}
+                <td className="p-3 border">{item.created_by}</td>
+                <td className="p-3 border">{item.created_on}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
+/* ================= SMALL CARD ================= */
 function Card({
   title,
   value,
@@ -184,19 +386,31 @@ function Card({
         ${onClick ? "cursor-pointer hover:shadow-md hover:scale-[1.02]" : ""}
       `}
     >
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-
         <div className="text-gray-400 text-lg flex items-center">{icon}</div>
       </div>
 
-      {/* Value */}
       <div className="mt-4">
         <p className={`text-2xl font-semibold ${valueColor}`}>{value}</p>
-
         <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
       </div>
+    </div>
+  );
+}
+
+/* ================= BIG GROUP CARD ================= */
+function BigCard({ title, icon, children }) {
+  return (
+    <div className="bg-white border rounded-2xl shadow-sm p-6">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="text-gray-500">{icon}</div>
+        <h3 className="text-md font-semibold text-gray-800">{title}</h3>
+      </div>
+
+      {/* Inner Cards */}
+      {children}
     </div>
   );
 }
