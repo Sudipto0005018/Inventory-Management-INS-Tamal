@@ -1896,7 +1896,7 @@ const DocumentsCorner = ({ type = "" }) => {
           >
             ✕
           </button>
-          <DialogTitle className="relative text-base -mt-4">
+          <DialogTitle className="relative text-base -mt-8">
             Manual Withdrawal
           </DialogTitle>
 
