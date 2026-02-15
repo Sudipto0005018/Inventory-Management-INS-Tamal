@@ -855,17 +855,47 @@ async function generateExcel(req, res) {
 
     if (module === "procurement") {
       [rows] = await pool.query(`
-        SELECT nac_qty, nac_no, nac_date, validity, rate_unit, issue_date,
-        box_no, qty_received, created_at
-        FROM procurement
+      SELECT p.nac_qty, p.nac_no, p.nac_date, p.validity, p.rate_unit, p.issue_date,
+      p.qty_received, p.box_no, p.created_at,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+
+        'PROCUREMENT' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
+
+      FROM procurement p
+      LEFT JOIN spares sp ON p.spare_id = sp.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+      ORDER BY p.created_at DESC
       `);
     }
 
     if (module === "stock_update") {
       [rows] = await pool.query(`
-        SELECT stocked_in_qty, mo_no, mo_date, issue_date,
-        box_no, qty_received, created_at
-        FROM stock_update
+        SELECT s.stocked_in_qty, s.mo_no, s.mo_date, s.issue_date,
+        s.box_no, s.qty_received, s.created_at,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+
+        'STOCK_UPDATE' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
+
+      FROM stock_update s
+      LEFT JOIN spares sp ON s.spare_id = sp.id
+      LEFT JOIN tools t ON s.tool_id = t.id
+      LEFT JOIN pending_issue pi ON s.issued_id = pi.id
+      ORDER BY s.created_at DESC
       `);
     }
 
@@ -889,6 +919,7 @@ async function generateExcel(req, res) {
     FROM survey s
     LEFT JOIN spares sp ON s.spare_id = sp.id
     LEFT JOIN tools t ON s.tool_id = t.id
+    ORDER BY s.created_at DESC
   `);
     }
 
@@ -909,6 +940,7 @@ async function generateExcel(req, res) {
     FROM demand d
     LEFT JOIN spares sp ON d.spare_id = sp.id
     LEFT JOIN tools t ON d.tool_id = t.id
+    ORDER BY d.created_at DESC
   `);
     }
 
@@ -937,7 +969,7 @@ async function generateExcel(req, res) {
     FROM pending_issue pi
     LEFT JOIN spares sp ON pi.spare_id = sp.id
     LEFT JOIN tools t ON pi.tool_id = t.id
-    ORDER BY pi.id DESC
+    ORDER BY pi.created_at DESC
   `);
 
       rows = rows.map((row) => {
@@ -970,6 +1002,49 @@ async function generateExcel(req, res) {
       });
     }
 
+    if (module === "special_demand") {
+      [rows] = await pool.query(`
+    SELECT 
+        sd.obs_authorised,
+        sd.obs_increase_qty,
+        sd.quote_authority,
+        sd.internal_demand_no,
+        sd.internal_demand_date,
+        sd.requisition_no,
+        sd.requisition_date,
+        sd.mo_demand_no,
+        sd.mo_demand_date,
+
+        sd.created_by_name,
+        sd.created_at,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.description
+          WHEN sd.tool_id IS NOT NULL THEN t.description
+          ELSE NULL
+        END AS description,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+          WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+          ELSE NULL
+        END AS indian_pattern,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.category
+          WHEN sd.tool_id IS NOT NULL THEN t.category
+          ELSE NULL
+        END AS category
+
+
+   FROM special_demand sd
+      LEFT JOIN spares s ON s.id = sd.spare_id
+      LEFT JOIN tools t on t.id = sd.tool_id
+      
+    ORDER BY sd.created_at DESC
+  `);
+    }
+
     // Workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(module);
@@ -981,6 +1056,7 @@ async function generateExcel(req, res) {
       survey: surveyHeaders,
       demand: demandHeaders,
       issue: issueHeaders,
+      special_demand: specialDHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -997,6 +1073,8 @@ async function generateExcel(req, res) {
       worksheet.columns = demandHeaders;
     } else if (module === "issue") {
       worksheet.columns = issueHeaders;
+    } else if (module === "special_demand") {
+      worksheet.columns = specialDHeaders;
     }
 
     rows.forEach((row) => {

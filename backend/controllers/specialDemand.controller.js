@@ -174,6 +174,7 @@ async function getSpecialDemandList(req, res) {
         sd.requisition_date,
         sd.mo_demand_no,
         sd.mo_demand_date,
+        sd.quote_authority,
 
         sd.created_by,
         sd.created_by_name,

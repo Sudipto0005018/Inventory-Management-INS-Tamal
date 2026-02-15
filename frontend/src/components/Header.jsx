@@ -29,6 +29,7 @@ const Header = ({ onSidebarOpen }) => {
       "/permanent/pending-survey": "survey",
       "/permanent/pending-demand": "demand",
       "/permanent/pending-issue": "issue",
+      "/permanent/special-demand": "special_demand",
     }),
     [],
   );
