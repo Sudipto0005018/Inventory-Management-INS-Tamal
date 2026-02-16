@@ -7,10 +7,14 @@ const {
   getStockUpdatePending,
   updateStock,
   updateProcurement,
+  getLogsProcurement,
+  getLogsStockUpdate,
 } = require("../controllers/procurement_stock.controller");
 
 router.get("/procurement", authMiddleware, getProcurementPending);
+router.get("/logsProcure", authMiddleware, getLogsProcurement);
 router.get("/stock_in", authMiddleware, getStockUpdatePending);
+router.get("/logsStock", authMiddleware, getLogsStockUpdate);
 router.put("/stock_in", authMiddleware, updateStock);
 router.put("/procurement", authMiddleware, updateProcurement);
 

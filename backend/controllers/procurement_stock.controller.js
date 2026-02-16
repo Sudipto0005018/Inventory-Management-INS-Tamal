@@ -653,9 +653,247 @@ async function updateProcurement(req, res) {
   }
 }
 
+async function getLogsProcurement(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? req.query.search.trim() : "";
+  const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+
+  const columnMap = {
+    description: ["sp.description", "t.description"],
+    category: ["sp.category", "t.category"],
+    equipment_system: ["sp.equipment_system", "t.equipment_system"],
+    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    nac_no: ["p.nac_no"],
+  };
+
+  const connection = await pool.getConnection();
+
+  try {
+    let whereConditions = [`p.status = 'complete'`];
+    let queryParams = [];
+
+    if (search) {
+      let searchFragments = [];
+      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col.trim()];
+          const sub = dbCols
+            .map((dbCol) => {
+              queryParams.push(`%${search}%`);
+              return `${dbCol} LIKE ?`;
+            })
+            .join(" OR ");
+          searchFragments.push(`(${sub})`);
+        }
+      } else {
+        searchFragments.push(
+          `(sp.description LIKE ? OR t.description LIKE ? OR p.nac_no LIKE ?)`,
+        );
+        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+    }
+
+    const finalWhere =
+      whereConditions.length > 0
+        ? "WHERE " + whereConditions.join(" AND ")
+        : "";
+
+    const [countRows] = await connection.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM procurement p
+      LEFT JOIN spares sp ON p.spare_id = sp.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      ${finalWhere}
+      `,
+      queryParams,
+    );
+
+    const totalItems = countRows[0].count;
+
+    if (totalItems === 0) {
+      return new ApiResponse(
+        200,
+        { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+        "No pending procurement found",
+      ).send(res);
+    }
+
+    const [rows] = await connection.query(
+      `
+      SELECT
+        p.*,
+        COALESCE(sp.description, t.description) AS description,
+        COALESCE(sp.category, t.category) AS category,
+        COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+        COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
+
+        'PROCUREMENT' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
+
+      FROM procurement p
+      LEFT JOIN spares sp ON p.spare_id = sp.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+
+      ${finalWhere}
+
+      ORDER BY p.id DESC
+      LIMIT ? OFFSET ?
+      `,
+      [...queryParams, limit, offset],
+    );
+
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+      "Procurement logs fetched successfully",
+    ).send(res);
+  } catch (error) {
+    console.log("Procurement pending error:", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
+async function getLogsStockUpdate(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? req.query.search.trim() : "";
+  const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+
+  const columnMap = {
+    description: ["sp.description", "t.description"],
+    category: ["sp.category", "t.category"],
+    equipment_system: ["sp.equipment_system", "t.equipment_system"],
+    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    mo_no: ["s.mo_no"],
+  };
+
+  const connection = await pool.getConnection();
+
+  try {
+    let whereConditions = [`s.status = 'complete'`];
+    let queryParams = [];
+
+    if (search) {
+      let searchFragments = [];
+      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col.trim()];
+          const sub = dbCols
+            .map((dbCol) => {
+              queryParams.push(`%${search}%`);
+              return `${dbCol} LIKE ?`;
+            })
+            .join(" OR ");
+          searchFragments.push(`(${sub})`);
+        }
+      } else {
+        searchFragments.push(
+          `(sp.description LIKE ? OR t.description LIKE ? OR s.mo_no LIKE ?)`,
+        );
+        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+    }
+
+    const finalWhere =
+      whereConditions.length > 0
+        ? "WHERE " + whereConditions.join(" AND ")
+        : "";
+
+    const [countRows] = await connection.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM stock_update s
+      LEFT JOIN spares sp ON s.spare_id = sp.id
+      LEFT JOIN tools t ON s.tool_id = t.id
+      ${finalWhere}
+      `,
+      queryParams,
+    );
+
+    const totalItems = countRows[0].count;
+
+    if (totalItems === 0) {
+      return new ApiResponse(
+        200,
+        { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+        "No pending stock update found",
+      ).send(res);
+    }
+
+    const [rows] = await connection.query(
+      `
+      SELECT
+        s.*,
+        COALESCE(sp.description, t.description) AS description,
+        COALESCE(sp.category, t.category) AS category,
+        COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+        COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
+
+        'STOCK_UPDATE' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
+
+      FROM stock_update s
+      LEFT JOIN spares sp ON s.spare_id = sp.id
+      LEFT JOIN tools t ON s.tool_id = t.id
+      LEFT JOIN pending_issue pi ON s.issued_id = pi.id
+
+      ${finalWhere}
+
+      ORDER BY s.id DESC
+      LIMIT ? OFFSET ?
+      `,
+      [...queryParams, limit, offset],
+    );
+
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+      "Stock update logs fetched successfully",
+    ).send(res);
+  } catch (error) {
+    console.log("Stock update pending error:", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getProcurementPending,
   getStockUpdatePending,
   updateStock,
   updateProcurement,
+  getLogsProcurement,
+  getLogsStockUpdate,
 };

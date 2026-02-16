@@ -29,14 +29,10 @@ const PendingSurvey = () => {
     },
     {
       key: "item_type",
-      header: "Spares / Tools",
+      header: "Type",
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
-    {
-      key: "box_no",
-      header: "Box No.",
-    },
     { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
     {
       key: "withdrawl_date_str",
@@ -157,30 +153,14 @@ const PendingSurvey = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    const t = fetchedData.items.flatMap((row) => {
-      if (!row.box_details || row.box_details.length === 0) {
-        return [
-          {
-            ...row,
-            box_no: "-",
-            survey_quantity: row.survey_quantity || "0",
-            issue_date: getFormatedDate(row.issue_date),
-            withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-            created_at: getTimeDate(row.created_at),
-          },
-        ];
-      }
-
-      return row.box_details.map((box) => ({
-        ...row,
-        box_no: box.no,
-        survey_quantity: row.survey_quantity || "0",
-        issue_date: getFormatedDate(row.issue_date),
-        withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-        created_at: getTimeDate(row.created_at),
-        item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
-      }));
-    });
+    const t = fetchedData.items.map((row) => ({
+      ...row,
+      survey_quantity: row.survey_quantity || "0",
+      issue_date: getFormatedDate(row.issue_date),
+      withdrawl_date_str: getFormatedDate(row.withdrawl_date),
+      created_at: getTimeDate(row.created_at),
+      item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
+    }));
     setTableData(t);
   }, [fetchedData]);
 

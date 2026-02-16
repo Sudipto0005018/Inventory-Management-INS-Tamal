@@ -122,9 +122,10 @@ const menuItems = [
     submenu: [
       { name: "Pending for Survey", path: "/logs/pending-survey" },
       { name: "Pending for Demand", path: "/logs/pending-demand" },
-      // { name: "Pending for Issue", path: "/logs/pending-issue" },
-      // { name: "Pending for Procurement", path: "/logs/procurement" },
-      // { name: "Pending for Stock Update", path: "/logs/stock-update" },
+      { name: "Pending for Issue", path: "/logs/pending-issue" },
+      { name: "Pending for Procurement", path: "/logs/procurement" },
+      { name: "Pending for Stock Update", path: "/logs/stock-update" },
+      { name: "Pending for Special Demand", path: "/logs/special-demand" },
     ],
   },
 ];

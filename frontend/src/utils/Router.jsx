@@ -22,7 +22,6 @@ import Search from "../pages/Search";
 import Handheld from "../pages/Handheld";
 import PendingTYLoan from "../pages/PendingTYLoan";
 import CompletedTYLoan from "../pages/CompletedTYLoan";
-import PendingTempLoan from "../pages/PendingTempLoan";
 import CompletedTempLoan from "../pages/CompletedTempLoan";
 import PendingIssue from "../pages/PendingIssue";
 import PendingStock from "../pages/PendingStock";
@@ -35,6 +34,10 @@ import TemporaryIssue from "../pages/TemporaryIssue";
 import PendingDemand from "../pages/PendingDemand";
 import LogsSurvey from "../pages/LogsSurvey";
 import LogsDemand from "../pages/LogsDemand";
+import LogsIssue from "../pages/LogsIssue";
+import LogsProcurement from "../pages/LogsProcurement";
+import LogsStock from "../pages/LogsStock";
+import LogsSpecialDemand from "../pages/LogsSpecialDemand";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -274,6 +277,46 @@ const Router = () => {
       </Route>
       <Route element={<HomeLayout />}>
         <Route
+          path="/logs/pending-issue"
+          element={
+            <ProtectedRoute>
+              <LogsIssue />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/logs/procurement"
+          element={
+            <ProtectedRoute>
+              <LogsProcurement />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/logs/stock-update"
+          element={
+            <ProtectedRoute>
+              <LogsStock />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/logs/special-demand"
+          element={
+            <ProtectedRoute>
+              <LogsSpecialDemand />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
           path="/search"
           element={
             <ProtectedRoute>
@@ -328,7 +371,7 @@ const Router = () => {
           path="/temp-loan/complete"
           element={
             <ProtectedRoute>
-              <CompletedTempLoan />
+              <CompletedTYLoan />
             </ProtectedRoute>
           }
         />

@@ -16,6 +16,7 @@ export const pageTitles = {
   "/logs/pending-issue": "Issue (Completed)",
   "/logs/procurement": "Procurement (Completed)",
   "/logs/stock-update": "Stock Update (Completed)",
+  "/logs/special-demand": "Special Demand (Completed)",
 
   "/permanent/pending-survey": "Pending for Survey",
   "/permanent/pending-demand": "Pending for Demand",

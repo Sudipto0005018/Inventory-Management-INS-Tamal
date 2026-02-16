@@ -327,8 +327,124 @@ async function updateSpecialDemand(req, res) {
   }
 }
 
+async function getLogsSpecialDemand(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  // ✅ Completed records condition
+  const whereClause = `
+    WHERE sd.internal_demand_no IS NOT NULL
+      AND sd.requisition_no IS NOT NULL
+      AND sd.mo_demand_no IS NOT NULL
+  `;
+
+  try {
+    /* ---------- TOTAL COUNT ---------- */
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(sd.id) AS count
+       FROM special_demand sd
+       ${whereClause}`,
+    );
+
+    const total = totalCount[0].count;
+
+    if (total === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          "No completed records found",
+        ),
+      );
+    }
+
+    /* ---------- MAIN QUERY ---------- */
+    const query = `
+      SELECT
+        sd.id,
+        sd.spare_id,
+        sd.tool_id,
+
+        sd.obs_authorised,
+        sd.obs_increase_qty,
+
+        sd.internal_demand_no,
+        sd.internal_demand_date,
+        sd.requisition_no,
+        sd.requisition_date,
+        sd.mo_demand_no,
+        sd.mo_demand_date,
+        sd.quote_authority,
+
+        sd.created_by,
+        sd.created_by_name,
+        sd.created_at,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN 'spares'
+          WHEN sd.tool_id IS NOT NULL THEN 'tools'
+          ELSE 'unknown'
+        END AS source,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.description
+          WHEN sd.tool_id IS NOT NULL THEN t.description
+          ELSE NULL
+        END AS description,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+          WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+          ELSE NULL
+        END AS indian_pattern,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.category
+          WHEN sd.tool_id IS NOT NULL THEN t.category
+          ELSE NULL
+        END AS category
+
+      FROM special_demand sd
+      LEFT JOIN spares s ON s.id = sd.spare_id
+      LEFT JOIN tools t ON t.id = sd.tool_id
+
+      ${whereClause}
+      ORDER BY sd.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [rows] = await pool.query(query, [limit, offset]);
+
+    res.json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+        "Completed special demand records retrieved successfully",
+      ),
+    );
+  } catch (err) {
+    console.error("GET COMPLETED SPECIAL DEMAND ERROR =>", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch completed special demand list",
+    });
+  }
+}
+
 module.exports = {
   createSpecialDemand,
   getSpecialDemandList,
   updateSpecialDemand,
+  getLogsSpecialDemand,
 };

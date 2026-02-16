@@ -7,10 +7,12 @@ const {
   createSpecialDemand,
   getSpecialDemandList,
   updateSpecialDemand,
+  getLogsSpecialDemand,
 } = require("../controllers/specialDemand.controller");
 
 router.post("/special", authMiddleware, createSpecialDemand);
 router.get("/special-demand", getSpecialDemandList);
+router.get("/logs", getLogsSpecialDemand);
 router.put("/special-demand", authMiddleware, updateSpecialDemand);
 
 module.exports = router;

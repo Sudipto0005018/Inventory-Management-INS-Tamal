@@ -365,6 +365,7 @@ const PermanentPendings = () => {
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage}
+          pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages}
           onPageChange={setCurrentPage}
           className="h-[calc(100vh-230px)]"

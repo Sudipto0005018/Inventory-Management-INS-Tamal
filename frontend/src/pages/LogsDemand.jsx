@@ -28,7 +28,7 @@ const PendingDemand = () => {
     },
     {
       key: "item_type",
-      header: "Spares / Tools",
+      header: "Type",
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },

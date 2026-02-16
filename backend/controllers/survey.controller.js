@@ -318,33 +318,11 @@ async function getLogSurveys(req, res) {
       [...queryParams, limit, offset],
     );
 
-    /* ---------- PARSE BOX DETAILS ---------- */
-    const formattedRows = rows.map((row) => {
-      let boxDetails = [];
-
-      if (row.box_no) {
-        try {
-          boxDetails =
-            typeof row.box_no === "string"
-              ? JSON.parse(row.box_no)
-              : row.box_no;
-        } catch (err) {
-          console.log("Box parse error:", err);
-          boxDetails = [];
-        }
-      }
-
-      return {
-        ...row,
-        box_details: boxDetails,
-      };
-    });
-
     /* ---------- RESPONSE ---------- */
     return new ApiResponse(
       200,
       {
-        items: formattedRows,
+        items: rows,
         totalItems: totalDemand,
         totalPages: Math.ceil(totalDemand / limit),
         currentPage: page,
