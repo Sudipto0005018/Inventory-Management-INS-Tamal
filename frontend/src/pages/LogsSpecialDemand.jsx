@@ -33,7 +33,15 @@ const PendingSpecial = () => {
     },
     { key: "category", header: "Category" },
     { key: "quantity", header: "Qty" },
-    { key: "modified_obs", header: "Modified OBS Authorised" },
+    {
+      key: "modified_obs",
+      header: (
+        <span>
+          Modified OBS <br /> Authorised
+        </span>
+      ),
+    },
+    { key: "quote_authority", header: "Quote Authority" },
     { key: "demandno", header: "Internal Demand No." },
     { key: "demanddate", header: "Internal Demand Date." },
     { key: "requisition", header: "Requisition No." },
@@ -107,6 +115,7 @@ const PendingSpecial = () => {
           limit: config.row_per_page,
         },
       });
+      console.log("response==>", response);
       if (response.success) {
         setFetchedData(response.data);
       } else {
@@ -155,6 +164,7 @@ const PendingSpecial = () => {
       created_at: getTimeDate(row.created_at),
       // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",
+      quote_authority: row.quote_authority || "--",
 
       demandno: row.internal_demand_no || "--",
       demanddate: row.internal_demand_date

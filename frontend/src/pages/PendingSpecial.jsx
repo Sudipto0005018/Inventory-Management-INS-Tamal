@@ -38,6 +38,7 @@ const PendingSpecial = () => {
     { key: "category", header: "Category" },
     { key: "quantity", header: "Qty" },
     { key: "modified_obs", header: "Modified OBS Authorised" },
+    { key: "quote_authority", header: "Quote Authority" },
     { key: "demandno", header: "Internal Demand No." },
     { key: "demanddate", header: "Internal Demand Date." },
     { key: "requisition", header: "Requisition No." },

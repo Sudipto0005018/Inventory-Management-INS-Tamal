@@ -527,9 +527,11 @@ const Spares = ({ type = "" }) => {
         return;
       }
       const formData = new FormData();
-      if (image.file) {
-        formData.append("image", image.file);
-      }
+      // ✅ Append multi images
+      Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
+        formData.append("images", file);
+      });
+
       formData.append("is_loose_spare", isLooseSpare);
       formData.append("description", inputs.description || "");
       formData.append("equipment_system", inputs.equipment_system || "");
@@ -700,14 +702,25 @@ const Spares = ({ type = "" }) => {
         toaster("error", "Equipment / System is required");
         return;
       }
-      let img = null;
-      if (image.fileEdit) {
-        img = image.fileEdit;
-      } else if (selectedRow.image) {
-        img = selectedRow.image;
-      }
+      // let img = null;
+      // if (image.fileEdit) {
+      //   img = image.fileEdit;
+      // } else if (selectedRow.image) {
+      //   img = selectedRow.image;
+      // }
       const formData = new FormData();
-      formData.append("image", img);
+      // formData.append("image", img);
+      // NEW uploads
+      Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
+        formData.append("images", file);
+      });
+
+      // Status (delete / replace info)
+      formData.append(
+        "imageStatus",
+        JSON.stringify(imagePayload?.imageStatus || []),
+      );
+
       formData.append("description", selectedRow.description || "");
       formData.append("equipment_system", selectedRow.equipment_system || "");
       formData.append("denos", selectedRow.denos || "");

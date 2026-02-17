@@ -33,9 +33,13 @@ const createSpare = async (req, res) => {
     }
 
     const isCriticalSpare = critical_spare === "yes" ? 1 : 0;
+
+    // ✅ MULTI IMAGE FILENAMES
+    const images = req.files?.map((file) => file.filename) || [];
+
     const query = `
             INSERT INTO spares
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, image, uid, oem, substitute_name, local_terminology, critical_spare)
+                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare)
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
@@ -54,7 +58,7 @@ const createSpare = async (req, res) => {
       indian_pattern || null,
       remarks || null,
       department.id,
-      req.file?.filename || null,
+      JSON.stringify(images),
       Date.now().toString(),
       oem || null,
       substitute_name || null,
@@ -62,18 +66,10 @@ const createSpare = async (req, res) => {
       isCriticalSpare,
     ]);
 
-    // if (result.length === 0) {
-    if (!result.insertId) {
-      if (req.file) unlinkFile(req.file.filename);
-      return res
-        .status(500)
-        .json(new ApiErrorResponse(500, {}, "Spare creation failed"));
-    }
     res
       .status(201)
       .json(new ApiResponse(201, result[0], "Spare created successfully"));
   } catch (error) {
-    if (req.file) unlinkFile(req.file.filename);
     console.log("Error creating spare: ", error);
     res
       .status(500)
@@ -431,7 +427,7 @@ async function updateSpare(req, res) {
     item_code,
     indian_pattern,
     remarks,
-    image,
+    // image,
     oem,
     substitute_name,
     local_terminology,
@@ -439,7 +435,15 @@ async function updateSpare(req, res) {
     supplier,
   } = req.body;
 
-  const filename = req.file ? req.file.filename : image || null;
+  // const filename = req.file ? req.file.filename : image || null;
+
+  const newImages = Array.isArray(req.files)
+    ? req.files.map((f) => f.filename)
+    : req.files?.images?.map((f) => f.filename) || [];
+
+  const imageStatus = req.body.imageStatus
+    ? JSON.parse(req.body.imageStatus)
+    : [];
 
   if (!description || !equipment_system) {
     return res
@@ -452,7 +456,7 @@ async function updateSpare(req, res) {
   try {
     /* 1️⃣ Fetch current spare */
     const [[spare]] = await pool.query(
-      `SELECT obs_authorised, image FROM spares WHERE id = ?`,
+      `SELECT obs_authorised, images FROM spares WHERE id = ?`,
       [id],
     );
 
@@ -494,6 +498,45 @@ async function updateSpare(req, res) {
       );
     }
 
+    let oldImages = [];
+
+    if (spare.images) {
+      try {
+        oldImages = JSON.parse(spare.images);
+      } catch {
+        oldImages = [];
+      }
+    }
+
+    let uploadIndex = 0;
+
+    imageStatus.forEach((status, index) => {
+      // DELETE
+      if (status.isDeleted && oldImages[index]) {
+        unlinkFile(oldImages[index]);
+        oldImages[index] = null;
+      }
+
+      // REPLACE
+      if (status.isReplaced) {
+        if (oldImages[index]) {
+          unlinkFile(oldImages[index]);
+        }
+        oldImages[index] = newImages[uploadIndex++] || null;
+      }
+    });
+
+    for (let i = 0; i < oldImages.length; i++) {
+      if (!oldImages[i] && newImages[uploadIndex]) {
+        oldImages[i] = newImages[uploadIndex++];
+      }
+    }
+
+    while (uploadIndex < newImages.length) {
+      oldImages.push(newImages[uploadIndex++]);
+    }
+
+    oldImages = oldImages.filter(Boolean);
     /* 3️⃣ Update NON-sensitive fields immediately */
     const [result] = await pool.query(
       `
@@ -510,7 +553,7 @@ async function updateSpare(req, res) {
           item_code = ?,
           indian_pattern = ?,
           remarks = ?,
-          image = ?,
+          images = ?,
           oem = ?,
           substitute_name = ?,
           local_terminology = ?,
@@ -531,7 +574,8 @@ async function updateSpare(req, res) {
         item_code || null,
         indian_pattern || null,
         remarks || null,
-        filename,
+        // filename,
+        JSON.stringify(oldImages),
         oem || null,
         substitute_name || null,
         local_terminology || null,
@@ -540,8 +584,6 @@ async function updateSpare(req, res) {
         id,
       ],
     );
-
-    oldImg = spare.image;
 
     res
       .status(200)
@@ -559,11 +601,12 @@ async function updateSpare(req, res) {
     res
       .status(500)
       .json(new ApiErrorResponse(500, {}, "Internal server error"));
-  } finally {
-    if (req.file && oldImg) {
-      unlinkFile(oldImg);
-    }
   }
+  // finally {
+  //   if (req.file && oldImg) {
+  //     unlinkFile(oldImg);
+  //   }
+  // }
 }
 
 async function deleteSpare(req, res) {
