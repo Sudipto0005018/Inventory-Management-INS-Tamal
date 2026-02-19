@@ -8,23 +8,13 @@ import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import Chip from "../components/Chip";
 import {
   addDate,
-  formatSimpleDate,
-  getDate,
   getFormatedDate,
+  getTimeDate,
 } from "../utils/helperFunctions";
-import BoxNoDeposit from "../components/BoxNoDeposit";
+
 import { MultiSelect } from "../components/ui/multi-select";
 
-import GenerateQRDialog from "../components/docQR";
-import { FormattedDatePicker } from "@/components/FormattedDatePicker";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
@@ -41,8 +31,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
-    { key: "status", header: "Status" },
-    { key: "receive", header: "Proceed" },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -75,11 +64,6 @@ const PendingTempLoan = () => {
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
-  // "returned" | "utilised"
-
-  //Generate QR state
-  const [generateQR, setGenerateQR] = useState("no");
-  const [openQRDialog, setOpenQRDialog] = useState(false);
 
   const [boxNo, setBoxNo] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -107,7 +91,7 @@ const PendingTempLoan = () => {
   const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
-      const response = await apiService.get("/document/list", {
+      const response = await apiService.get("/document/logs", {
         params: {
           page,
           limit: config.row_per_page,
@@ -190,25 +174,6 @@ const PendingTempLoan = () => {
 
         received_quantity: row.qty_received ?? 0,
 
-        /** ✅ STATUS FROM BACKEND */
-        status: (() => {
-          const s = row.loan_status?.toLowerCase();
-
-          if (s === "pending") {
-            return <Chip text="Pending" varient="info" />;
-          }
-
-          if (s === "partial") {
-            return <Chip text="Partial" varient="warning" />;
-          }
-
-          if (s === "complete") {
-            return <Chip text="Completed" varient="success" />;
-          }
-
-          return <Chip text="Unknown" varient="default" />;
-        })(),
-
         receive: (
           <Button
             size="icon"
@@ -244,103 +209,6 @@ const PendingTempLoan = () => {
     setTableData(t);
   }, [fetchedData]);
 
-  async function updateDetails() {
-    setIsLoading((prev) => ({ ...prev, receive: true }));
-
-    try {
-      let response;
-      /** ITEM RETURNED */
-      response = await apiService.put("/document/doc-list", {
-        id: selectedRow.id,
-        qty_received: Number(inputs.quantity_received),
-        return_date: formatSimpleDate(inputs.receive_date),
-        box_no: boxNo,
-        approve: true,
-      });
-
-      if (response.success) {
-        toaster("success", "Item received successfully");
-
-        setIsOpen((prev) => ({ ...prev, receive: false }));
-        setInputs({
-          quantity_received: "",
-          receive_date: new Date(),
-        });
-        setActionType("returned");
-        setBoxNo([]);
-        setOpenQRDialog(false);
-        fetchdata();
-      } else {
-        toaster("error", response.message);
-      }
-    } catch (error) {
-      toaster(
-        "error",
-        error.response?.data?.message || error.message || "Operation failed",
-      );
-    } finally {
-      setIsLoading((prev) => ({ ...prev, receive: false }));
-    }
-  }
-
-  const handleReceive = async () => {
-    if (actionType === "returned") {
-      const returnedQty = Number(inputs.quantity_received);
-      const depositQty = Number(getDepositQty());
-
-      // 🔴 No field should be less than zero
-      const fieldsToValidate = [
-        { value: returnedQty, label: "Returned quantity" },
-        { value: depositQty, label: "Deposit quantity" },
-      ];
-
-      for (const field of fieldsToValidate) {
-        if (field.value < 0) {
-          toaster("error", `${field.label} cannot be less than zero`);
-          return;
-        }
-      }
-
-      if (!returnedQty) {
-        toaster("error", "Quantity is required");
-        return;
-      }
-
-      if (returnedQty > selectedRow.quantity) {
-        toaster("error", "Quantity cannot be greater than issued quantity");
-        return;
-      }
-
-      if (!inputs.receive_date) {
-        toaster("error", "Receive date is required");
-        return;
-      }
-
-      // ❌ No single deposit qty can be less than 0
-      const hasNegativeDepositRow = boxNo.some(
-        (row) => Number(row.deposit) < 0,
-      );
-
-      if (hasNegativeDepositRow) {
-        toaster(
-          "error",
-          "Deposit quantity in any box cannot be less than zero",
-        );
-        return;
-      }
-
-      if (depositQty !== returnedQty) {
-        toaster("error", "Deposit quantity must be equal to returned quantity");
-        return;
-      }
-    }
-    if (generateQR != "no") {
-      setOpenQRDialog(true);
-      return;
-    }
-    await updateDetails();
-  };
-
   // Pagination change
   useEffect(() => {
     fetchdata(currentPage);
@@ -372,7 +240,6 @@ const PendingTempLoan = () => {
           Number(row.qty_received || 0) >= issuedQty ? "Completed" : "Pending",
 
         service_no: row.service_no || "-",
-
         issue_date_formated: row.issue_date
           ? getFormatedDate(row.issue_date)
           : "-",
@@ -382,7 +249,7 @@ const PendingTempLoan = () => {
               addDate(row.issue_date, parseInt(row.loan_duration || 0)),
             )
           : "-",
-
+        created_at: getTimeDate(row.created_at),
         received_quantity: row.qty_received ?? 0,
 
         status:
@@ -437,23 +304,6 @@ const PendingTempLoan = () => {
     setTableData(t);
   }, [fetchedData]);
 
-  const updateTablePreview = (updates) => {
-    setTableData((prev) =>
-      prev.map((row) =>
-        row.id === selectedRow.id ? { ...row, ...updates } : row,
-      ),
-    );
-  };
-
-  const closeDialog = () => {
-    setIsOpen((prev) => ({ ...prev, receive: false }));
-    setBoxNo([]);
-    setInputs({
-      receive_date: new Date(),
-      quantity_received: "",
-    });
-  };
-
   return (
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
@@ -481,6 +331,7 @@ const PendingTempLoan = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
+
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
@@ -515,6 +366,7 @@ const PendingTempLoan = () => {
           </Button>
         </div>
         <PaginationTable
+          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}
@@ -524,161 +376,6 @@ const PendingTempLoan = () => {
           hasSearch={false}
         />
       </div>
-
-      <Dialog
-        open={isOpen.receive}
-        onOpenChange={(set) =>
-          setIsOpen((prev) => {
-            return { ...prev, receive: set };
-          })
-        }
-      >
-        <DialogContent
-          unbounded
-          className="w-[55vw] p-6"
-          onPointerDownOutside={(e) => {
-            // e.preventDefault();
-          }}
-          onCloseAutoFocus={() => {
-            setInputs((prev) => ({
-              ...prev,
-            }));
-          }}
-        >
-          <DialogTitle className="capitalize">
-            TY Loan - Item Returned Details
-          </DialogTitle>
-
-          <>
-            <div className="grid grid-cols-3 gap-4"></div>
-            <DialogDescription className="hidden" />
-            <div className="">
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Qty Issued<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    className="mt-2"
-                    id="quantity"
-                    type="number"
-                    placeholder="Quantity"
-                    value={selectedRow?.quantity ?? 0}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Qty Returned<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    className="mt-2"
-                    id="quantity"
-                    visibleColums={[]}
-                    type="number"
-                    placeholder="Quantity"
-                    value={inputs.quantity_received}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setInputs((prev) => ({
-                        ...prev,
-                        quantity_received: value,
-                      }));
-
-                      updateTablePreview({
-                        qty_received: value,
-                        received_quantity: value,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="">
-                  <FormattedDatePicker
-                    label="Returned Date *"
-                    className="w-full"
-                    value={inputs.receive_date}
-                    onChange={(date) => {
-                      setInputs((prev) => ({
-                        ...prev,
-                        receive_date: date,
-                      }));
-
-                      updateTablePreview({
-                        returned_date: date,
-                        returned_date_formatted: getDate(date),
-                      });
-                    }}
-                  />
-                </div>
-              </div>
-              <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
-                Box Wise Segregation
-              </Label>
-              <BoxNoDeposit
-                className="mt-4"
-                value={boxNo}
-                onChange={(val) => {
-                  setBoxNo(val);
-                }}
-              />
-              <div className="mt-4">
-                <Label className="ms-2 mb-2 block">
-                  Generate QR <span className="text-red-500">*</span>
-                </Label>
-
-                <div className="flex gap-6 ms-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="generate_qr"
-                      value="no"
-                      checked={generateQR === "no"}
-                      onChange={() => {
-                        setGenerateQR("no");
-                      }}
-                    />
-                    No
-                  </label>
-
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="generate_qr"
-                      value="yes"
-                      checked={generateQR === "yes"}
-                      onChange={() => {
-                        setGenerateQR("yes");
-                      }}
-                    />
-                    Yes
-                  </label>
-                </div>
-              </div>
-              <GenerateQRDialog
-                open={openQRDialog}
-                setOpen={setOpenQRDialog}
-                row={selectedRow}
-                boxesData={boxNo}
-                updateDetails={updateDetails}
-              />
-            </div>
-          </>
-          <div className="flex items-center mt-4 gap-4 justify-end">
-            <Button onClick={closeDialog} variant="outline">
-              Cancel
-            </Button>
-            <SpinnerButton
-              loading={isLoading.receive}
-              disabled={isLoading.receive}
-              loadingText="Receiving..."
-              onClick={handleReceive}
-              className="text-white hover:bg-primary/85 cursor-pointer"
-            >
-              Submit
-            </SpinnerButton>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

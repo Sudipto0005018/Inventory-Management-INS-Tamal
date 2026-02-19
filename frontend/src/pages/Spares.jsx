@@ -711,9 +711,15 @@ const Spares = ({ type = "" }) => {
       const formData = new FormData();
       // formData.append("image", img);
       // NEW uploads
-      Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
-        formData.append("images", file);
-      });
+      Object.entries(imagePayload?.newImageFiles || {}).forEach(
+        ([index, file]) => {
+          formData.append(`images_${index}`, file);
+        },
+      );
+
+      // Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
+      //   formData.append("images", file);
+      // });
 
       // Status (delete / replace info)
       formData.append(
@@ -951,7 +957,6 @@ const Spares = ({ type = "" }) => {
               }));
             }
             setSelectedRow(row);
-            console.log();
 
             setBoxNo(JSON.parse(row.box_no));
             setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
@@ -1082,8 +1087,8 @@ const Spares = ({ type = "" }) => {
           <div className="h-full">
             <div className="w-full justify-center flex">
               <ImagePreviewDialog
-                className="w-72 h-72 object-contain rounded-md border"
-                image={panelProduct.imgUrl}
+                className="w-80 h-80 object-contain rounded-md border"
+                image={panelProduct.images}
               />
             </div>
             <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
@@ -1230,6 +1235,17 @@ const Spares = ({ type = "" }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
+                    OBS Maintained<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    name="obs_authorised"
+                    value={inputs.obs_authorised}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div>
+                  <Label className="ms-2 mb-1">
                     OBS Held<span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1271,6 +1287,10 @@ const Spares = ({ type = "" }) => {
                     <option value="NA">NA</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Row 3 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     Item Code<span className="text-red-500">*</span>
@@ -1282,10 +1302,6 @@ const Spares = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* IN Part No */}
                 <div>
                   <Label className="ms-2 mb-1">
@@ -1626,6 +1642,28 @@ const Spares = ({ type = "" }) => {
               <div>
                 <Label>
                   OBS Authorised<span className="text-red-500">*</span>
+                </Label>
+
+                <InputWithPencil
+                  name="obs_authorised"
+                  value={selectedRow.obs_authorised}
+                  readOnly
+                  editable={false}
+                  onEdit={() => {
+                    setObsDialog({
+                      open: true,
+                      action: "increase",
+                      quantity: "",
+                    });
+
+                    setOriginalObsAuthorised(selectedRow.obs_authorised);
+                  }}
+                />
+              </div>
+
+              <div>
+                <Label>
+                  OBS Maintained<span className="text-red-500">*</span>
                 </Label>
 
                 <InputWithPencil

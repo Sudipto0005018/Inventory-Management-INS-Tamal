@@ -10,6 +10,7 @@ const {
   getCategory,
   categoryWiseUpdate,
   generateQRCode,
+  getLogsTemporary,
 } = require("../controllers/temporaryIssue.controller");
 
 router.post("/temporary", authMiddleware, createTemporaryIssue);
@@ -18,5 +19,6 @@ router.put("/issue", authMiddleware, updateTemporaryIssue);
 router.post("/category", getCategory);
 router.post("/category-update", authMiddleware, categoryWiseUpdate);
 router.post("/genarate-qr", generateQRCode);
+router.get("/logs", getLogsTemporary);
 
 module.exports = router;

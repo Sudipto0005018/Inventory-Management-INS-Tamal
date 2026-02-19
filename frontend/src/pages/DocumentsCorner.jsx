@@ -43,8 +43,9 @@ import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 
 //search fields
 const SEARCH_FIELDS = [
-  { label: "Item Description", value: "description" },
+  { label: "Document Description", value: "description" },
   { label: "Equipment / System", value: "equipment_system" },
+  { label: "Denos", value: "denos" },
   { label: "Denos", value: "denos" },
   { label: "Book Authorised", value: "obs_authorised" },
   { label: "Book Held", value: "obs_held" },
@@ -997,7 +998,7 @@ const DocumentsCorner = ({ type = "" }) => {
             <div className="w-full justify-center flex">
               <ImagePreviewDialog
                 className="w-72 h-72 object-contain rounded-md border"
-                image={panelProduct.imgUrl}
+                image={panelProduct.images}
               />
             </div>
             <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">

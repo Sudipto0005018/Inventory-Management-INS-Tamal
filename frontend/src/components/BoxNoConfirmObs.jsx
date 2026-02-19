@@ -144,11 +144,13 @@ function BoxNoConfirmObs({
             </TableHead>
 
             <TableHead className="text-center">
-              Authorised / Maintained Qty
+              Authorised Qty
               <span className="text-red-500">*</span>
             </TableHead>
 
-            <TableHead className="text-center">Qty (Inc / Dec)</TableHead>
+            <TableHead className="text-center">
+              Qty (Inc / Dec) <span className="text-red-500">*</span>
+            </TableHead>
 
             {/* <TableHead className="text-center">
               Qty Held

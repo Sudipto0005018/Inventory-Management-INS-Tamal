@@ -120,13 +120,13 @@ const PendingDemand = () => {
   const [selectedRow, setSelectedRow] = useState({});
 
   // Placeholder fetch function as requested
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage, search = inputs.search) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
       const response = await apiService.get("/demand", {
         params: {
-          page: currentPage,
-          search: inputs.search,
+          page,
+          search,
           limit: config.row_per_page,
         },
       });
@@ -159,17 +159,11 @@ const PendingDemand = () => {
   };
 
   const handleRefresh = () => {
-    setInputs((prev) => ({
-      ...prev,
-      search: "",
-    }));
-
-    setSelectedSearchFields([]);
+    setInputs((prev) => ({ ...prev, search: "" }));
+    setSelectedValues([]);
     setCurrentPage(1);
     setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+    fetchdata(1, "");
   };
 
   const handleProceed = async (row) => {

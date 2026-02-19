@@ -41,7 +41,9 @@ const upload = multer({
 });
 
 // const imageMiddleware = upload.single("image");
-const imageMiddleware = upload.array("images", 5);
+const imageMiddleware = upload.any();
+
+// const imageMiddleware = upload.array("images", 5);
 
 const unlinkFile = (filename) => {
   const filePath = path.join(__dirname, "../uploads", filename);

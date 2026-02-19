@@ -96,8 +96,10 @@ function BoxNoInputs({
               <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
-              Authorised / Maintained Qty{" "}
-              <span className="text-red-500">*</span>
+              Authorised Qty <span className="text-red-500">*</span>
+            </TableHead>
+            <TableHead className="text-center">
+              Maintained Qty <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
               Qty Held <span className="text-red-500">*</span>
@@ -144,6 +146,18 @@ function BoxNoInputs({
                 <Input
                   required
                   placeholder="Authorised Qty"
+                  type="number"
+                  value={row.qn}
+                  onChange={(e) =>
+                    handleInputChange(index, "qn", e.target.value)
+                  }
+                />
+              </TableCell>
+
+              <TableCell>
+                <Input
+                  required
+                  placeholder="Maintained Qty"
                   type="number"
                   value={row.qn}
                   onChange={(e) =>

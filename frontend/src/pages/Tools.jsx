@@ -540,9 +540,10 @@ const Tools = ({ type = "" }) => {
         return;
       }
       const formData = new FormData();
-      if (image.file) {
-        formData.append("image", image.file);
-      }
+      // ✅ Append multi images
+      Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
+        formData.append("images", file);
+      });
       formData.append("is_loose_tool", isLooseSpare);
       formData.append("description", inputs.description || "");
       formData.append("equipment_system", inputs.equipment_system || "");
@@ -720,7 +721,15 @@ const Tools = ({ type = "" }) => {
         img = selectedRow.image;
       }
       const formData = new FormData();
-      formData.append("image", img);
+      Object.entries(imagePayload?.newImageFiles || {}).forEach(
+        ([index, file]) => {
+          formData.append(`images_${index}`, file);
+        },
+      );
+      formData.append(
+        "imageStatus",
+        JSON.stringify(imagePayload?.imageStatus || []),
+      );
       formData.append("description", selectedRow.description || "");
       formData.append("equipment_system", selectedRow.equipment_system || "");
       formData.append("denos", selectedRow.denos || "");
@@ -1080,7 +1089,7 @@ const Tools = ({ type = "" }) => {
             <div className="w-full justify-center flex">
               <ImagePreviewDialog
                 className="w-72 h-72 object-contain rounded-md border"
-                image={panelProduct.imgUrl}
+                image={panelProduct.images}
               />
             </div>
             <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
@@ -1227,6 +1236,17 @@ const Tools = ({ type = "" }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
+                    OBS Maintained<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    name="obs_authorised"
+                    value={inputs.obs_authorised}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div>
+                  <Label className="ms-2 mb-1">
                     OBS Held<span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1266,7 +1286,10 @@ const Tools = ({ type = "" }) => {
                     <option value="NA">NA</option>
                   </select>
                 </div>
+              </div>
 
+              {/* Row 3 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     Item Code<span className="text-red-500">*</span>
@@ -1278,10 +1301,6 @@ const Tools = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* IN Part No */}
                 <div>
                   <Label className="ms-2 mb-1">
@@ -1643,6 +1662,28 @@ const Tools = ({ type = "" }) => {
 
               <div>
                 <Label>
+                  OBS Maintained<span className="text-red-500">*</span>
+                </Label>
+
+                <InputWithPencil
+                  name="obs_authorised"
+                  value={selectedRow.obs_authorised}
+                  readOnly
+                  editable={false}
+                  onEdit={() => {
+                    setObsDialog({
+                      open: true,
+                      action: "increase",
+                      quantity: "",
+                    });
+
+                    setOriginalObsAuthorised(selectedRow.obs_authorised);
+                  }}
+                />
+              </div>
+
+              <div>
+                <Label>
                   OBS Held<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
@@ -1787,27 +1828,6 @@ const Tools = ({ type = "" }) => {
                   </div>
                 )}
               </div>
-
-              {/* critical-special-price_unit-sub_component */}
-              {/* <div>
-                <Label className="ms-2 mb-1">Critical Spare</Label>
-                <RadioGroup defaultValue="no">
-                  <div className="flex gap-6 mt-2">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="yes" />
-                      <Label htmlFor="yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="no" />
-                      <Label htmlFor="no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div> */}
 
               <div>
                 <Label className="ms-2 mb-1">

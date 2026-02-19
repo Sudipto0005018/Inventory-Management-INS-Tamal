@@ -98,13 +98,13 @@ const PendingSurvey = () => {
     survey_calender: false,
   });
 
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage, search = inputs.search) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
       const response = await apiService.get("/survey/logs", {
         params: {
-          page: currentPage,
-          search: inputs.search,
+          page,
+          search,
           limit: config.row_per_page,
           status: "pending",
         },
@@ -136,16 +136,11 @@ const PendingSurvey = () => {
   };
 
   const handleRefresh = () => {
-    setInputs((prev) => ({
-      ...prev,
-      search: "",
-    }));
-
-    setSelectedSearchFields([]);
+    setInputs((prev) => ({ ...prev, search: "" }));
+    setSelectedValues([]);
     setCurrentPage(1);
     setActualSearch("");
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+    fetchdata(1, "");
   };
 
   useEffect(() => {

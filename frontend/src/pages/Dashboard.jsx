@@ -336,7 +336,7 @@ export default function Dashboard() {
       </div>
       {/* ================= ATTENTION REQUIRED ================= */}
       <div className="mb-6 mt-6">
-        <div className="bg-red-100 border border-red-200 rounded-2xl p-5">
+        <div className="bg-red-200 border border-red-200 rounded-2xl p-5">
           {/* Header */}
           <div className="flex items-center gap-2 mb-2">
             <FaExclamationCircle className="text-red-600" size={18} />

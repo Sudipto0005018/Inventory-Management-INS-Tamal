@@ -58,16 +58,9 @@ const PermanentPendings = () => {
   ];
   const [selectedValues, setSelectedValues] = useState([]);
 
-  const handleSearch = async (e) => {
-    const searchTerm = inputs.search.trim();
-    if (searchTerm === actualSearch) {
-      return;
-    } else {
-      setActualSearch(searchTerm);
-    }
-    setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
-    setIsLoading((prev) => ({ ...prev, search: false }));
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchData(1);
   };
 
   const handleRefresh = () => {
@@ -76,12 +69,10 @@ const PermanentPendings = () => {
       search: "",
     }));
 
-    setSelectedSearchFields([]);
+    setSelectedValues([]); // reset selected columns
     setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+
+    fetchData(1);
   };
 
   const columns = useMemo(
@@ -128,11 +119,13 @@ const PermanentPendings = () => {
     nac: false,
     mo: false,
     inventory: false,
+    search: false,
   });
 
   const [procurementPending, setProcurementPending] = useState("no");
 
   const [inputs, setInputs] = useState({
+    search: "",
     issue_type: "nac",
     demand_quantity: "",
     nac_no: "",
@@ -148,12 +141,14 @@ const PermanentPendings = () => {
 
   const [boxNo, setBoxNo] = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = async (page = currentPage) => {
     try {
       const res = await apiService.get("/issue/pending-issue", {
         params: {
-          page: currentPage,
+          page,
           limit: config.row_per_page,
+          search: inputs.search || "",
+          cols: selectedValues.join(","),
         },
       });
 
@@ -164,13 +159,19 @@ const PermanentPendings = () => {
       }
     } catch (err) {
       console.log(err);
-
       toaster("error", err.message);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, search: false }));
     }
   };
 
   useEffect(() => {
-    fetchData();
+    setCurrentPage(1);
+    fetchData(1);
+  }, [selectedValues]);
+
+  useEffect(() => {
+    fetchData(currentPage);
   }, [currentPage]);
 
   useEffect(() => {

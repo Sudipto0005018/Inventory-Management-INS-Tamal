@@ -28,6 +28,8 @@ import {
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
+import SupplierFirm from "../components/Supplier";
+import AsyncSelectBox from "../components/AsyncSelectBox";
 
 const Procurement = () => {
   const { config } = useContext(Context);
@@ -59,11 +61,10 @@ const Procurement = () => {
 
   const options = [
     { value: "description", label: "Item Description" },
-    { value: "vue", label: "IN Part No." },
+    { value: "indian_pattern", label: "IN Part No." },
     { value: "category", label: "Category" },
-    { value: "quantity", label: "Issued Quantity" },
-    { value: "survey_quantity", label: "Surveyed Quantity" },
-    { value: "status", label: "Status" },
+    { value: "equipment_system", label: "Equipment System" },
+    { value: "nac_no", label: "NAC No." },
   ];
 
   const [generateQR, setGenerateQR] = useState("no");
@@ -110,14 +111,17 @@ const Procurement = () => {
     receive_date: new Date(),
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [selectedAddSupplier, setSelectedAddSupplier] = useState(null);
+  const [supplierList, setSupplierList] = useState([]);
 
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
       const response = await apiService.get("/stocks/procurement", {
         params: {
-          page: currentPage,
+          page,
           limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
@@ -149,8 +153,8 @@ const Procurement = () => {
   };
 
   const handleSearch = () => {
-    setCurrentPage(1); // reset pagination
-    fetchdata();
+    setCurrentPage(1);
+    fetchdata(1);
   };
 
   const handleRefresh = () => {
@@ -159,12 +163,10 @@ const Procurement = () => {
       search: "",
     }));
 
-    setSelectedSearchFields([]);
+    setSelectedValues([]);
     setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+
+    fetchdata(1);
   };
 
   async function updateDetails() {
@@ -316,11 +318,12 @@ const Procurement = () => {
 
   useEffect(() => {
     fetchdata();
+    fetchSuppliers();
   }, [currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-    fetchdata();
+    fetchdata(1);
   }, [selectedValues]);
 
   useEffect(() => {
@@ -388,6 +391,63 @@ const Procurement = () => {
       quantity_received: "",
     });
   };
+
+  const fetchSuppliers = async () => {
+    try {
+      const res = await apiService.get(`/supplier/list`);
+      console.log(res);
+
+      setSupplierList(Array.isArray(res?.data) ? res.data : []);
+    } catch (error) {
+      console.error("Failed to fetch suppliers", error);
+      setSupplierList([]);
+    }
+  };
+
+  const fetchSupplierOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/supplier/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch Supplier options", error);
+      return [];
+    }
+  };
+
+  const onDeleteSupplier = async (id) => {
+    try {
+      const res = await apiService.delete(`/supplier/${id}`);
+      if (res.success) {
+        toaster("success", "Supplier deleted successfully");
+        fetchSuppliers();
+        if (selectedSupplier?.id === id) {
+          setSelectedSupplier(null);
+          setInputs((prev) => ({ ...prev, supplier: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete Supplier");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete Supplier");
+    }
+  };
+  const fetchSupplierDetails = async (id) => {
+    try {
+      const res = await apiService.get(`/supplier/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch Supplier details", error);
+      return null;
+    }
+  };
+
   return (
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
@@ -405,18 +465,21 @@ const Procurement = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search survey items"
+            placeholder="Search procurement items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
           />
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
-            // onClick={handleSearch}
-            loading={isLoading.search}
-            disabled={isLoading.search}
+            onClick={handleSearch}
+            loading={isLoading.table}
+            disabled={isLoading.table}
             loadingText="Searching..."
           >
             <FaMagnifyingGlass className="size-3.5" />
@@ -448,9 +511,12 @@ const Procurement = () => {
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}
-          pageSize={fetchedData.items?.length || 10}
+          pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages || 1}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            fetchdata(page);
+          }}
           className="h-[calc(100vh-230px)]"
         />
       </div>
@@ -510,7 +576,7 @@ const Procurement = () => {
       >
         <DialogContent
           unbounded
-          className="w-[55vw] p-6"
+          className="w-[55vw] p-6 max-h-[80vh] overflow-y-auto"
           onInteractOutside={(e) => {
             e.preventDefault(); // 🚫 Prevent outside click close
           }}
@@ -630,6 +696,34 @@ const Procurement = () => {
                 onChange={(val) => {
                   setBoxNo(val);
                 }}
+              />
+              <AsyncSelectBox
+                label="Vendor/ Third Party Supplier"
+                value={
+                  selectedRow.supplier
+                    ? {
+                        id: supplierList.find(
+                          (item) => item.name === selectedRow.supplier,
+                        )?.id,
+                        name: selectedRow.supplier,
+                      }
+                    : null
+                }
+                onChange={(val) => {
+                  const id = supplierList.find(
+                    (item) => item.name === selectedRow.supplier,
+                  )?.id;
+                  console.log(supplierList);
+
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    supplier: val.name,
+                  }));
+                }}
+                fetchOptions={fetchSupplierOptions}
+                fetchDetails={fetchSupplierDetails}
+                AddNewModal={SupplierFirm}
+                onDelete={onDeleteSupplier}
               />
               <div className="mt-4">
                 <Label className="ms-2 mb-2 block">Generate QR</Label>

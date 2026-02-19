@@ -64,7 +64,7 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "vue",
+      value: "indian_pattern",
       label: (
         <span>
           <i>IN</i> Part No.
@@ -104,18 +104,23 @@ const PendingTempLoan = () => {
     receive_calender: false,
   });
   const [inputs, setInputs] = useState({
+    search: "",
     receive_date: new Date(),
     quantity_received: "",
   });
   const [isLoading, setIsLoading] = useState({
+    table: false,
     receive: false,
   });
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage) => {
     try {
+      setIsLoading((prev) => ({ ...prev, table: true }));
       const response = await apiService.get("/temporaryIssue/issue", {
         params: {
           page: currentPage,
           limit: config.row_per_page,
+          search: inputs.search || "",
+          cols: selectedValues.join(","),
         },
       });
 
@@ -133,19 +138,26 @@ const PendingTempLoan = () => {
       }
     } catch (error) {
       toaster("error", error.message);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
 
-  const handleSearch = async (e) => {
-    const service_no = inputs.search.trim();
-    if (service_no === actualSearch) {
-      return;
-    } else {
-      setActualSearch(service_no);
-    }
-    setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
-    setIsLoading((prev) => ({ ...prev, search: false }));
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchdata(1);
+  };
+
+  const handleRefresh = () => {
+    setInputs((prev) => ({
+      ...prev,
+      search: "",
+    }));
+
+    setSelectedValues([]);
+    setCurrentPage(1);
+
+    fetchdata(1);
   };
 
   const getDepositQty = () => {
@@ -155,20 +167,6 @@ const PendingTempLoan = () => {
       const depositQty = Number(row?.deposit || 0);
       return sum + depositQty;
     }, 0);
-  };
-
-  const handleRefresh = () => {
-    setInputs((prev) => ({
-      ...prev,
-      search: "",
-    }));
-
-    setSelectedSearchFields([]);
-    setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
   };
 
   const getDaysUntilReturn = (
@@ -374,9 +372,16 @@ const PendingTempLoan = () => {
     await updateDetails();
   };
 
+  // Pagination change
   useEffect(() => {
-    fetchdata();
+    fetchdata(currentPage);
   }, [currentPage]);
+
+  // Column change auto search
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchdata(1);
+  }, [selectedValues]);
 
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
@@ -548,18 +553,21 @@ const PendingTempLoan = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search items"
-            className="bg-white "
+            placeholder="Search Temporary Issues for.."
+            className="bg-white"
             value={inputs.search}
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
           />
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
-            loading={isLoading.search}
-            disabled={isLoading.search}
+            loading={isLoading.table}
+            disabled={isLoading.table}
             loadingText="Searching..."
           >
             <FaMagnifyingGlass className="size-3.5" />
@@ -589,10 +597,11 @@ const PendingTempLoan = () => {
           </Button>
         </div>
         <PaginationTable
+          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}
-          pageSize={fetchedData.items?.length || 10}
+          pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
           hasSearch={false}

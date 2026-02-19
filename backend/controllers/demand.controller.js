@@ -383,6 +383,7 @@ async function getPendingIssue(req, res) {
 }
 
 // UPDATE PENDING ISSUE
+
 async function updatePendingIssue(req, res) {
   const { id } = req.params;
 

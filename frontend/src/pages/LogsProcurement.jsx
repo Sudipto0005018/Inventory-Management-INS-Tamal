@@ -44,11 +44,10 @@ const Procurement = () => {
 
   const options = [
     { value: "description", label: "Item Description" },
-    { value: "vue", label: "IN Part No." },
+    { value: "indian_pattern", label: "IN Part No." },
     { value: "category", label: "Category" },
-    { value: "quantity", label: "Issued Quantity" },
-    { value: "survey_quantity", label: "Surveyed Quantity" },
-    { value: "status", label: "Status" },
+    { value: "equipment_system", label: "Equipment System" },
+    { value: "nac_no", label: "NAC No." },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -93,13 +92,13 @@ const Procurement = () => {
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
 
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
       const response = await apiService.get("/stocks/logsProcure", {
         params: {
-          page: currentPage,
+          page,
           limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
@@ -131,8 +130,8 @@ const Procurement = () => {
   };
 
   const handleSearch = () => {
-    setCurrentPage(1); // reset pagination
-    fetchdata();
+    setCurrentPage(1);
+    fetchdata(1);
   };
 
   const handleRefresh = () => {
@@ -141,12 +140,10 @@ const Procurement = () => {
       search: "",
     }));
 
-    setSelectedSearchFields([]);
+    setSelectedValues([]);
     setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+
+    fetchdata(1);
   };
 
   useEffect(() => {
@@ -155,7 +152,7 @@ const Procurement = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-    fetchdata();
+    fetchdata(1);
   }, [selectedValues]);
 
   useEffect(() => {
@@ -232,18 +229,21 @@ const Procurement = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search survey items"
+            placeholder="Search procurement items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
           />
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
-            // onClick={handleSearch}
-            loading={isLoading.search}
-            disabled={isLoading.search}
+            onClick={handleSearch}
+            loading={isLoading.table}
+            disabled={isLoading.table}
             loadingText="Searching..."
           >
             <FaMagnifyingGlass className="size-3.5" />
@@ -275,9 +275,12 @@ const Procurement = () => {
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}
-          pageSize={fetchedData.items?.length || 10}
+          pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages || 1}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            fetchdata(page);
+          }}
           className="h-[calc(100vh-230px)]"
         />
       </div>

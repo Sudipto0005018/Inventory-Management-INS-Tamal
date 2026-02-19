@@ -51,11 +51,11 @@ const PendingSpecial = () => {
 
   const options = [
     { value: "description", label: "Item Description" },
-    { value: "vue", label: "IN Part No." },
+    { value: "indian_pattern", label: "IN Part No." },
     { value: "category", label: "Category" },
     { value: "quantity", label: "Issued Quantity" },
-    { value: "survey_quantity", label: "Surveyed Quantity" },
     { value: "modified_obs", label: "Modified OBS Authorised" },
+    { value: "quote_authority", label: "Quote Authority" },
     { value: "demandno", label: "Internal Demand No." },
     { value: "demanddate", label: "Internal Demand Date." },
     { value: "requisition", label: "Requisition No." },
@@ -94,6 +94,7 @@ const PendingSpecial = () => {
   const [selectedRow, setSelectedRow] = useState({});
 
   const [inputs, setInputs] = useState({
+    search: "",
     internal_demand_no: "",
     internal_demand_date: null,
     requisition_no: "",
@@ -105,17 +106,16 @@ const PendingSpecial = () => {
 
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
 
-  const fetchdata = async () => {
+  const fetchdata = async (page = currentPage) => {
     try {
-      const response = await apiService.get(
-        "http://localhost:7777/api/v1/specialDemand/special-demand",
-        {
-          params: {
-            page: currentPage,
-            limit: config.row_per_page,
-          },
+      const response = await apiService.get("/specialDemand/special-demand", {
+        params: {
+          page,
+          limit: config.row_per_page,
+          search: inputs.search || "",
+          cols: selectedValues.join(","),
         },
-      );
+      });
       if (response.success) {
         setFetchedData(response.data);
       } else {
@@ -124,7 +124,14 @@ const PendingSpecial = () => {
     } catch (error) {
       console.log(error);
       toaster("error", error.message);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, table: false }));
     }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchdata(1);
   };
 
   const handleRefresh = () => {
@@ -133,12 +140,10 @@ const PendingSpecial = () => {
       search: "",
     }));
 
-    setSelectedSearchFields([]);
+    setSelectedValues([]);
     setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+
+    fetchdata(1);
   };
 
   const handleSubmitSpecialDemand = async () => {
@@ -227,9 +232,17 @@ const PendingSpecial = () => {
     }
   };
 
+  // Pagination change
   useEffect(() => {
-    fetchdata();
+    fetchdata(currentPage);
   }, [currentPage]);
+
+  // Column change auto search
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchdata(1);
+  }, [selectedValues]);
+
   const getSpecialDemandStatus = (row) => {
     if (!row.internal_demand_no) return "Awaiting for Internal Demand No";
 
@@ -320,18 +333,21 @@ const PendingSpecial = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search items"
+            placeholder="Search Special Demands"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
           />
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
-            // onClick={handleSearch}
-            loading={isLoading.search}
-            disabled={isLoading.search}
+            onClick={handleSearch}
+            loading={isLoading.table}
+            disabled={isLoading.table}
             loadingText="Searching..."
           >
             <FaMagnifyingGlass className="size-3.5" />

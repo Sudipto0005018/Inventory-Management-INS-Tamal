@@ -7,15 +7,47 @@ async function getTyLoanList(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE ---------- */
+  let whereClause = `
+    WHERE ty.status IN ('pending','partial','overdue')
+  `;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR ty.service_no LIKE ?
+        OR ty.concurred_by LIKE ?
+        OR ty.box_no LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
 
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
       `
       SELECT COUNT(*) AS count
-      FROM ty_loan
-      WHERE status IN ('pending', 'partial', 'overdue')
+      FROM ty_loan ty
+      LEFT JOIN spares s ON s.id = ty.spare_id
+      LEFT JOIN tools t ON t.id = ty.tool_id
+      LEFT JOIN users u1 ON u1.id = ty.created_by
+      LEFT JOIN users u2 ON u2.id = ty.approved_by
+      ${whereClause}
       `,
+      searchParams,
     );
 
     const total = countResult[0].count;
@@ -45,7 +77,6 @@ async function getTyLoanList(req, res) {
         ty.qty_withdrawn,
         ty.qty_received,
 
-        /* 🔹 Balance calculation */
         (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
 
         ty.service_no,
@@ -96,20 +127,18 @@ async function getTyLoanList(req, res) {
           WHEN ty.tool_id IS NOT NULL THEN t.days_untill_return
         END AS days_untill_return
 
-
       FROM ty_loan ty
       LEFT JOIN spares s ON s.id = ty.spare_id
       LEFT JOIN tools t ON t.id = ty.tool_id
       LEFT JOIN users u1 ON u1.id = ty.created_by
       LEFT JOIN users u2 ON u2.id = ty.approved_by
 
-      WHERE ty.status IN ('pending','partial','overdue')
-
+      ${whereClause}
       ORDER BY ty.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(query, [limit, offset]);
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
 
     return res.json(
       new ApiResponse(
@@ -533,16 +562,47 @@ async function getLogsTy(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE ---------- */
+  let whereClause = `
+    WHERE ty.status = 'complete'
+  `;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR ty.service_no LIKE ?
+        OR ty.concurred_by LIKE ?
+        OR ty.box_no LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
 
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
       `
       SELECT COUNT(*) AS count
-      FROM ty_loan
-      WHERE status = 'complete'
-
+      FROM ty_loan ty
+      LEFT JOIN spares s ON s.id = ty.spare_id
+      LEFT JOIN tools t ON t.id = ty.tool_id
+      LEFT JOIN users u1 ON u1.id = ty.created_by
+      LEFT JOIN users u2 ON u2.id = ty.approved_by
+      ${whereClause}
       `,
+      searchParams,
     );
 
     const total = countResult[0].count;
@@ -572,7 +632,6 @@ async function getLogsTy(req, res) {
         ty.qty_withdrawn,
         ty.qty_received,
 
-        /* 🔹 Balance calculation */
         (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
 
         ty.service_no,
@@ -612,17 +671,9 @@ async function getLogsTy(req, res) {
         END AS category,
 
         CASE
-          WHEN ty.status IN ('pending','partial')
-          AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
-          THEN 'overdue'
-          ELSE ty.status
-        END AS loan_status,
-
-        CASE
           WHEN ty.spare_id IS NOT NULL THEN s.days_untill_return
           WHEN ty.tool_id IS NOT NULL THEN t.days_untill_return
         END AS days_untill_return
-
 
       FROM ty_loan ty
       LEFT JOIN spares s ON s.id = ty.spare_id
@@ -630,13 +681,12 @@ async function getLogsTy(req, res) {
       LEFT JOIN users u1 ON u1.id = ty.created_by
       LEFT JOIN users u2 ON u2.id = ty.approved_by
 
-      WHERE ty.status = 'complete'
-
+      ${whereClause}
       ORDER BY ty.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(query, [limit, offset]);
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
 
     return res.json(
       new ApiResponse(
@@ -647,14 +697,14 @@ async function getLogsTy(req, res) {
           totalPages: Math.ceil(total / limit),
           currentPage: page,
         },
-        "Ty Loan list retrieved successfully",
+        "Ty Loan logs retrieved successfully",
       ),
     );
   } catch (err) {
-    console.error("GET Ty Loan ERROR =>", err);
+    console.error("GET TY LOAN LOGS ERROR =>", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch Ty Loan list",
+      message: "Failed to fetch Ty Loan logs",
     });
   }
 }

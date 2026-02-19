@@ -54,7 +54,11 @@ const menuItems = [
     path: "/temporary/temporary-issue",
     icon: <FaRegClock />,
     submenu: [
-      { name: "Temporary Issue Local", path: "/temporary/temporary-issue" },
+      { name: "Pending", path: "/temporary/temporary-issue" },
+      {
+        name: "Completed",
+        path: "/temporary/completed",
+      },
     ],
   },
   {
@@ -63,7 +67,7 @@ const menuItems = [
     icon: <BsCartPlus />,
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
-      { name: "Complete", path: "/temp-loan/complete" },
+      { name: "Completed", path: "/temp-loan/complete" },
     ],
   },
   {
@@ -106,26 +110,30 @@ const menuItems = [
     icon: <IoDocumentSharp />,
     submenu: [
       {
-        name: "Documents",
+        name: "Documents Master",
         path: "/documents",
       },
       {
-        name: "Documents Issue",
+        name: "Pending",
         path: "/documents/issue",
+      },
+      {
+        name: "Completed",
+        path: "/documents/completed",
       },
     ],
   },
   {
-    name: "Logs & Records",
+    name: "Permanent Issue Logs",
     path: "/logs/pending-survey",
     icon: <LuLogs />,
     submenu: [
-      { name: "Pending for Survey", path: "/logs/pending-survey" },
-      { name: "Pending for Demand", path: "/logs/pending-demand" },
-      { name: "Pending for Issue", path: "/logs/pending-issue" },
-      { name: "Pending for Procurement", path: "/logs/procurement" },
-      { name: "Pending for Stock Update", path: "/logs/stock-update" },
-      { name: "Pending for Special Demand", path: "/logs/special-demand" },
+      { name: "Survey Logs", path: "/logs/pending-survey" },
+      { name: "Demand Logs", path: "/logs/pending-demand" },
+      { name: "Issue Logs", path: "/logs/pending-issue" },
+      { name: "Procurement Logs", path: "/logs/procurement" },
+      { name: "Stock Update Logs", path: "/logs/stock-update" },
+      { name: "Special Demand Logs", path: "/logs/special-demand" },
     ],
   },
 ];

@@ -297,15 +297,47 @@ async function getDocIssue(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE ---------- */
+  let whereClause = `
+    WHERE (di.qty_received IS NULL 
+           OR di.qty_received < di.qty_withdrawn)
+  `;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        dc.description LIKE ?
+        OR dc.indian_pattern LIKE ?
+        OR dc.category LIKE ?
+        OR dc.folder_no LIKE ?
+        OR dc.box_no LIKE ?
+        OR dc.equipment_system LIKE ?
+        OR di.service_no LIKE ?
+        OR di.concurred_by LIKE ?
+        OR di.issue_to LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
 
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(
       `
       SELECT COUNT(*) AS count
-      FROM doc_issue
-      WHERE (qty_received IS NULL OR qty_received < qty_withdrawn)
+      FROM doc_issue di
+      LEFT JOIN doc_corner dc ON dc.id = di.doc_id
+      LEFT JOIN users u1 ON u1.id = di.created_by
+      LEFT JOIN users u2 ON u2.id = di.approved_by
+      ${whereClause}
       `,
+      searchParams,
     );
 
     const total = countResult[0].count;
@@ -363,14 +395,12 @@ async function getDocIssue(req, res) {
       LEFT JOIN users u1 ON u1.id = di.created_by
       LEFT JOIN users u2 ON u2.id = di.approved_by
 
-      WHERE (di.qty_received IS NULL 
-             OR di.qty_received < di.qty_withdrawn)
-
+      ${whereClause}
       ORDER BY di.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(query, [limit, offset]);
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
 
     return res.json(
       new ApiResponse(
@@ -882,6 +912,141 @@ async function generateQRCode(req, res) {
   }
 }
 
+async function getDocLogs(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE (Completed) ---------- */
+  let whereClause = `
+    WHERE di.qty_received >= di.qty_withdrawn
+  `;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        dc.description LIKE ?
+        OR dc.indian_pattern LIKE ?
+        OR dc.category LIKE ?
+        OR dc.folder_no LIKE ?
+        OR dc.box_no LIKE ?
+        OR dc.equipment_system LIKE ?
+        OR di.service_no LIKE ?
+        OR di.concurred_by LIKE ?
+        OR di.issue_to LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+
+  try {
+    /* ---------- TOTAL COUNT ---------- */
+    const [countResult] = await pool.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM doc_issue di
+      LEFT JOIN doc_corner dc ON dc.id = di.doc_id
+      LEFT JOIN users u1 ON u1.id = di.created_by
+      LEFT JOIN users u2 ON u2.id = di.approved_by
+      ${whereClause}
+      `,
+      searchParams,
+    );
+
+    const total = countResult[0].count;
+
+    if (total === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          "No document issue logs found",
+        ),
+      );
+    }
+
+    /* ---------- LIST QUERY ---------- */
+    const query = `
+      SELECT
+        di.id,
+        di.doc_id,
+
+        dc.description,
+        dc.indian_pattern,
+        dc.category,
+        dc.folder_no,
+        dc.box_no,
+        dc.equipment_system,
+
+        di.qty_withdrawn,
+        di.qty_received,
+
+        (di.qty_withdrawn - IFNULL(di.qty_received,0)) AS balance_qty,
+
+        di.service_no,
+        di.concurred_by,
+        di.issue_to,
+        di.issue_date,
+        di.loan_duration,
+        di.return_date,
+
+        di.created_by,
+        u1.name AS created_by_name,
+        di.created_at,
+
+        di.approved_by,
+        u2.name AS approved_by_name,
+        di.approved_at,
+
+        CASE
+          WHEN di.qty_received >= di.qty_withdrawn
+          THEN 'completed'
+          ELSE 'pending'
+        END AS loan_status
+
+      FROM doc_issue di
+      LEFT JOIN doc_corner dc ON dc.id = di.doc_id
+      LEFT JOIN users u1 ON u1.id = di.created_by
+      LEFT JOIN users u2 ON u2.id = di.approved_by
+
+      ${whereClause}
+      ORDER BY di.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+        "Document issue logs retrieved successfully",
+      ),
+    );
+  } catch (err) {
+    console.error("GET DOC LOGS ERROR =>", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch document issue logs",
+    });
+  }
+}
+
 module.exports = {
   createDocCorner,
   getDocCorner,
@@ -890,4 +1055,5 @@ module.exports = {
   createDocIssue,
   updateDocIssue,
   generateQRCode,
+  getDocLogs,
 };

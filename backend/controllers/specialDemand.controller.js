@@ -137,12 +137,50 @@ async function getSpecialDemandList(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
-  const whereClause =
-    "WHERE sd.internal_demand_no IS NULL OR sd.requisition_no IS NULL OR sd.mo_demand_no IS NULL";
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------------- BASE WHERE ---------------- */
+  let whereClause = `
+    WHERE 
+      (sd.internal_demand_no IS NULL 
+      OR sd.requisition_no IS NULL 
+      OR sd.mo_demand_no IS NULL)
+  `;
+
+  /* ---------------- SEARCH WHERE ---------------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR sd.internal_demand_no LIKE ?
+        OR sd.requisition_no LIKE ?
+        OR sd.mo_demand_no LIKE ?
+        OR sd.created_by_name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(10).fill(`%${search}%`) : [];
+
+  /* ---------------- TOTAL COUNT ---------------- */
   const [totalCount] = await pool.query(
-    `SELECT COUNT(sd.id) as count FROM special_demand sd ${whereClause}`,
+    `
+    SELECT COUNT(sd.id) as count
+    FROM special_demand sd
+    LEFT JOIN spares s ON s.id = sd.spare_id
+    LEFT JOIN tools t ON t.id = sd.tool_id
+    ${whereClause}
+  `,
+    searchParams,
   );
+
   const total = totalCount[0].count;
+
   if (total === 0) {
     return res.status(200).json(
       new ApiResponse(
@@ -158,6 +196,7 @@ async function getSpecialDemandList(req, res) {
     );
   }
 
+  /* ---------------- MAIN QUERY ---------------- */
   try {
     const query = `
       SELECT
@@ -206,13 +245,13 @@ async function getSpecialDemandList(req, res) {
 
       FROM special_demand sd
       LEFT JOIN spares s ON s.id = sd.spare_id
-      LEFT JOIN tools t on t.id = sd.tool_id
+      LEFT JOIN tools t ON t.id = sd.tool_id
       ${whereClause}
       ORDER BY sd.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(query, [limit, offset]);
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
 
     res.json(
       new ApiResponse(
@@ -223,7 +262,7 @@ async function getSpecialDemandList(req, res) {
           totalPages: Math.ceil(total / limit),
           currentPage: page,
         },
-        "Spares retrieved successfully",
+        "Special demand list retrieved successfully",
       ),
     );
   } catch (err) {
@@ -331,20 +370,47 @@ async function getLogsSpecialDemand(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
 
-  // ✅ Completed records condition
-  const whereClause = `
-    WHERE sd.internal_demand_no IS NOT NULL
+  /* ---------- BASE WHERE (Completed Records) ---------- */
+  let whereClause = `
+    WHERE 
+      sd.internal_demand_no IS NOT NULL
       AND sd.requisition_no IS NOT NULL
       AND sd.mo_demand_no IS NOT NULL
   `;
 
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR sd.internal_demand_no LIKE ?
+        OR sd.requisition_no LIKE ?
+        OR sd.mo_demand_no LIKE ?
+        OR sd.created_by_name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(10).fill(`%${search}%`) : [];
+
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [totalCount] = await pool.query(
-      `SELECT COUNT(sd.id) AS count
-       FROM special_demand sd
-       ${whereClause}`,
+      `
+      SELECT COUNT(sd.id) AS count
+      FROM special_demand sd
+      LEFT JOIN spares s ON s.id = sd.spare_id
+      LEFT JOIN tools t ON t.id = sd.tool_id
+      ${whereClause}
+      `,
+      searchParams,
     );
 
     const total = totalCount[0].count;
@@ -419,7 +485,7 @@ async function getLogsSpecialDemand(req, res) {
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.query(query, [limit, offset]);
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
 
     res.json(
       new ApiResponse(

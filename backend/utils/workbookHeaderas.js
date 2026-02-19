@@ -45,6 +45,7 @@ const procurement = [
   { header: "Item Distribution", key: "itemDistribution", width: 25 },
   { header: "Received Qty", key: "qty_received", width: 15 },
   { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
 ];
 
 const stock_update = [
@@ -65,6 +66,7 @@ const stock_update = [
   { header: "Item Distribution", key: "itemDistribution", width: 25 },
   { header: "Received Qty", key: "qty_received", width: 15 },
   { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
 ];
 
 const survey = [
@@ -82,6 +84,7 @@ const survey = [
   { header: "Box No.", key: "boxes", width: 20 },
   { header: "Item Distribution", key: "itemDistribution", width: 25 },
   { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
 ];
 
 const demand = [
@@ -95,6 +98,7 @@ const demand = [
   { header: "Survey Voucher No.", key: "survey_voucher_no", width: 22 },
   { header: "Surveyed Date", key: "survey_date", width: 20 },
   { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
 ];
 
 const issue = [
@@ -117,6 +121,7 @@ const issue = [
   { header: "Returned Qty", key: "qty_received", width: 18 },
   { header: "Returned Date", key: "return_date", width: 20 },
   { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
 ];
 
 const special_demand = [
@@ -139,6 +144,73 @@ const special_demand = [
   { header: "Created On", key: "created_at", width: 20 },
 ];
 
+const ty = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+
+  { header: "Qty Withdrawn", key: "qty_withdrawn", width: 15 },
+  { header: "Qty Received", key: "qty_received", width: 15 },
+  { header: "Service No.", key: "service_no", width: 22 },
+  { header: "Concurred by", key: "concurred_by", width: 20 },
+  { header: "Issued Date", key: "issue_date", width: 20 },
+  { header: "Loan Duration", key: "loan_duration", width: 20 },
+  { header: "Box No.", key: "boxes", width: 20 },
+  { header: "Item Distribution", key: "itemDistribution", width: 25 },
+  { header: "Return Date", key: "return_date", width: 20 },
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created On", key: "created_at", width: 20 },
+  { header: "Approved By", key: "approved_by_name", width: 20 },
+  { header: "Approved On", key: "approved_at", width: 20 },
+  { header: "Status", key: "loan_status", width: 20 },
+];
+
+const temp = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+  { header: "Equipment /System", key: "equipment_system", width: 30 },
+
+  { header: "Qty Withdrawn", key: "qty_withdrawn", width: 15 },
+  { header: "Qty Received", key: "qty_received", width: 15 },
+  { header: "Service No.", key: "service_no", width: 22 },
+  { header: "Issued To", key: "issue_to", width: 20 },
+  { header: "Issued Date", key: "issue_date", width: 20 },
+  { header: "Loan Duration", key: "loan_duration", width: 20 },
+  { header: "Box No.", key: "boxes", width: 20 },
+  { header: "Item Distribution", key: "itemDistribution", width: 25 },
+  { header: "Return Date", key: "return_date", width: 20 },
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created On", key: "created_at", width: 20 },
+  { header: "Approved By", key: "approved_by_name", width: 20 },
+  { header: "Approved On", key: "approved_at", width: 20 },
+  { header: "Status", key: "loan_status", width: 20 },
+];
+
+const docIssue = [
+  { header: "Document Description", key: "description", width: 20 },
+  { header: "Folder No.", key: "folder_no", width: 20 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+  { header: "Equipment /System", key: "equipment_system", width: 30 },
+
+  { header: "Qty Withdrawn", key: "qty_withdrawn", width: 15 },
+  { header: "Qty Received", key: "qty_received", width: 15 },
+  { header: "Service No.", key: "service_no", width: 20 },
+  { header: "Issued To", key: "issue_to", width: 20 },
+  { header: "Concurred by", key: "concurred_by", width: 20 },
+  { header: "Issued Date", key: "issue_date", width: 20 },
+  { header: "Loan Duration", key: "loan_duration", width: 20 },
+  { header: "Box No.", key: "boxes", width: 20 },
+  { header: "Item Distribution", key: "itemDistribution", width: 25 },
+  { header: "Return Date", key: "return_date", width: 20 },
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created On", key: "created_at", width: 20 },
+  { header: "Approved By", key: "approved_by_name", width: 20 },
+  { header: "Approved On", key: "approved_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
+];
+
 module.exports = {
   spares,
   tools,
@@ -148,4 +220,7 @@ module.exports = {
   demand,
   issue,
   special_demand,
+  ty,
+  temp,
+  docIssue,
 };

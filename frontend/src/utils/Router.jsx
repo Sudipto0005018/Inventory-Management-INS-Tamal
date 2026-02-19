@@ -30,7 +30,9 @@ import CompletedServays from "../pages/CompletedServays";
 import PendingSpecial from "../pages/PendingSpecial";
 import DocumentsCorner from "../pages/DocumentsCorner";
 import DocumentIssue from "../pages/DocumentsIssue";
+import DocumentLogs from "../pages/DocumentLogs";
 import TemporaryIssue from "../pages/TemporaryIssue";
+import TemporaryCompleted from "../pages/TemporaryCompleted";
 import PendingDemand from "../pages/PendingDemand";
 import LogsSurvey from "../pages/LogsSurvey";
 import LogsDemand from "../pages/LogsDemand";
@@ -147,6 +149,16 @@ const Router = () => {
       </Route>
       <Route element={<HomeLayout />}>
         <Route
+          path="/documents/completed"
+          element={
+            <ProtectedRoute>
+              <DocumentLogs />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
           path="/lp"
           element={
             <ProtectedRoute>
@@ -181,6 +193,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <TemporaryIssue />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temporary/completed"
+          element={
+            <ProtectedRoute>
+              <TemporaryCompleted />
             </ProtectedRoute>
           }
         />

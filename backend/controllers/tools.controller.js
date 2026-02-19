@@ -1,6 +1,7 @@
 const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
+const { unlinkFile } = require("../middlewares/file");
 
 const createTool = async (req, res) => {
   const {
@@ -21,6 +22,7 @@ const createTool = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_tool,
+    supplier,
   } = req.body;
   const department = req.department;
   try {
@@ -31,11 +33,15 @@ const createTool = async (req, res) => {
     }
 
     const isCriticalTool = critical_tool === "yes" ? 1 : 0;
+
+    // ✅ MULTI IMAGE FILENAMES
+    const images = req.files?.map((file) => file.filename) || [];
+
     const query = `
             INSERT INTO tools
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, image, uid, oem, substitute_name, local_terminology, critical_tool)
+                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -52,12 +58,13 @@ const createTool = async (req, res) => {
       indian_pattern || null,
       remarks || null,
       department.id,
-      req.file?.filename || null,
+      JSON.stringify(images),
       Date.now().toString(),
       oem || null,
       substitute_name || null,
       local_terminology || null,
       isCriticalTool,
+      supplier || null,
     ]);
     if (result.length === 0) {
       return res
@@ -194,104 +201,6 @@ async function getCriticalTools(req, res) {
     res.status.json(new ApiErrorResponse(500, {}, "Internal server error"));
   }
 }
-// async function updateTool(req, res) {
-//   const { id } = req.params;
-//   const {
-//     description,
-//     equipment_system,
-//     denos,
-//     obs_authorised,
-//     obs_held,
-//     b_d_authorised,
-//     category,
-//     box_no,
-//     item_distribution,
-//     storage_location,
-//     item_code,
-//     indian_pattern,
-//     remarks,
-//     image,
-//     oem,
-//     substitute_name,
-//     local_terminology,
-//   } = req.body;
-//   let filename = null;
-//   if (req.file) {
-//     filename = req.file.filename;
-//   } else if (image) {
-//     filename = image;
-//   }
-//   if (!description || !equipment_system) {
-//     return res
-//       .status(400)
-//       .json(new ApiErrorResponse(400, {}, "All fields are required"));
-//   }
-//   let oldImg = null;
-//   try {
-//     const [r] = await pool.query(
-//       `SELECT obs_authorised, obs_authorised_new FROM tools WHERE id = ?`,
-//       [id]
-//     );
-//     const data = r[0];
-//     if (data.obs_authorised_new != null) {
-
-//       return res
-//         .status(400)
-//         .json(new ApiErrorResponse(400, {}, "Approval pending"));
-//     }
-//     let query;
-//     if (data.obs_authorised == obs_authorised) {
-//       query = `
-//         UPDATE tools
-//         SET description = ?, equipment_system = ?, denos = ?, obs_authorised = ?, obs_held = ?, b_d_authorised = ?, category = ?, box_no = ?, item_distribution = ?, storage_location = ?, item_code = ?, indian_pattern = ?, remarks = ?, image = ?, oem = ?, substitute_name = ?, local_terminology = ?
-//         WHERE id = ?;
-//         `;
-//     } else {
-//       query = `
-//         UPDATE tools
-//         SET description = ?, equipment_system = ?, denos = ?, obs_authorised_new = ?, obs_held = ?, b_d_authorised = ?, category = ?, box_no = ?, item_distribution = ?, storage_location = ?, item_code = ?, indian_pattern = ?, remarks = ?, image = ?, oem = ?, substitute_name = ?, local_terminology = ?
-//         WHERE id = ?;
-//       `;
-//     }
-
-//     [oldImg] = await pool.query("SELECT image FROM tools WHERE id = ?", [id]);
-//     const [result] = await pool.query(query, [
-//       description,
-//       equipment_system,
-//       denos || null,
-//       obs_authorised || null,
-//       obs_held || null,
-//       b_d_authorised || null,
-//       category || null,
-//       box_no || null,
-//       item_distribution || null,
-//       storage_location || null,
-//       item_code || null,
-//       indian_pattern || null,
-//       remarks || null,
-//       filename || null,
-//       oem || null,
-//       substitute_name || null,
-//       local_terminology || null,
-//       id,
-//     ]);
-//     if (result.affectedRows === 0) {
-//       return res
-//         .status(404)
-//         .json(new ApiErrorResponse(404, {}, "Tool not found"));
-//     }
-//     res.status(200).json(new ApiResponse(200, {}, "Tool updated successfully"));
-//   } catch (error) {
-//     console.log("Error while updating tools: ", error);
-//     res
-//       .status(500)
-//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
-//   } finally {
-//     if (req.file && oldImg[0].image) {
-//       unlinkFile(oldImg[0].image);
-//     }
-//   }
-// }
 
 async function updateTool(req, res) {
   const { id } = req.params;
@@ -310,15 +219,19 @@ async function updateTool(req, res) {
     item_code,
     indian_pattern,
     remarks,
-    image,
     oem,
     substitute_name,
     local_terminology,
     critical_tool,
+    supplier,
   } = req.body;
 
-  const filename = req.file ? req.file.filename : image || null;
+  // const filename = req.file ? req.file.filename : image || null;
   const isCriticalTool = critical_tool === "yes" ? 1 : 0;
+
+  const imageStatus = req.body.imageStatus
+    ? JSON.parse(req.body.imageStatus)
+    : [];
 
   if (!description || !equipment_system) {
     return res
@@ -326,12 +239,18 @@ async function updateTool(req, res) {
       .json(new ApiErrorResponse(400, {}, "All fields are required"));
   }
 
-  let oldImg = null;
+  if (!description || !equipment_system) {
+    return res
+      .status(400)
+      .json(new ApiErrorResponse(400, {}, "All fields are required"));
+  }
+
+  // let oldImg = null;
 
   try {
     /* 1️⃣ Fetch current spare */
     const [[tool]] = await pool.query(
-      `SELECT obs_authorised, image FROM tools WHERE id = ?`,
+      `SELECT obs_authorised, images FROM tools WHERE id = ?`,
       [id],
     );
 
@@ -373,6 +292,94 @@ async function updateTool(req, res) {
       );
     }
 
+    /* ---------------- SAFE OLD IMAGE PARSE ---------------- */
+
+    let oldImages = [];
+
+    if (tool.images) {
+      try {
+        const parsed =
+          typeof tool.images === "string"
+            ? JSON.parse(tool.images)
+            : tool.images;
+
+        if (Array.isArray(parsed)) {
+          oldImages = parsed.filter(
+            (img) =>
+              img !== null &&
+              img !== "null" &&
+              img !== "" &&
+              img !== "undefined",
+          );
+        } else {
+          oldImages = [];
+        }
+      } catch (err) {
+        console.log("Image JSON parse error:", err);
+        oldImages = [];
+      }
+    }
+
+    /* Ensure iterable ALWAYS */
+    if (!Array.isArray(oldImages)) {
+      oldImages = [];
+    }
+
+    /* Clone safely */
+    let finalImages = [...oldImages];
+
+    /* Build upload map by index */
+    const uploadMap = {};
+
+    if (req.files) {
+      req.files.forEach((file) => {
+        // frontend must send fieldname like images_0, images_1 etc
+        const match = file.fieldname.match(/images_(\d+)/);
+        if (match) {
+          const index = parseInt(match[1]);
+          uploadMap[index] = file.filename;
+        }
+      });
+    }
+
+    imageStatus.forEach((status, index) => {
+      /* DELETE */
+      if (status.isDeleted) {
+        if (finalImages[index]) {
+          unlinkFile(finalImages[index]);
+        }
+        finalImages[index] = null;
+      }
+
+      /* REPLACE */
+      if (status.isReplaced) {
+        if (finalImages[index]) {
+          unlinkFile(finalImages[index]);
+        }
+
+        if (uploadMap[index]) {
+          finalImages[index] = uploadMap[index];
+        }
+      }
+    });
+
+    /* Remove ALL null / empty slots */
+    finalImages = finalImages.filter(
+      (img) =>
+        img !== null && img !== "" && img !== "null" && img !== "undefined",
+    );
+
+    /* Remove only trailing nulls */
+    while (finalImages.length && finalImages[finalImages.length - 1] === null) {
+      finalImages.pop();
+    }
+
+    console.log("REQ.FILES:", req.files);
+    console.log("IMAGE STATUS:", imageStatus);
+    console.log("OLD IMAGES:", oldImages);
+    console.log("UPLOAD MAP:", uploadMap);
+    console.log("FINAL IMAGES:", finalImages);
+
     /* 3️⃣ Update NON-sensitive fields immediately */
     const [result] = await pool.query(
       `
@@ -389,11 +396,12 @@ async function updateTool(req, res) {
           item_code = ?,
           indian_pattern = ?,
           remarks = ?,
-          image = ?,
+          images = ?,
           oem = ?,
           substitute_name = ?,
           local_terminology = ?,
-          critical_tool = ?
+          critical_tool = ?,
+          supplier = ?
       WHERE id = ?
       `,
       [
@@ -409,16 +417,22 @@ async function updateTool(req, res) {
         item_code || null,
         indian_pattern || null,
         remarks || null,
-        filename,
+        JSON.stringify(finalImages),
         oem || null,
         substitute_name || null,
         local_terminology || null,
         isCriticalTool,
+        supplier || null,
         id,
       ],
     );
 
-    oldImg = tool.image;
+    const removeFiles = oldImages.filter((f) => !finalImages.includes(f));
+    if (finalImages.length > 0) {
+      for (let i = 0; i < removeFiles.length; i++) {
+        unlinkFile(removeFiles[i]);
+      }
+    }
 
     res
       .status(200)
@@ -436,11 +450,12 @@ async function updateTool(req, res) {
     res
       .status(500)
       .json(new ApiErrorResponse(500, {}, "Internal server error"));
-  } finally {
-    if (req.file && oldImg) {
-      unlinkFile(oldImg);
-    }
   }
+  // finally {
+  //   if (req.file && oldImg) {
+  //     unlinkFile(oldImg);
+  //   }
+  // }
 }
 
 async function deleteTool(req, res) {

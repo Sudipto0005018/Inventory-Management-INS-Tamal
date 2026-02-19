@@ -11,6 +11,7 @@ const {
   createDocIssue,
   updateDocIssue,
   generateQRCode,
+  getDocLogs,
 } = require("../controllers/docCorner.controller");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateDocCorner);
@@ -18,6 +19,7 @@ router.post("/", authMiddleware, imageMiddleware, createDocCorner);
 router.get("/", authMiddleware, getDocCorner);
 router.post("/issue", authMiddleware, createDocIssue);
 router.get("/list", getDocIssue);
+router.get("/logs", getDocLogs);
 router.put("/doc-list", authMiddleware, updateDocIssue);
 router.post("/genarate-qr", generateQRCode);
 

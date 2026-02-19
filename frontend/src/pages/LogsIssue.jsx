@@ -51,32 +51,6 @@ const PermanentPendings = () => {
   ];
   const [selectedValues, setSelectedValues] = useState([]);
 
-  const handleSearch = async (e) => {
-    const searchTerm = inputs.search.trim();
-    if (searchTerm === actualSearch) {
-      return;
-    } else {
-      setActualSearch(searchTerm);
-    }
-    setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
-    setIsLoading((prev) => ({ ...prev, search: false }));
-  };
-
-  const handleRefresh = () => {
-    setInputs((prev) => ({
-      ...prev,
-      search: "",
-    }));
-
-    setSelectedSearchFields([]);
-    setCurrentPage(1);
-    setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
-  };
-
   const columns = useMemo(
     () => [
       { key: "description", header: "Item Description" },
@@ -120,12 +94,14 @@ const PermanentPendings = () => {
     nac: false,
     mo: false,
     inventory: false,
+    search: false,
   });
 
   const [procurementPending, setProcurementPending] = useState("no");
 
   const [inputs, setInputs] = useState({
     issue_type: "nac",
+    search: "",
     demand_quantity: "",
     nac_no: "",
     nac_calender: new Date(),
@@ -140,14 +116,17 @@ const PermanentPendings = () => {
 
   const [boxNo, setBoxNo] = useState([]);
 
-  const fetchData = async () => {
+  const fetchData = async (page = currentPage) => {
     try {
+      setIsLoading((prev) => ({ ...prev, search: true }));
       console.log("TABLE DATA LENGTH:", tableData.length);
 
       const res = await apiService.get("/issue/logs", {
         params: {
-          page: currentPage,
+          page,
           limit: config.row_per_page,
+          search: inputs.search || "",
+          cols: selectedValues.join(","),
         },
       });
       console.log("Rows per page:", config.row_per_page);
@@ -161,11 +140,35 @@ const PermanentPendings = () => {
       console.log(err);
 
       toaster("error", err.message);
+    } finally {
+      setIsLoading((prev) => ({ ...prev, search: false }));
     }
   };
 
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchData(1);
+  };
+
+  const handleRefresh = () => {
+    setInputs((prev) => ({
+      ...prev,
+      search: "",
+    }));
+
+    setSelectedValues([]);
+    setCurrentPage(1);
+
+    fetchData(1);
+  };
+
   useEffect(() => {
-    fetchData();
+    setCurrentPage(1);
+    fetchData(1);
+  }, [selectedValues]);
+
+  useEffect(() => {
+    fetchData(currentPage);
   }, [currentPage]);
 
   useEffect(() => {
@@ -346,6 +349,7 @@ const PermanentPendings = () => {
           </Button>
         </div>
         <PaginationTable
+          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage}

@@ -87,6 +87,7 @@ async function getProcurementPending(req, res) {
         COALESCE(sp.category, t.category) AS category,
         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.supplier, t.supplier) AS supplier,
         COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
 
         'PROCUREMENT' AS source,

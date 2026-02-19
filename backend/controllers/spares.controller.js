@@ -3,6 +3,8 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { unlinkFile } = require("../middlewares/file");
 const ExcelJS = require("exceljs");
+const fs = require("fs");
+const path = require("path");
 
 const createSpare = async (req, res) => {
   const {
@@ -23,6 +25,7 @@ const createSpare = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_spare,
+    supplier,
   } = req.body;
   const department = req.department;
   try {
@@ -39,9 +42,9 @@ const createSpare = async (req, res) => {
 
     const query = `
             INSERT INTO spares
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare)
+                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -64,6 +67,7 @@ const createSpare = async (req, res) => {
       substitute_name || null,
       local_terminology || null,
       isCriticalSpare,
+      supplier || null,
     ]);
 
     res
@@ -292,124 +296,6 @@ async function getCriticalSpares(req, res) {
   }
 }
 
-// async function updateSpare(req, res) {
-//   const { id } = req.params;
-
-//   const {
-//     description,
-//     equipment_system,
-//     denos,
-//     obs_authorised,
-//     obs_held,
-//     b_d_authorised,
-//     category,
-//     box_no,
-//     item_distribution,
-//     storage_location,
-//     item_code,
-//     indian_pattern,
-//     remarks,
-//     image,
-//     oem,
-//     substitute_name,
-//     local_terminology,
-//   } = req.body;
-//   let filename = null;
-//   if (req.file) {
-//     filename = req.file.filename;
-//   } else if (image) {
-//     filename = image;
-//   }
-//   if (!description || !equipment_system) {
-//     return res
-//       .status(400)
-//       .json(new ApiErrorResponse(400, {}, "All fields are required"));
-//   }
-//   let oldImg = null;
-//   try {
-//     const [prevReq] = await pool.query(
-//       `SELECT obs_authorised, obs_authorised_new FROM spares WHERE id = ?`, // id -> (spares_id = id) AND status = pending and field_name = obs_authorised
-//       [id]
-//     );
-//     const data = prevReq[0];
-//     if (data.obs_authorised_new != null) {
-//       return res
-//         .status(400)
-//         .json(new ApiErrorResponse(400, {}, "Already Requested"));
-//     }
-//     let query;
-
-//     if (data.obs_authorised != obs_authorised) {
-//       await pool.query(
-//         `
-//     INSERT INTO approval
-//       (spares_id, created_by, field_name, old_value, new_value, status)
-//     VALUES
-//       (?, ?, ?, ?, ?, 'pending')
-//     `,
-//         [id, req.user.id, "obs_authorised", data.obs_authorised, obs_authorised]
-//       );
-
-//       return res
-//         .status(200)
-//         .json(new ApiResponse(200, {}, "Approval request sent"));
-//     }
-
-//     if (data.obs_authorised == obs_authorised) {
-//       query = `
-//             UPDATE spares
-//             SET description = ?, equipment_system = ?, denos = ?, obs_authorised= ?, obs_held = ?, b_d_authorised = ?, category = ?, box_no = ?, item_distribution = ?, storage_location = ?, item_code = ?, indian_pattern = ?, remarks = ?, image = ?, oem = ?, substitute_name = ?, local_terminology = ?
-//             WHERE id = ?;
-//         `;
-//     } else {
-//       query = `
-//             UPDATE spares
-//             SET description = ?, equipment_system = ?, denos = ?, obs_authorised_new = ?, obs_held = ?, b_d_authorised = ?, category = ?, box_no = ?, item_distribution = ?, storage_location = ?, item_code = ?, indian_pattern = ?, remarks = ?, image = ?, oem = ?, substitute_name = ?, local_terminology = ?
-//             WHERE id = ?;
-//         `;
-//     }
-
-//     [oldImg] = await pool.query("SELECT image FROM spares WHERE id = ?", [id]);
-//     const [result] = await pool.query(query, [
-//       description,
-//       equipment_system,
-//       denos || null,
-//       obs_authorised || null,
-//       obs_held || null,
-//       b_d_authorised || null,
-//       category || null,
-//       box_no || null,
-//       item_distribution || null,
-//       storage_location || null,
-//       item_code || null,
-//       indian_pattern || null,
-//       remarks || null,
-//       filename || null,
-//       oem || null,
-//       substitute_name || null,
-//       local_terminology || null,
-//       id,
-//     ]);
-//     if (result.affectedRows === 0) {
-//       return res
-//         .status(404)
-//         .json(new ApiErrorResponse(404, {}, "Spare not found"));
-//     }
-//     res
-//       .status(200)
-//       .json(new ApiResponse(200, {}, "Spare updated successfully"));
-//   } catch (error) {
-//     console.log("Error while updating spare: ", error);
-//     res
-//       .status(500)
-//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
-//   } finally {
-//     if (req.file && oldImg[0].image) {
-//       unlinkFile(oldImg[0].image);
-//     }
-//   }
-// }
-
 async function updateSpare(req, res) {
   const { id } = req.params;
 
@@ -427,7 +313,6 @@ async function updateSpare(req, res) {
     item_code,
     indian_pattern,
     remarks,
-    // image,
     oem,
     substitute_name,
     local_terminology,
@@ -437,9 +322,7 @@ async function updateSpare(req, res) {
 
   // const filename = req.file ? req.file.filename : image || null;
 
-  const newImages = Array.isArray(req.files)
-    ? req.files.map((f) => f.filename)
-    : req.files?.images?.map((f) => f.filename) || [];
+  // const newImages = req.files?.map((f) => f.filename) || [];
 
   const imageStatus = req.body.imageStatus
     ? JSON.parse(req.body.imageStatus)
@@ -451,7 +334,7 @@ async function updateSpare(req, res) {
       .json(new ApiErrorResponse(400, {}, "All fields are required"));
   }
 
-  let oldImg = null;
+  // let oldImg = null;
 
   try {
     /* 1️⃣ Fetch current spare */
@@ -498,47 +381,95 @@ async function updateSpare(req, res) {
       );
     }
 
+    /* ---------------- SAFE OLD IMAGE PARSE ---------------- */
+
     let oldImages = [];
 
     if (spare.images) {
       try {
-        oldImages = JSON.parse(spare.images);
-      } catch {
+        const parsed =
+          typeof spare.images === "string"
+            ? JSON.parse(spare.images)
+            : spare.images;
+
+        if (Array.isArray(parsed)) {
+          oldImages = parsed.filter(
+            (img) =>
+              img !== null &&
+              img !== "null" &&
+              img !== "" &&
+              img !== "undefined",
+          );
+        } else {
+          oldImages = [];
+        }
+      } catch (err) {
+        console.log("Image JSON parse error:", err);
         oldImages = [];
       }
     }
 
-    let uploadIndex = 0;
+    /* Ensure iterable ALWAYS */
+    if (!Array.isArray(oldImages)) {
+      oldImages = [];
+    }
+
+    /* Clone safely */
+    let finalImages = [...oldImages];
+
+    /* Build upload map by index */
+    const uploadMap = {};
+
+    if (req.files) {
+      req.files.forEach((file) => {
+        // frontend must send fieldname like images_0, images_1 etc
+        const match = file.fieldname.match(/images_(\d+)/);
+        if (match) {
+          const index = parseInt(match[1]);
+          uploadMap[index] = file.filename;
+        }
+      });
+    }
 
     imageStatus.forEach((status, index) => {
-      // DELETE
-      if (status.isDeleted && oldImages[index]) {
-        unlinkFile(oldImages[index]);
-        oldImages[index] = null;
+      /* DELETE */
+      if (status.isDeleted) {
+        if (finalImages[index]) {
+          unlinkFile(finalImages[index]);
+        }
+        finalImages[index] = null;
       }
 
-      // REPLACE
+      /* REPLACE */
       if (status.isReplaced) {
-        if (oldImages[index]) {
-          unlinkFile(oldImages[index]);
+        if (finalImages[index]) {
+          unlinkFile(finalImages[index]);
         }
-        oldImages[index] = newImages[uploadIndex++] || null;
+
+        if (uploadMap[index]) {
+          finalImages[index] = uploadMap[index];
+        }
       }
     });
 
-    for (let i = 0; i < oldImages.length; i++) {
-      if (!oldImages[i] && newImages[uploadIndex]) {
-        oldImages[i] = newImages[uploadIndex++];
-      }
+    /* Remove ALL null / empty slots */
+    finalImages = finalImages.filter(
+      (img) =>
+        img !== null && img !== "" && img !== "null" && img !== "undefined",
+    );
+
+    /* Remove only trailing nulls */
+    while (finalImages.length && finalImages[finalImages.length - 1] === null) {
+      finalImages.pop();
     }
 
-    while (uploadIndex < newImages.length) {
-      oldImages.push(newImages[uploadIndex++]);
-    }
+    console.log("REQ.FILES:", req.files);
+    console.log("IMAGE STATUS:", imageStatus);
+    console.log("OLD IMAGES:", oldImages);
+    console.log("UPLOAD MAP:", uploadMap);
+    console.log("FINAL IMAGES:", finalImages);
 
-    oldImages = oldImages.filter(Boolean);
-    /* 3️⃣ Update NON-sensitive fields immediately */
-    const [result] = await pool.query(
+    await pool.query(
       `
       UPDATE spares
       SET description = ?,
@@ -574,8 +505,7 @@ async function updateSpare(req, res) {
         item_code || null,
         indian_pattern || null,
         remarks || null,
-        // filename,
-        JSON.stringify(oldImages),
+        JSON.stringify(finalImages),
         oem || null,
         substitute_name || null,
         local_terminology || null,
@@ -584,6 +514,25 @@ async function updateSpare(req, res) {
         id,
       ],
     );
+
+    const removeFiles = oldImages.filter((f) => !finalImages.includes(f));
+    if (finalImages.length > 0) {
+      for (let i = 0; i < removeFiles.length; i++) {
+        unlinkFile(removeFiles[i]);
+      }
+    }
+
+    //alternative way without using middleware file.js
+    // const imageFolder = path.join(__dirname, "../uploads");
+    // const removeFiles = oldImages.filter((f) => !finalImages.includes(f));
+    // if (finalImages.length > 0) {
+    //   for (let i = 0; i < removeFiles.length; i++) {
+    //     const filePath = path.join(imageFolder, removeFiles[i]);
+    //     try {
+    //       fs.unlinkSync(filePath);
+    //     } catch (error) {}
+    //   }
+    // }
 
     res
       .status(200)
@@ -602,11 +551,6 @@ async function updateSpare(req, res) {
       .status(500)
       .json(new ApiErrorResponse(500, {}, "Internal server error"));
   }
-  // finally {
-  //   if (req.file && oldImg) {
-  //     unlinkFile(oldImg);
-  //   }
-  // }
 }
 
 async function deleteSpare(req, res) {
@@ -875,7 +819,13 @@ async function generateQRCode(req, res) {
 }
 
 async function generateExcel(req, res) {
-  const { module } = req.query;
+  let { module, completed, startDate, endDate } = req.query;
+  console.log(req.query);
+  if (completed && completed == "true") {
+    completed = true;
+  } else {
+    completed = false;
+  }
 
   try {
     let rows = [];
@@ -897,9 +847,16 @@ async function generateExcel(req, res) {
     }
 
     if (module === "procurement") {
-      [rows] = await pool.query(`
+      const whereClause = completed
+        ? `WHERE p.status = 'complete'
+       AND p.created_at BETWEEN ? AND ?`
+        : `WHERE (p.status = 'pending' OR p.status = 'partial')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
       SELECT p.nac_qty, p.nac_no, p.nac_date, p.validity, p.rate_unit, p.issue_date,
-      p.qty_received, p.box_no, p.created_at,
+      p.qty_received, p.box_no, p.created_at, p.status,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
@@ -915,14 +872,24 @@ async function generateExcel(req, res) {
       LEFT JOIN spares sp ON p.spare_id = sp.id
       LEFT JOIN tools t ON p.tool_id = t.id
       LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+       ${whereClause}
       ORDER BY p.created_at DESC
-      `);
+      `,
+        args,
+      );
     }
 
     if (module === "stock_update") {
-      [rows] = await pool.query(`
+      const whereClause = completed
+        ? `WHERE s.status = 'complete'
+       AND s.created_at BETWEEN ? AND ?`
+        : `WHERE (s.status = 'pending' OR s.status = 'partial')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
         SELECT s.stocked_in_qty, s.mo_no, s.mo_date, s.issue_date,
-        s.box_no, s.qty_received, s.created_at,
+        s.box_no, s.qty_received, s.created_at, s.status,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
@@ -938,12 +905,22 @@ async function generateExcel(req, res) {
       LEFT JOIN spares sp ON s.spare_id = sp.id
       LEFT JOIN tools t ON s.tool_id = t.id
       LEFT JOIN pending_issue pi ON s.issued_id = pi.id
+      ${whereClause}
       ORDER BY s.created_at DESC
-      `);
+      `,
+        args,
+      );
     }
 
     if (module === "survey") {
-      [rows] = await pool.query(`
+      const whereClause = completed
+        ? `WHERE s.status = 'complete'
+       AND s.created_at BETWEEN ? AND ?`
+        : `WHERE s.status = 'pending'`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
     SELECT 
       s.issue_to,
       s.survey_quantity,
@@ -953,6 +930,7 @@ async function generateExcel(req, res) {
       s.name,
       s.box_no,
       s.created_at,
+      s.status,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
@@ -962,18 +940,29 @@ async function generateExcel(req, res) {
     FROM survey s
     LEFT JOIN spares sp ON s.spare_id = sp.id
     LEFT JOIN tools t ON s.tool_id = t.id
+    ${whereClause}
     ORDER BY s.created_at DESC
-  `);
+  `,
+        args,
+      );
     }
 
     if (module === "demand") {
-      [rows] = await pool.query(`
+      const whereClause = completed
+        ? `WHERE d.status = 'complete'
+       AND d.created_at BETWEEN ? AND ?`
+        : `WHERE d.status = 'pending'`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
     SELECT 
       d.issue_to,
       d.survey_qty,
       d.survey_voucher_no,
       d.survey_date,
       d.created_at,
+      d.status, 
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
@@ -983,12 +972,22 @@ async function generateExcel(req, res) {
     FROM demand d
     LEFT JOIN spares sp ON d.spare_id = sp.id
     LEFT JOIN tools t ON d.tool_id = t.id
+    ${whereClause}
     ORDER BY d.created_at DESC
-  `);
+  `,
+        args,
+      );
     }
 
     if (module === "issue") {
-      [rows] = await pool.query(`
+      const whereClause = completed
+        ? `WHERE pi.status = 'complete'
+       AND pi.created_at BETWEEN ? AND ?`
+        : `WHERE (pi.status = 'pending' OR pi.status = 'partial')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
     SELECT 
       pi.stocked_nac_qty,
       pi.quote_authority,
@@ -1003,6 +1002,7 @@ async function generateExcel(req, res) {
       pi.qty_received,
       pi.return_date,
       pi.created_at,
+      pi.status,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
@@ -1012,8 +1012,11 @@ async function generateExcel(req, res) {
     FROM pending_issue pi
     LEFT JOIN spares sp ON pi.spare_id = sp.id
     LEFT JOIN tools t ON pi.tool_id = t.id
+    ${whereClause}
     ORDER BY pi.created_at DESC
-  `);
+  `,
+        args,
+      );
 
       rows = rows.map((row) => {
         let boxNo = [];
@@ -1046,46 +1049,252 @@ async function generateExcel(req, res) {
     }
 
     if (module === "special_demand") {
-      [rows] = await pool.query(`
-    SELECT 
-        sd.obs_authorised,
-        sd.obs_increase_qty,
-        sd.quote_authority,
-        sd.internal_demand_no,
-        sd.internal_demand_date,
-        sd.requisition_no,
-        sd.requisition_date,
-        sd.mo_demand_no,
-        sd.mo_demand_date,
+      const whereClause = completed
+        ? "WHERE (sd.internal_demand_no IS NOT NULL AND sd.requisition_no IS NOT NULL AND sd.mo_demand_no IS NOT NULL) AND sd.created_at BETWEEN ? AND ?"
+        : "WHERE sd.internal_demand_no IS NULL OR sd.requisition_no IS NULL OR sd.mo_demand_no IS NULL";
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
+      SELECT 
+          sd.obs_authorised,
+          sd.obs_increase_qty,
+          sd.quote_authority,
+          sd.internal_demand_no,
+          sd.internal_demand_date,
+          sd.requisition_no,
+          sd.requisition_date,
+          sd.mo_demand_no,
+          sd.mo_demand_date,
 
-        sd.created_by_name,
-        sd.created_at,
+          sd.created_by_name,
+          sd.created_at,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.description
+            WHEN sd.tool_id IS NOT NULL THEN t.description
+            ELSE NULL
+          END AS description,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+            WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+            ELSE NULL
+          END AS indian_pattern,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.category
+            WHEN sd.tool_id IS NOT NULL THEN t.category
+            ELSE NULL
+          END AS category
+
+
+    FROM special_demand sd
+        LEFT JOIN spares s ON s.id = sd.spare_id
+        LEFT JOIN tools t on t.id = sd.tool_id
+      ${whereClause}
+      ORDER BY sd.created_at DESC
+  `,
+        args,
+      );
+    }
+
+    if (module === "ty") {
+      const whereClause = completed
+        ? `WHERE ty.status = 'complete'
+       AND ty.created_at BETWEEN ? AND ?`
+        : `WHERE (ty.status = 'pending' OR ty.status = 'partial' OR ty.status = 'overdue')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
+    SELECT 
+        ty.qty_withdrawn,
+        ty.qty_received,
+        ty.service_no,
+        ty.concurred_by,
+        ty.issue_date,
+        ty.loan_duration,
+        ty.return_date,
+        u1.name AS created_by_name,
+        ty.created_at,
+
+        u2.name AS approved_by_name,
+        ty.approved_at,
+        ty.box_no,
 
         CASE
-          WHEN sd.spare_id IS NOT NULL THEN s.description
-          WHEN sd.tool_id IS NOT NULL THEN t.description
-          ELSE NULL
+          WHEN ty.spare_id IS NOT NULL THEN 'spare'
+          WHEN ty.tool_id IS NOT NULL THEN 'tool'
+          ELSE 'unknown'
+        END AS source,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.description
+          WHEN ty.tool_id IS NOT NULL THEN t.description
         END AS description,
 
         CASE
-          WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
-          WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
-          ELSE NULL
+          WHEN ty.spare_id IS NOT NULL THEN s.indian_pattern
+          WHEN ty.tool_id IS NOT NULL THEN t.indian_pattern
         END AS indian_pattern,
 
         CASE
-          WHEN sd.spare_id IS NOT NULL THEN s.category
-          WHEN sd.tool_id IS NOT NULL THEN t.category
+          WHEN ty.spare_id IS NOT NULL THEN s.category
+          WHEN ty.tool_id IS NOT NULL THEN t.category
+        END AS category,
+
+        CASE
+          WHEN ty.status IN ('pending','partial')
+          AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
+          THEN 'overdue'
+          ELSE ty.status
+        END AS loan_status,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.days_untill_return
+          WHEN ty.tool_id IS NOT NULL THEN t.days_untill_return
+        END AS days_untill_return
+
+      FROM ty_loan ty
+      LEFT JOIN spares s ON s.id = ty.spare_id
+      LEFT JOIN tools t ON t.id = ty.tool_id
+      LEFT JOIN users u1 ON u1.id = ty.created_by
+      LEFT JOIN users u2 ON u2.id = ty.approved_by
+
+      ${whereClause}
+      ORDER BY ty.created_at DESC
+  `,
+        args,
+      );
+    }
+
+    if (module === "temp") {
+      const whereClause = completed
+        ? `WHERE (til.status = 'complete' OR til.status = 'utilised')
+       AND til.created_at BETWEEN ? AND ?`
+        : `WHERE (til.status = 'pending' OR til.status = 'partial' OR til.status = 'overdue')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
+    SELECT 
+    til.qty_withdrawn,
+    til.qty_received,
+    til.service_no,
+    til.issue_to,
+    til.issue_date,
+    til.loan_duration,
+    til.return_date,
+    u1.name AS created_by_name,
+    til.created_at,
+    u2.name AS approved_by_name,
+    til.approved_at,
+
+    til.box_no,
+
+    CASE
+      WHEN til.spare_id IS NOT NULL THEN 'spare'
+      WHEN til.tool_id IS NOT NULL THEN 'tool'
+      ELSE 'unknown'
+    END AS source,
+
+    CASE
+      WHEN til.spare_id IS NOT NULL THEN s.description
+      WHEN til.tool_id IS NOT NULL THEN t.description
+    END AS description,
+
+    CASE
+      WHEN til.spare_id IS NOT NULL THEN s.indian_pattern
+      WHEN til.tool_id IS NOT NULL THEN t.indian_pattern
+    END AS indian_pattern,
+
+    CASE
+      WHEN til.spare_id IS NOT NULL THEN s.category
+      WHEN til.tool_id IS NOT NULL THEN t.category
+    END AS category,
+
+            CASE
+          WHEN til.spare_id IS NOT NULL THEN s.equipment_system
+          WHEN til.tool_id IS NOT NULL THEN t.equipment_system
           ELSE NULL
-        END AS category
+        END AS equipment_system,
 
+    CASE
+      WHEN til.status IN ('pending','partial')
+      AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
+      THEN 'overdue'
+      ELSE til.status
+    END AS loan_status,
 
-   FROM special_demand sd
-      LEFT JOIN spares s ON s.id = sd.spare_id
-      LEFT JOIN tools t on t.id = sd.tool_id
-      
-    ORDER BY sd.created_at DESC
-  `);
+    CASE
+      WHEN til.spare_id IS NOT NULL THEN s.days_untill_return
+      WHEN til.tool_id IS NOT NULL THEN t.days_untill_return
+    END AS days_untill_return
+
+FROM temporary_issue_local til
+LEFT JOIN spares s ON s.id = til.spare_id
+LEFT JOIN tools t ON t.id = til.tool_id
+LEFT JOIN users u1 ON u1.id = til.created_by
+LEFT JOIN users u2 ON u2.id = til.approved_by
+
+${whereClause}
+ORDER BY til.created_at DESC;
+
+  `,
+        args,
+      );
+    }
+
+    if (module === "docIssue") {
+      const whereClause = completed
+        ? `WHERE di.qty_received IS NOT NULL
+       AND di.qty_received >= di.qty_withdrawn
+       AND di.created_at BETWEEN ? AND ?`
+        : `WHERE (
+          di.qty_received IS NULL
+          OR di.qty_received < di.qty_withdrawn
+        )`;
+
+      const args = completed ? [startDate, endDate] : [];
+
+      [rows] = await pool.query(
+        `
+    SELECT 
+        dc.description,
+        dc.indian_pattern,
+        dc.category,
+        dc.folder_no,
+        dc.box_no,
+        dc.equipment_system,
+
+        di.qty_withdrawn,
+        di.qty_received,
+        di.service_no,
+        di.concurred_by,
+        di.issue_to,
+        di.issue_date,
+        di.loan_duration,
+        di.return_date,
+
+        di.created_by,
+        u1.name AS created_by_name,
+        di.created_at,
+        di.status,
+
+        di.approved_by,
+        u2.name AS approved_by_name,
+        di.approved_at
+
+    FROM doc_issue di
+    LEFT JOIN doc_corner dc ON dc.id = di.doc_id
+    LEFT JOIN users u1 ON u1.id = di.created_by
+    LEFT JOIN users u2 ON u2.id = di.approved_by
+
+    ${whereClause}
+    ORDER BY di.created_at DESC
+    `,
+        args,
+      );
     }
 
     // Workbook
@@ -1100,6 +1309,9 @@ async function generateExcel(req, res) {
       demand: demandHeaders,
       issue: issueHeaders,
       special_demand: specialDHeaders,
+      ty: tyHeaders,
+      temp: tempHeaders,
+      docIssue: docIssueHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -1118,6 +1330,12 @@ async function generateExcel(req, res) {
       worksheet.columns = issueHeaders;
     } else if (module === "special_demand") {
       worksheet.columns = specialDHeaders;
+    } else if (module === "ty") {
+      worksheet.columns = tyHeaders;
+    } else if (module === "temp") {
+      worksheet.columns = tempHeaders;
+    } else if (module === "docIssue") {
+      worksheet.columns = docIssueHeaders;
     }
 
     rows.forEach((row) => {

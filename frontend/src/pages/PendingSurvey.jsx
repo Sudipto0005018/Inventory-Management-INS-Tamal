@@ -111,31 +111,54 @@ const PendingSurvey = () => {
   });
   const [selectedRow, setSelectedRow] = useState({});
 
-  const fetchdata = async () => {
+  // const fetchdata = async () => {
+  //   try {
+  //     setIsLoading((prev) => ({ ...prev, table: true }));
+  //     const response = await apiService.get("/survey", {
+  //       params: {
+  //         page: currentPage,
+  //         search: inputs.search,
+  //         limit: config.row_per_page,
+  //         status: "pending",
+  //       },
+  //     });
+  //     setFetchedData(response.data);
+  //   } catch (error) {
+  //     console.log(error);
+  //     setFetchedData({
+  //       items: [],
+  //       totalItems: 0,
+  //       totalPages: 1,
+  //       currentPage: 1,
+  //     });
+  //     toaster.error(error.response.data.message);
+  //   } finally {
+  //     setIsLoading((prev) => ({ ...prev, table: false }));
+  //   }
+  // };
+
+  const fetchdata = async (page = currentPage, search = inputs.search) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
+
       const response = await apiService.get("/survey", {
         params: {
-          page: currentPage,
-          search: inputs.search,
+          page,
+          search,
           limit: config.row_per_page,
           status: "pending",
         },
       });
+
       setFetchedData(response.data);
     } catch (error) {
       console.log(error);
-      setFetchedData({
-        items: [],
-        totalItems: 0,
-        totalPages: 1,
-        currentPage: 1,
-      });
-      toaster.error(error.response.data.message);
+      toaster.error(error.response?.data?.message);
     } finally {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
     if (searchTerm === actualSearch) {
@@ -149,17 +172,12 @@ const PendingSurvey = () => {
   };
 
   const handleRefresh = () => {
-    setInputs((prev) => ({
-      ...prev,
-      search: "",
-    }));
-
-    setSelectedSearchFields([]);
+    setInputs((prev) => ({ ...prev, search: "" }));
+    setSelectedValues([]);
     setCurrentPage(1);
     setActualSearch("");
-    // setSelectedRowIndex(null);
-    setPanelProduct({ critical_spare: "no" });
-    fetchdata("", 1);
+
+    fetchdata(1, "");
   };
 
   const handleServay = async () => {
