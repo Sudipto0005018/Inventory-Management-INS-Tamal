@@ -50,8 +50,7 @@ function BoxNoWithdrawl({
               <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
-              Authorised / Maintained Qty{" "}
-              <span className="text-red-500">*</span>
+              Authorised Qty <span className="text-red-500">*</span>
             </TableHead>
             <TableHead className="text-center">
               Qty Held <span className="text-red-500">*</span>
