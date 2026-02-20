@@ -1239,8 +1239,7 @@ LEFT JOIN users u2 ON u2.id = til.approved_by
 
 ${whereClause}
 ORDER BY til.created_at DESC;
-
-  `,
+`,
         args,
       );
     }
@@ -1297,6 +1296,24 @@ ORDER BY til.created_at DESC;
       );
     }
 
+    if (module === "docCorner") {
+      [rows] = await pool.query(`
+    SELECT 
+      description,
+      indian_pattern,
+      category,
+      folder_no,
+      box_no,
+      equipment_system,
+      item_code,
+      item_distribution,
+      created_at,
+      updated_at
+    FROM doc_corner
+    ORDER BY description ASC
+  `);
+    }
+
     // Workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(module);
@@ -1312,6 +1329,7 @@ ORDER BY til.created_at DESC;
       ty: tyHeaders,
       temp: tempHeaders,
       docIssue: docIssueHeaders,
+      docCorner: docCornerHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -1336,6 +1354,8 @@ ORDER BY til.created_at DESC;
       worksheet.columns = tempHeaders;
     } else if (module === "docIssue") {
       worksheet.columns = docIssueHeaders;
+    } else if (module === "docCorner") {
+      worksheet.columns = docCornerHeaders;
     }
 
     rows.forEach((row) => {

@@ -589,23 +589,16 @@ const Procurement = () => {
             }));
           }}
         >
-          <div
-            className="sticky top-0 z-10 bg-background 
-                grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => ({ ...prev, receive: false }))}
+            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
           >
-            <DialogTitle className="text-lg font-semibold">
-              Stock Update Details
-            </DialogTitle>
-
-            <button
-              type="button"
-              onClick={() => setIsOpen((prev) => ({ ...prev, receive: false }))}
-              className="justify-self-end rounded-md p-1 transition"
-            >
-              ✕
-            </button>
-          </div>
+            ✕
+          </button>
+          <DialogTitle className="text-md font-semibold -mt-10 border-b">
+            Stock Update Details
+          </DialogTitle>
           <div className="flex items-start gap-2 mb-3">
             <span className="font-semibold text-gray-700">
               Item Description :
@@ -691,7 +684,6 @@ const Procurement = () => {
                 Box Wise Segregation
               </Label>
               <BoxNoDeposit
-                className="mt-4"
                 value={boxNo}
                 onChange={(val) => {
                   setBoxNo(val);

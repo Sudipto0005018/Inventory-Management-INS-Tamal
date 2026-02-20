@@ -526,9 +526,9 @@ const PermanentPendings = () => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+              border-b"
           >
-            <DialogTitle className="text-lg font-semibold">
+            <DialogTitle className="text-md font-semibold -mt-2">
               Stock Update Details
             </DialogTitle>
 

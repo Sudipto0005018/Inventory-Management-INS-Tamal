@@ -211,6 +211,19 @@ const docIssue = [
   { header: "Status", key: "status", width: 20 },
 ];
 
+const docCorner = [
+  { header: "Document Description", key: "description", width: 30 },
+  { header: "Folder No.", key: "folder_no", width: 20 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+  { header: "Equipment / System", key: "equipment_system", width: 30 },
+  { header: "Item Code", key: "item_code", width: 20 },
+  { header: "Box No.", key: "boxes", width: 25 },
+  { header: "Item Distribution", key: "item_distribution", width: 25 },
+  { header: "Created On", key: "created_at", width: 20 },
+  { header: "Updated On", key: "updated_at", width: 20 },
+];
+
 module.exports = {
   spares,
   tools,
@@ -223,4 +236,5 @@ module.exports = {
   ty,
   temp,
   docIssue,
+  docCorner,
 };

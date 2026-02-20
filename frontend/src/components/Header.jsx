@@ -37,6 +37,7 @@ const Header = ({ onSidebarOpen }) => {
       "/temp-loan/pending": "ty",
       "/temporary/temporary-issue": "temp",
       "/documents/issue": "docIssue",
+      "/documents": "docCorner",
 
       "/logs/pending-survey": "survey",
       "/logs/pending-demand": "demand",
