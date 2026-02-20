@@ -48,6 +48,7 @@ const SEARCH_FIELDS = [
   { label: "Equipment / System", value: "equipment_system" },
   { label: "Denos", value: "denos" },
   { label: "OBS Authorised", value: "obs_authorised" },
+  { label: "OBS Maintained", value: "obs_maintained" },
   { label: "OBS Held", value: "obs_held" },
   { label: "Item Storage Distribution", value: "boxNo" },
   { label: "Location of Storage", value: "storage_location" },
@@ -182,6 +183,7 @@ const Spares = ({ type = "" }) => {
     equipment_system: "",
     denos: "",
     obs_authorised: "",
+    obs_maintained: "",
     obs_held: "",
     b_d_authorised: "",
     category: "",
@@ -537,6 +539,7 @@ const Spares = ({ type = "" }) => {
       formData.append("equipment_system", inputs.equipment_system || "");
       formData.append("denos", inputs.denos || "");
       formData.append("obs_authorised", inputs.obs_authorised || "");
+      formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
       formData.append("category", inputs.category || "");
@@ -567,6 +570,7 @@ const Spares = ({ type = "" }) => {
           equipment_system: "",
           denos: "",
           obs_authorised: "",
+          obs_maintained: "",
           obs_held: "",
           b_d_authorised: "",
           category: "",
@@ -596,10 +600,23 @@ const Spares = ({ type = "" }) => {
     }
   };
 
+  const resetImageState = () => {
+    setImagePayload({
+      newImageFiles: {},
+      imageStatus: [],
+    });
+
+    setImage({
+      fileEdit: null,
+      preview: null,
+    });
+  };
+
   const handleEditSpare = async () => {
     try {
       let s = 0,
-        s1 = 0;
+        s1 = 0,
+        s2 = 0;
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
 
@@ -609,7 +626,7 @@ const Spares = ({ type = "" }) => {
       }
 
       for (let i = 0; i < boxes.length; i++) {
-        const { no, location, qtyHeld, qn } = boxes[i];
+        const { no, location, qtyHeld, qn, qnMain } = boxes[i];
 
         if (!no?.trim()) {
           toaster("error", `Box No is required in row ${i + 1}`);
@@ -623,6 +640,11 @@ const Spares = ({ type = "" }) => {
 
         if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
           toaster("error", `Qty Held is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
+          toaster("error", `Qty Maintained is required in row ${i + 1}`);
           return;
         }
 
@@ -644,16 +666,28 @@ const Spares = ({ type = "" }) => {
           return;
         }
 
+        const qty2 = boxes[i].qnMain;
+        if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+          toaster("error", "Invalid Maintained Qty");
+          return;
+        }
         s += Number(boxes[i].qn || 0);
         s1 += Number(qty1 || 0);
+        s2 += Number(qty2 || 0);
       }
 
       const obsAuthorised = Number(selectedRow.obs_authorised);
+      const obsMaintained = Number(selectedRow.obs_maintained);
       const obsHeld = Number(selectedRow.obs_held);
 
       // QN must match authorised
       if (s !== obsAuthorised) {
         toaster("error", "Authorised Qty not matched with OBS Authorised");
+        return;
+      }
+
+      if (s2 !== obsMaintained) {
+        toaster("error", "Maintained Qty not matched with OBS Maintained");
         return;
       }
 
@@ -731,6 +765,7 @@ const Spares = ({ type = "" }) => {
       formData.append("equipment_system", selectedRow.equipment_system || "");
       formData.append("denos", selectedRow.denos || "");
       formData.append("obs_authorised", selectedRow.obs_authorised || "");
+      formData.append("obs_maintained", selectedRow.obs_maintained || "");
       formData.append("obs_held", selectedRow.obs_held || "");
       formData.append("b_d_authorised", selectedRow.b_d_authorised || "");
       formData.append("category", selectedRow.category || "");
@@ -758,6 +793,9 @@ const Spares = ({ type = "" }) => {
       );
       if (response.success) {
         toaster("success", "Spare updated successfully");
+        resetImageState(); // clear image payload
+        setSelectedRow({}); // clear edit data
+
         setIsOpen({ ...isOpen, editSpare: false });
         fetchdata();
       } else {
@@ -807,7 +845,7 @@ const Spares = ({ type = "" }) => {
     setBoxNo(
       selectedRow.box_no
         ? JSON.parse(selectedRow.box_no)
-        : [{ no: "", qn: "", qtyHeld: "", location: "" }],
+        : [{ no: "", qn: "", qtyHeld: "", qnMain: "", location: "" }],
     );
   }, [selectedRow.box_no]);
 
@@ -1239,8 +1277,8 @@ const Spares = ({ type = "" }) => {
                   </Label>
                   <Input
                     type="text"
-                    name="obs_authorised"
-                    value={inputs.obs_authorised}
+                    name="obs_maintained"
+                    value={inputs.obs_maintained}
                     onChange={handleChange}
                   />
                 </div>
@@ -1460,8 +1498,13 @@ const Spares = ({ type = "" }) => {
                 Image
               </Label>
               <div className="relative">
-                <MultiImageSelect
+                {/* <MultiImageSelect
                   initialImages={selectedRow.images || []}
+                  onImagesUpdate={setImagePayload}
+                /> */}
+                <MultiImageSelect
+                  key={isOpen.addSpare ? "add-open" : "add-closed"}
+                  initialImages={[]}
                   onImagesUpdate={setImagePayload}
                 />
               </div>
@@ -1665,21 +1708,13 @@ const Spares = ({ type = "" }) => {
                 <Label>
                   OBS Maintained<span className="text-red-500">*</span>
                 </Label>
-
                 <InputWithPencil
-                  name="obs_authorised"
-                  value={selectedRow.obs_authorised}
-                  readOnly
-                  editable={false}
-                  onEdit={() => {
-                    setObsDialog({
-                      open: true,
-                      action: "increase",
-                      quantity: "",
-                    });
-
-                    setOriginalObsAuthorised(selectedRow.obs_authorised);
-                  }}
+                  name="obs_maintained"
+                  value={selectedRow.obs_maintained}
+                  onChange={handleEditChange}
+                  editable={editableFields.obs_maintained}
+                  onEdit={() => enableEdit("obs_maintained")}
+                  onBlur={() => disableEdit("obs_maintained")}
                 />
               </div>
 
@@ -2046,9 +2081,11 @@ const Spares = ({ type = "" }) => {
           </div>
           <DialogFooter>
             <Button
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, editSpare: false }))
-              }
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, editSpare: false }));
+                resetImageState(); // clear image payload
+                setSelectedRow({});
+              }}
               variant="outline"
               className="cursor-pointer"
             >

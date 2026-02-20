@@ -12,6 +12,7 @@ const createSpare = async (req, res) => {
     equipment_system,
     denos,
     obs_authorised,
+    obs_maintained,
     obs_held,
     b_d_authorised,
     category,
@@ -42,15 +43,16 @@ const createSpare = async (req, res) => {
 
     const query = `
             INSERT INTO spares
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
       equipment_system,
       denos || null,
       obs_authorised || null,
+      obs_maintained || null,
       obs_held || null,
       b_d_authorised || null,
       category || null,
@@ -304,6 +306,7 @@ async function updateSpare(req, res) {
     equipment_system,
     denos,
     obs_authorised,
+    obs_maintained,
     obs_held,
     b_d_authorised,
     category,
@@ -477,6 +480,7 @@ async function updateSpare(req, res) {
           denos = ?,
           obs_held = ?,
           b_d_authorised = ?,
+          obs_maintained = ?,
           category = ?,
           box_no = ?,
           item_distribution = ?,
@@ -497,6 +501,7 @@ async function updateSpare(req, res) {
         equipment_system,
         denos || null,
         obs_held || null,
+        obs_maintained || null,
         b_d_authorised || null,
         category || null,
         box_no || null,
@@ -833,7 +838,7 @@ async function generateExcel(req, res) {
     if (module === "tools") {
       [rows] = await pool.query(`
         SELECT description, indian_pattern, equipment_system, category, denos,
-        obs_authorised, obs_held, box_no, item_distribution, storage_location
+        obs_authorised, obs_maintained, obs_held, box_no, item_distribution, storage_location
         FROM tools
       `);
     }
@@ -841,7 +846,7 @@ async function generateExcel(req, res) {
     if (module === "spares") {
       [rows] = await pool.query(`
         SELECT description, indian_pattern, equipment_system, category, denos,
-        obs_authorised, obs_held, box_no, item_distribution, storage_location
+        obs_authorised, obs_maintained, obs_held, box_no, item_distribution, storage_location
         FROM spares
       `);
     }

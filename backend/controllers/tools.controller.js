@@ -9,6 +9,7 @@ const createTool = async (req, res) => {
     equipment_system,
     denos,
     obs_authorised,
+    obs_maintained,
     obs_held,
     b_d_authorised,
     category,
@@ -39,15 +40,16 @@ const createTool = async (req, res) => {
 
     const query = `
             INSERT INTO tools
-                (description, equipment_system, denos, obs_authorised, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
       equipment_system,
       denos || null,
       obs_authorised || null,
+      obs_maintained || null,
       obs_held || null,
       b_d_authorised || null,
       category || null,
@@ -210,6 +212,7 @@ async function updateTool(req, res) {
     equipment_system,
     denos,
     obs_authorised,
+    obs_maintained,
     obs_held,
     b_d_authorised,
     category,
@@ -388,6 +391,7 @@ async function updateTool(req, res) {
           equipment_system = ?,
           denos = ?,
           obs_held = ?,
+          obs_maintained = ?,
           b_d_authorised = ?,
           category = ?,
           box_no = ?,
@@ -409,6 +413,7 @@ async function updateTool(req, res) {
         equipment_system,
         denos || null,
         obs_held || null,
+        obs_maintained || null,
         b_d_authorised || null,
         category || null,
         box_no || null,

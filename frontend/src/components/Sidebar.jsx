@@ -10,6 +10,7 @@ import { LuNotebookPen } from "react-icons/lu";
 import { User } from "lucide-react";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { IoDocumentSharp } from "react-icons/io5";
+import { SiPhpmyadmin } from "react-icons/si";
 
 import logo1 from "../assets/logo1.png";
 import { LuLogs } from "react-icons/lu";
@@ -134,6 +135,21 @@ const menuItems = [
       { name: "Procurement Logs", path: "/logs/procurement" },
       { name: "Stock Update Logs", path: "/logs/stock-update" },
       { name: "Special Demand Logs", path: "/logs/special-demand" },
+    ],
+  },
+  {
+    name: "D787",
+    path: "/successor-board",
+    icon: <SiPhpmyadmin size={25} />,
+    submenu: [
+      {
+        name: "D787 Original",
+        path: "/successor-board/officer-incharge",
+      },
+      {
+        name: "D787 Amendment",
+        path: "/successor-board/storekeeper-incharge",
+      },
     ],
   },
 ];

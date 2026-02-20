@@ -66,7 +66,10 @@ function BoxNoInputs({
   const [newValue, setNewValue] = useState(null);
 
   const addRow = () => {
-    onChange([...value, { no: "", qn: "", qtyHeld: "", location: "" }]);
+    onChange([
+      ...value,
+      { no: "", qn: "", qnMain: "", qtyHeld: "", location: "" },
+    ]);
   };
 
   const handleRemoveRow = (index) => {
@@ -83,7 +86,7 @@ function BoxNoInputs({
   // const canAddRow = lastRow && lastRow.no && lastRow.qn && lastRow.location;
 
   const lastRow = value.length > 0 ? value[value.length - 1] : null;
-  const canAddRow = lastRow && lastRow.no && lastRow.qn;
+  const canAddRow = lastRow && lastRow.no && lastRow.qn && lastRow.qnMain;
 
   return (
     <div className="w-full p-2 border rounded-md">
@@ -159,9 +162,9 @@ function BoxNoInputs({
                   required
                   placeholder="Maintained Qty"
                   type="number"
-                  value={row.qn}
+                  value={row.qnMain}
                   onChange={(e) =>
-                    handleInputChange(index, "qn", e.target.value)
+                    handleInputChange(index, "qnMain", e.target.value)
                   }
                 />
               </TableCell>
