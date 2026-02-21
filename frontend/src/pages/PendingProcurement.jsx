@@ -28,6 +28,7 @@ import {
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
+import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
 import AsyncSelectBox from "../components/AsyncSelectBox";
 
@@ -112,8 +113,10 @@ const Procurement = () => {
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [selectedOem, setSelectedOem] = useState(null);
   const [selectedAddSupplier, setSelectedAddSupplier] = useState(null);
   const [supplierList, setSupplierList] = useState([]);
+  const [oemList, setOemList] = useState([]);
 
   const fetchdata = async (page = currentPage) => {
     try {
@@ -319,6 +322,7 @@ const Procurement = () => {
   useEffect(() => {
     fetchdata();
     fetchSuppliers();
+    fetchOems();
   }, [currentPage]);
 
   useEffect(() => {
@@ -448,6 +452,59 @@ const Procurement = () => {
     }
   };
 
+  const fetchOemDetails = async (id) => {
+    try {
+      const res = await apiService.get(`/oem/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch OEM details", error);
+      return null;
+    }
+  };
+
+  const fetchOems = async () => {
+    try {
+      const res = await apiService.get(`/oem/list`);
+      setOemList(Array.isArray(res?.data) ? res.data : []);
+    } catch (error) {
+      console.error("Failed to fetch oems", error);
+      setOemList([]);
+    }
+  };
+
+  const fetchOemOptions = async (query = "") => {
+    try {
+      const res = await apiService.get(`/oem/all`);
+      const items =
+        res.data?.items?.map((item) => ({ id: item.id, name: item.name })) ||
+        [];
+      if (!query) return items;
+      return items.filter((item) =>
+        item.name.toLowerCase().includes(query.toLowerCase()),
+      );
+    } catch (error) {
+      console.error("Failed to fetch OEM options", error);
+      return [];
+    }
+  };
+  const onDeleteOem = async (id) => {
+    try {
+      const res = await apiService.delete(`/oem/${id}`);
+      if (res.success) {
+        toaster("success", "OEM deleted successfully");
+        fetchOems();
+        if (selectedOem === id) {
+          setSelectedOem(null);
+          setInputs((prev) => ({ ...prev, oem: "" }));
+        }
+      } else {
+        toaster("error", res.message || "Failed to delete OEM");
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to delete OEM");
+    }
+  };
   return (
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
@@ -689,34 +746,68 @@ const Procurement = () => {
                   setBoxNo(val);
                 }}
               />
-              <AsyncSelectBox
-                label="Vendor/ Third Party Supplier"
-                value={
-                  selectedRow.supplier
-                    ? {
-                        id: supplierList.find(
-                          (item) => item.name === selectedRow.supplier,
-                        )?.id,
-                        name: selectedRow.supplier,
-                      }
-                    : null
-                }
-                onChange={(val) => {
-                  const id = supplierList.find(
-                    (item) => item.name === selectedRow.supplier,
-                  )?.id;
-                  console.log(supplierList);
+              <div className="w-full mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="ms-2 mb-1">OEM Details</Label>
+                  <AsyncSelectBox
+                    label="OEM"
+                    value={
+                      selectedRow.oem
+                        ? {
+                            id: oemList.find(
+                              (item) => item.name === selectedRow.oem,
+                            )?.id,
+                            name: selectedRow.oem,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        oem: val.name,
+                      }));
+                    }}
+                    fetchOptions={fetchOemOptions}
+                    fetchDetails={fetchOemDetails}
+                    AddNewModal={OEMFirm}
+                    onDelete={onDeleteOem}
+                  />
+                </div>
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Vendor / Third Party Supplier
+                  </Label>
+                  <AsyncSelectBox
+                    label="Vendor/ Third Party Supplier"
+                    value={
+                      selectedRow.supplier
+                        ? {
+                            id: supplierList.find(
+                              (item) => item.name === selectedRow.supplier,
+                            )?.id,
+                            name: selectedRow.supplier,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      const id = supplierList.find(
+                        (item) => item.name === selectedRow.supplier,
+                      )?.id;
+                      console.log(supplierList);
 
-                  setSelectedRow((prev) => ({
-                    ...prev,
-                    supplier: val.name,
-                  }));
-                }}
-                fetchOptions={fetchSupplierOptions}
-                fetchDetails={fetchSupplierDetails}
-                AddNewModal={SupplierFirm}
-                onDelete={onDeleteSupplier}
-              />
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        supplier: val.name,
+                      }));
+                    }}
+                    fetchOptions={fetchSupplierOptions}
+                    fetchDetails={fetchSupplierDetails}
+                    AddNewModal={SupplierFirm}
+                    onDelete={onDeleteSupplier}
+                  />
+                </div>
+              </div>
+
               <div className="mt-4">
                 <Label className="ms-2 mb-2 block">Generate QR</Label>
 

@@ -221,7 +221,7 @@ const docCorner = [
   { header: "Equipment / System", key: "equipment_system", width: 30 },
   { header: "Item Code", key: "item_code", width: 20 },
   { header: "Box No.", key: "boxes", width: 25 },
-  { header: "Item Distribution", key: "item_distribution", width: 25 },
+  // { header: "Item Distribution", key: "item_distribution", width: 25 },
   { header: "Created On", key: "created_at", width: 20 },
   { header: "Updated On", key: "updated_at", width: 20 },
 ];

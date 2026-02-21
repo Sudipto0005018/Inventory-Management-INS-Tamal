@@ -12,6 +12,8 @@ export const pageTitles = {
   "/temporary/completed": "Temporary Issue Logs",
   "/search": "Search",
   "/handheld": "Handheld Details",
+  "/d787/original": "D787 Original",
+  "/d787/amendment": "D787 Amendment",
 
   "/logs/pending-survey": "Survey Logs",
   "/logs/pending-demand": "Demand Logs",

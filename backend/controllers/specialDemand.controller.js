@@ -508,9 +508,94 @@ async function getLogsSpecialDemand(req, res) {
   }
 }
 
+async function createD787Original(req, res) {
+  const { id: userId, name } = req.user;
+
+  try {
+    const {
+      spare_id,
+      tool_id,
+      obs_authorised,
+      obs_increase_qty,
+      obs_maintained,
+      obs_held,
+      maintained_qty,
+      qty_held,
+      box_no,
+    } = req.body;
+
+    console.log("REQ.BODY =>", req.body);
+
+    /* =====================================================
+       INSERT ONLY INTO special_demand
+       ===================================================== */
+
+    const specialDemandQuery = `
+      INSERT INTO special_demand (
+        spare_id,
+        tool_id,
+        obs_authorised,
+        obs_increase_qty,
+        obs_maintained,
+        obs_held,
+        maintained_qty,
+        qty_held,
+        created_by,
+        created_by_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    await pool.query(specialDemandQuery, [
+      spare_id || null,
+      tool_id || null,
+      obs_authorised || 0,
+      obs_increase_qty || 0,
+      obs_maintained || 0,
+      obs_held || 0,
+      maintained_qty || 0,
+      qty_held || 0,
+      userId,
+      name,
+    ]);
+
+    /* =====================================================
+       Update spares / tools master table
+       ===================================================== */
+
+    await pool.query(
+      `UPDATE ${spare_id ? "spares" : "tools"} 
+       SET 
+         box_no = ?, 
+         obs_authorised = ?, 
+         obs_maintained = ?, 
+         obs_held = ?
+       WHERE id = ?`,
+      [
+        typeof box_no === "string" ? box_no : JSON.stringify(box_no),
+        obs_authorised || 0,
+        obs_maintained || 0,
+        obs_held || 0,
+        spare_id || tool_id,
+      ],
+    );
+
+    res.json({
+      success: true,
+      message: "Inserted successfully into Special Demand",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
 module.exports = {
   createSpecialDemand,
   getSpecialDemandList,
   updateSpecialDemand,
   getLogsSpecialDemand,
+  createD787Original,
 };

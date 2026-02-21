@@ -139,16 +139,16 @@ const menuItems = [
   },
   {
     name: "D787",
-    path: "/successor-board",
+    path: "/d787/original",
     icon: <SiPhpmyadmin size={25} />,
     submenu: [
       {
         name: "D787 Original",
-        path: "/successor-board/officer-incharge",
+        path: "/d787/original",
       },
       {
         name: "D787 Amendment",
-        path: "/successor-board/storekeeper-incharge",
+        path: "/d787/amendment",
       },
     ],
   },

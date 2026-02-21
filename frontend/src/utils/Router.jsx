@@ -40,6 +40,8 @@ import LogsIssue from "../pages/LogsIssue";
 import LogsProcurement from "../pages/LogsProcurement";
 import LogsStock from "../pages/LogsStock";
 import LogsSpecialDemand from "../pages/LogsSpecialDemand";
+import Original from "../pages/Original";
+import Amendment from "../pages/Amendment";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -273,6 +275,26 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <CompletedServays />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/d787/original"
+          element={
+            <ProtectedRoute>
+              <Original />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/d787/amendment"
+          element={
+            <ProtectedRoute>
+              <Amendment />
             </ProtectedRoute>
           }
         />

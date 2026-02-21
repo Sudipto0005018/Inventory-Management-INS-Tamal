@@ -1427,6 +1427,48 @@ const Tools = ({ type = "" }) => {
                 </div>
 
                 <div>
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Part of original D787
+                      <span className="text-red-500">*</span>
+                    </Label>
+
+                    <RadioGroup
+                      value={inputs.critical_tool}
+                      onValueChange={(value) =>
+                        setInputs((prev) => ({
+                          ...prev,
+                          critical_tool: value,
+                        }))
+                      }
+                      className="mt-2"
+                    >
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="critical_yes" />
+                          <Label
+                            htmlFor="critical_yes"
+                            className="cursor-pointer"
+                          >
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="critical_no" />
+                          <Label
+                            htmlFor="critical_no"
+                            className="cursor-pointer"
+                          >
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+
+                <div>
                   <Label className="ms-2 mb-1">
                     Sub Component<span className="text-red-500">*</span>
                   </Label>
