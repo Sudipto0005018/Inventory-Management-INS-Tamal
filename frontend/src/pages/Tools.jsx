@@ -554,7 +554,7 @@ const Tools = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", inputs.category || "");
+      formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");

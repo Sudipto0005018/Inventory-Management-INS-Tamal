@@ -542,7 +542,7 @@ const Spares = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", inputs.category || "");
+      formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");
@@ -561,6 +561,35 @@ const Spares = ({ type = "" }) => {
       const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      console.log("SPARE RESPONSE =>", response);
+
+      //d787 logic
+      const createdSpareId =
+        response?.data?.insertId ||
+        response?.data?.data?.insertId ||
+        response?.insertId;
+
+      // if (!createdSpareId) {
+      //   toaster("error", "Spare ID not returned from server");
+      //   return;
+      // }
+
+      // ✅ Call Special Demand API
+      const specialPayload = {
+        spare_id: createdSpareId,
+        obs_authorised: Number(inputs.obs_authorised) || 0,
+        obs_increase_qty: Number(inputs.obs_authorised) || 0,
+        obs_maintained: Number(inputs.obs_maintained) || 0,
+        obs_held: Number(inputs.obs_held) || 0,
+        maintained_qty: Number(inputs.obs_maintained) || 0,
+        qty_held: Number(inputs.obs_held) || 0,
+        box_no: boxNo,
+      };
+
+      console.log("specialPayload==>", specialPayload);
+      await apiService.post("/specialDemand/d787", specialPayload);
+      //d787 logic end
+
       if (response.success) {
         toaster("success", "Spare added successfully");
         setIsOpen({ ...isOpen, addSpare: false });

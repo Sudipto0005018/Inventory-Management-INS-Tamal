@@ -592,10 +592,210 @@ async function createD787Original(req, res) {
   }
 }
 
+// async function getD787List(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const offset = (page - 1) * limit;
+//   const search = req.query?.search ? req.query.search.trim() : "";
+
+//   let whereClause = `WHERE 1=1`;
+
+//   if (search) {
+//     whereClause += `
+//       AND (
+//         s.description LIKE ?
+//         OR t.description LIKE ?
+//         OR s.indian_pattern LIKE ?
+//         OR t.indian_pattern LIKE ?
+//         OR s.category LIKE ?
+//         OR t.category LIKE ?
+//         OR sd.created_by_name LIKE ?
+//       )
+//     `;
+//   }
+
+//   const searchParams = search ? Array(7).fill(`%${search}%`) : [];
+
+//   const [totalCount] = await pool.query(
+//     `
+//     SELECT COUNT(sd.id) as count
+//     FROM special_demand sd
+//     LEFT JOIN spares s ON s.id = sd.spare_id
+//     LEFT JOIN tools t ON t.id = sd.tool_id
+//     ${whereClause}
+//   `,
+//     searchParams,
+//   );
+
+//   const total = totalCount[0].count;
+
+//   const query = `
+//     SELECT
+//       sd.id,
+//       sd.spare_id,
+//       sd.tool_id,
+//       sd.obs_authorised,
+//       sd.obs_increase_qty,
+//       sd.obs_maintained,
+//       sd.obs_held,
+//       sd.maintained_qty,
+//       sd.qty_held,
+//       sd.created_by,
+//       sd.created_by_name,
+//       sd.created_at,
+
+//       CASE
+//         WHEN sd.spare_id IS NOT NULL THEN 'spares'
+//         WHEN sd.tool_id IS NOT NULL THEN 'tools'
+//         ELSE 'unknown'
+//       END AS source,
+
+//       CASE
+//         WHEN sd.spare_id IS NOT NULL THEN s.description
+//         WHEN sd.tool_id IS NOT NULL THEN t.description
+//       END AS description,
+
+//       CASE
+//         WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+//         WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+//       END AS indian_pattern,
+
+//       CASE
+//         WHEN sd.spare_id IS NOT NULL THEN s.category
+//         WHEN sd.tool_id IS NOT NULL THEN t.category
+//       END AS category
+
+//     FROM special_demand sd
+//     LEFT JOIN spares s ON s.id = sd.spare_id
+//     LEFT JOIN tools t ON t.id = sd.tool_id
+//     ${whereClause}
+//     ORDER BY sd.created_at DESC
+//     LIMIT ? OFFSET ?
+//   `;
+
+//   const [rows] = await pool.query(query, [...searchParams, limit, offset]);
+
+//   res.json(
+//     new ApiResponse(
+//       200,
+//       {
+//         items: rows,
+//         totalItems: total,
+//         totalPages: Math.ceil(total / limit),
+//         currentPage: page,
+//       },
+//       "Special demand list retrieved successfully",
+//     ),
+//   );
+// }
+
+async function getD787List(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  let whereClause = `WHERE 1=1`;
+
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR sd.created_by_name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(7).fill(`%${search}%`) : [];
+
+  const [totalCount] = await pool.query(
+    `
+    SELECT COUNT(sd.id) as count
+    FROM special_demand sd
+    LEFT JOIN spares s ON s.id = sd.spare_id
+    LEFT JOIN tools t ON t.id = sd.tool_id
+    ${whereClause}
+  `,
+    searchParams,
+  );
+
+  const total = totalCount[0].count;
+
+  const query = `
+    SELECT
+      sd.id,
+      sd.spare_id,
+      sd.tool_id,
+      sd.obs_authorised,
+      sd.obs_increase_qty,
+      sd.obs_maintained,
+      sd.obs_held,
+      sd.maintained_qty,
+      sd.qty_held,
+      sd.created_by,
+      sd.created_by_name,
+      sd.created_at,
+
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN 'spares'
+        WHEN sd.tool_id IS NOT NULL THEN 'tools'
+        ELSE 'unknown'
+      END AS source,
+
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN s.description
+        WHEN sd.tool_id IS NOT NULL THEN t.description
+      END AS description,
+
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+        WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+      END AS indian_pattern,
+
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN s.category
+        WHEN sd.tool_id IS NOT NULL THEN t.category
+      END AS category,
+
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN s.equipment_system
+        WHEN sd.tool_id IS NOT NULL THEN t.equipment_system
+      END AS equipment_system
+
+    FROM special_demand sd
+    LEFT JOIN spares s ON s.id = sd.spare_id
+    LEFT JOIN tools t ON t.id = sd.tool_id
+    ${whereClause}
+    ORDER BY sd.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const [rows] = await pool.query(query, [...searchParams, limit, offset]);
+
+  res.json(
+    new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+      "Special demand list retrieved successfully",
+    ),
+  );
+}
+
 module.exports = {
   createSpecialDemand,
   getSpecialDemandList,
   updateSpecialDemand,
   getLogsSpecialDemand,
   createD787Original,
+  getD787List,
 };

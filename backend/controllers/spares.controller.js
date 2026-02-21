@@ -74,7 +74,7 @@ const createSpare = async (req, res) => {
 
     res
       .status(201)
-      .json(new ApiResponse(201, result[0], "Spare created successfully"));
+      .json(new ApiResponse(201, result, "Spare created successfully")); //result[0]
   } catch (error) {
     console.log("Error creating spare: ", error);
     res
