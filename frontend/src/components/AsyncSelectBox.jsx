@@ -92,6 +92,7 @@ const AsyncSelectBox = ({
   AddNewModal,
   placeholder = "Select item...",
   label = "Item",
+  isEditable = true,
   onDelete,
 }) => {
   const [open, setOpen] = useState(false);
@@ -220,17 +221,19 @@ const AsyncSelectBox = ({
                     ))}
                 </CommandGroup>
                 <CommandGroup>
-                  <CommandItem
-                    className="cursor-pointer text-blue-600 font-medium border-t mt-1"
-                    onSelect={() => {
-                      setOpen(false);
-                      setEditData(null);
-                      setIsAddModalOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add New {label}
-                  </CommandItem>
+                  {isEditable && (
+                    <CommandItem
+                      className="cursor-pointer text-blue-600 font-medium border-t mt-1"
+                      onSelect={() => {
+                        setOpen(false);
+                        setEditData(null);
+                        setIsAddModalOpen(true);
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New {label}
+                    </CommandItem>
+                  )}
                 </CommandGroup>
               </CommandList>
             </Command>
@@ -279,6 +282,7 @@ const AsyncSelectBox = ({
             const data = await fetchDetails(id);
             setDetails(data);
           }}
+          editable={isEditable}
         />
       )}
 

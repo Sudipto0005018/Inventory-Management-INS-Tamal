@@ -21,6 +21,7 @@ const OEMFirm = ({
   isEditable = true,
   val,
   onEdited = () => {},
+  editable = true,
 }) => {
   const [value, setValue] = useState(() => {
     if (val && val != null) {
@@ -181,7 +182,7 @@ const OEMFirm = ({
             <Input
               placeholder="OEM Name"
               value={value.vendor}
-              disabled={!isFieldEnabled("vendor")}
+              disabled={!isFieldEnabled("vendor") || !editable}
               onChange={(e) => setValue({ ...value, vendor: e.target.value })}
             />
             {renderEditIcon("vendor")}
@@ -193,7 +194,7 @@ const OEMFirm = ({
             <Textarea
               placeholder="Address"
               value={value.address}
-              disabled={!isFieldEnabled("address")}
+              disabled={!isFieldEnabled("address") || !editable}
               onChange={(e) => setValue({ ...value, address: e.target.value })}
             />
             {renderEditIcon("address")}

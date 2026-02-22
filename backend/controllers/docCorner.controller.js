@@ -13,6 +13,7 @@ const createDocCorner = async (req, res) => {
     obs_authorised_new,
     obs_held,
     b_d_authorised,
+    obs_maintained,
     category,
     box_no,
     item_distribution,
@@ -20,7 +21,6 @@ const createDocCorner = async (req, res) => {
     item_code,
     indian_pattern,
     remarks,
-    nac_date,
     uidoem,
     supplier,
     substitute_name,
@@ -42,6 +42,9 @@ const createDocCorner = async (req, res) => {
         );
     }
 
+    // ✅ MULTI IMAGE FILENAMES
+    const images = req.files?.map((file) => file.filename) || [];
+
     const query = `
       INSERT INTO doc_corner
       (
@@ -50,6 +53,7 @@ const createDocCorner = async (req, res) => {
         equipment_system,
         denos,
         obs_authorised,
+        obs_maintained,
         obs_authorised_new,
         obs_held,
         b_d_authorised,
@@ -61,13 +65,13 @@ const createDocCorner = async (req, res) => {
         indian_pattern,
         remarks,
         department,
-        nac_date,
+        images,
         uidoem,
         supplier,
         substitute_name,
         local_terminology
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [result] = await pool.query(query, [
@@ -76,6 +80,7 @@ const createDocCorner = async (req, res) => {
       equipment_system,
       denos || null,
       obs_authorised || null,
+      obs_maintained || null,
       obs_authorised_new || null,
       obs_held || null,
       b_d_authorised || null,
@@ -87,7 +92,7 @@ const createDocCorner = async (req, res) => {
       indian_pattern || null,
       remarks || null,
       department.id,
-      nac_date || null,
+      JSON.stringify(images),
       uidoem || null,
       supplier || null,
       substitute_name || null,
@@ -201,6 +206,7 @@ async function updateDocCorner(req, res) {
     equipment_system,
     denos,
     obs_authorised,
+    obs_maintained,
     obs_authorised_new,
     obs_held,
     b_d_authorised,
@@ -218,6 +224,10 @@ async function updateDocCorner(req, res) {
     local_terminology,
   } = req.body;
 
+  const imageStatus = req.body.imageStatus
+    ? JSON.parse(req.body.imageStatus)
+    : [];
+
   if (!description || !equipment_system) {
     return res
       .status(400)
@@ -225,6 +235,145 @@ async function updateDocCorner(req, res) {
   }
 
   try {
+    /* 1️⃣ Fetch current document */
+    const [[doc]] = await pool.query(
+      `SELECT obs_authorised, images FROM doc_corner WHERE id = ?`,
+      [id],
+    );
+
+    if (!doc) {
+      return res
+        .status(404)
+        .json(new ApiErrorResponse(404, {}, "Document not found"));
+    }
+
+    /* 2️⃣ If obs_authorised changed → approval required (mirror spare behavior) */
+    if (doc.obs_authorised != obs_authorised) {
+      const [[pending]] = await pool.query(
+        `
+        SELECT COUNT(*) AS count
+        FROM approval
+        WHERE doc_corner_id = ?
+          AND field_name = 'obs_authorised'
+          AND status = 'pending'
+        `,
+        [id],
+      );
+
+      if (pending.count > 0) {
+        return res
+          .status(400)
+          .json(new ApiErrorResponse(400, {}, "Approval already pending"));
+      }
+
+      await pool.query(
+        `
+        INSERT INTO approval
+          (doc_corner_id, created_by, field_name, old_value, new_value, status)
+        VALUES
+          (?, ?, 'obs_authorised', ?, ?, 'pending')
+        `,
+        [id, req.user.id, doc.obs_authorised, obs_authorised],
+      );
+    }
+
+    /* ---------------- SAFE OLD IMAGE PARSE ---------------- */
+
+    let oldImages = [];
+
+    if (doc.images) {
+      try {
+        const parsed =
+          typeof doc.images === "string" ? JSON.parse(doc.images) : doc.images;
+
+        if (Array.isArray(parsed)) {
+          oldImages = parsed.filter(
+            (img) =>
+              img !== null &&
+              img !== "null" &&
+              img !== "" &&
+              img !== "undefined",
+          );
+        } else {
+          oldImages = [];
+        }
+      } catch (err) {
+        console.log("Image JSON parse error:", err);
+        oldImages = [];
+      }
+    }
+
+    if (!Array.isArray(oldImages)) {
+      oldImages = [];
+    }
+
+    let finalImages = [...oldImages];
+
+    const uploadMap = {};
+
+    if (req.files) {
+      req.files.forEach((file) => {
+        const match = file.fieldname.match(/images_(\d+)/);
+        if (match) {
+          const index = parseInt(match[1]);
+          uploadMap[index] = file.filename;
+        }
+      });
+    }
+
+    // imageStatus.forEach((status, index) => {
+    //   /* DELETE */
+    //   if (status.isDeleted) {
+    //     if (finalImages[index]) {
+    //       unlinkFile(finalImages[index]);
+    //     }
+    //     finalImages[index] = null;
+    //   }
+
+    //   /* REPLACE */
+    //   if (status.isReplaced) {
+    //     if (finalImages[index]) {
+    //       unlinkFile(finalImages[index]);
+    //     }
+
+    //     if (uploadMap[index]) {
+    //       finalImages[index] = uploadMap[index];
+    //     }
+    //   }
+    // });
+
+    imageStatus.forEach((status, index) => {
+      if (status.isDeleted) {
+        finalImages[index] = null;
+      }
+
+      if (status.isReplaced) {
+        if (uploadMap[index]) {
+          finalImages[index] = uploadMap[index];
+        }
+      }
+    });
+    const removeFiles = oldImages.filter((f) => !finalImages.includes(f));
+
+    for (let i = 0; i < removeFiles.length; i++) {
+      unlinkFile(removeFiles[i]);
+    }
+    finalImages = finalImages.filter(
+      (img) =>
+        img !== null && img !== "" && img !== "null" && img !== "undefined",
+    );
+
+    while (finalImages.length && finalImages[finalImages.length - 1] === null) {
+      finalImages.pop();
+    }
+
+    console.log("REQ.FILES:", req.files);
+    console.log("IMAGE STATUS:", imageStatus);
+    console.log("OLD IMAGES:", oldImages);
+    console.log("UPLOAD MAP:", uploadMap);
+    console.log("FINAL IMAGES:", finalImages);
+
+    /* 3️⃣ Update doc_corner including images */
     const [result] = await pool.query(
       `
       UPDATE doc_corner
@@ -234,6 +383,7 @@ async function updateDocCorner(req, res) {
         equipment_system = ?,
         denos = ?,
         obs_authorised = ?,
+        obs_maintained = ?,
         obs_authorised_new = ?,
         obs_held = ?,
         b_d_authorised = ?,
@@ -248,7 +398,8 @@ async function updateDocCorner(req, res) {
         uidoem = ?,
         supplier = ?,
         substitute_name = ?,
-        local_terminology = ?
+        local_terminology = ?,
+        images = ?
       WHERE id = ?
       `,
       [
@@ -257,6 +408,7 @@ async function updateDocCorner(req, res) {
         equipment_system,
         denos || null,
         obs_authorised || null,
+        obs_maintained || null,
         obs_authorised_new || null,
         obs_held || null,
         b_d_authorised || null,
@@ -272,6 +424,7 @@ async function updateDocCorner(req, res) {
         supplier || null,
         substitute_name || null,
         local_terminology || null,
+        JSON.stringify(finalImages),
         id,
       ],
     );
@@ -282,9 +435,24 @@ async function updateDocCorner(req, res) {
         .json(new ApiErrorResponse(404, {}, "Document not found"));
     }
 
+    // const removeFiles = oldImages.filter((f) => !finalImages.includes(f));
+    // if (finalImages.length > 0) {
+    //   for (let i = 0; i < removeFiles.length; i++) {
+    //     unlinkFile(removeFiles[i]);
+    //   }
+    // }
+
     res
       .status(200)
-      .json(new ApiResponse(200, {}, "Document updated successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          doc.obs_authorised != obs_authorised
+            ? "Document updated. Approval request sent."
+            : "Document updated successfully",
+        ),
+      );
   } catch (error) {
     console.error("Error while updating document:", error);
     res

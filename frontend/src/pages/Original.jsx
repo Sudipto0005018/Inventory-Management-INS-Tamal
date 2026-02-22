@@ -11,6 +11,7 @@ import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
 import { MultiSelect } from "../components/ui/multi-select";
+import { getTimeDate } from "../utils/helperFunctions";
 
 const Original = () => {
   const { config } = useContext(Context);
@@ -34,12 +35,8 @@ const Original = () => {
         </span>
       ),
     },
-    { key: "quantity", header: "Increase Qty" },
     { key: "modified_obs", header: "OBS Authorised" },
-    { key: "obs_maintained", header: "OBS Maintained" },
-    { key: "obs_held", header: "OBS Held" },
-    { key: "maintained_qty", header: "Maintained Qty" },
-    { key: "qty_held", header: "Qty Held" },
+    { key: "created_at", header: "Created On" },
   ]);
 
   const options = [
@@ -157,6 +154,7 @@ const Original = () => {
 
       maintained_qty: row.maintained_qty || "--",
       qty_held: row.qty_held || "--",
+      created_at: getTimeDate(row.created_at),
     }));
 
     setTableData(t);

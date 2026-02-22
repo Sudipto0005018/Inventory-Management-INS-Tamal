@@ -301,3 +301,9 @@ export default Dashboard;
 //after that qty held increase ho jayega hatne k bad as per jitna qty dala hai box mai
 
 //id(primaryy key), tools id, spares id(foreign key), created by(forign key), created at(date,time), action by(foreign key), field name(varchar kon field name), new value(field name tar value store korbo), status(enum, pending approve rejected)
+
+//21st feb
+// in confirm obs authorised add maintained qty, if all the qty is filled are submitted do you want to update maintained qty or not yes or no? if yes then it will add the inc/dec qty with maintained qty
+// d787 changes
+// doc corner chnages , issue to not coming, manual withdrawal will be replaced with temporary issue, should come directly
+// dashboard changes low stock spares whichever is less than 25% obs_authorised will show

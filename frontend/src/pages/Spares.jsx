@@ -521,6 +521,110 @@ const Spares = ({ type = "" }) => {
 
   const handleaddSpare = async () => {
     try {
+      let s = 0,
+        s1 = 0,
+        s2 = 0;
+
+      // Validate boxNo exists and parseable
+      const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
+      if (!boxes.length) {
+        toaster("error", "Item Storage Distribution is required");
+        return;
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
+        const { no, location, qtyHeld, qn, qnMain } = boxes[i];
+
+        if (!no?.trim()) {
+          toaster("error", `Box No is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qn === "" || qn === null || isNaN(qn)) {
+          toaster("error", `Authorised Qty is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
+          toaster("error", `Qty Held is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
+          toaster("error", `Qty Maintained is required in row ${i + 1}`);
+          return;
+        }
+
+        if (!location?.trim()) {
+          toaster("error", `Location is required in row ${i + 1}`);
+          return;
+        }
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
+        const qty = boxes[i].qn;
+        if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
+          toaster("error", "Invalid Authorised Qty");
+          return;
+        }
+        const qty1 = boxes[i].qtyHeld;
+        if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
+          toaster("error", "Invalid Held Qty");
+          return;
+        }
+
+        const qty2 = boxes[i].qnMain;
+        if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+          toaster("error", "Invalid Maintained Qty");
+          return;
+        }
+        s += Number(boxes[i].qn || 0);
+        s1 += Number(qty1 || 0);
+        s2 += Number(qty2 || 0);
+      }
+
+      const obsAuthorised = Number(inputs.obs_authorised);
+      const obsMaintained = Number(inputs.obs_maintained);
+      const obsHeld = Number(inputs.obs_held);
+      const prevHeld = Number(savedHeld || 0);
+      const currentHeld = Number(obsHeld || 0);
+
+      if (s !== obsAuthorised) {
+        toaster("error", "Authorised Qty not matched with OBS Authorised");
+        return;
+      }
+
+      if (s2 !== obsMaintained) {
+        toaster("error", "Maintained Qty not matched with OBS Maintained");
+        return;
+      }
+
+      if (currentHeld < prevHeld) {
+        toaster("error", "Follow manual withdrawal procedure");
+        return;
+      }
+
+      // Qty-Held totals comparison against any existing saved boxes (if present)
+      let prevTotal = 0;
+      let currentTotal = 0;
+      if (savedRow?.box_no) {
+        const prevBoxes = JSON.parse(savedRow.box_no);
+        for (let i = 0; i < prevBoxes.length; i++) {
+          prevTotal += parseInt(prevBoxes[i]?.qtyHeld || 0);
+        }
+        for (let i = 0; i < boxes.length; i++) {
+          currentTotal += parseInt(boxes[i]?.qtyHeld || 0);
+        }
+        if (currentTotal < prevTotal) {
+          toaster("error", "Follow manual withdrawal procedure");
+          return;
+        }
+      }
+
+      if (s1 !== obsHeld) {
+        toaster("error", "Qty Held not matched with OBS Held");
+        return;
+      }
       if (!inputs.description?.trim()) {
         toaster("error", "Description is required");
         return;

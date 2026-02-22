@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { FaMagnifyingGlass } from "react-icons/fa6";
+import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdRefresh } from "react-icons/io";
 
 import { Input } from "../components/ui/input";
@@ -10,9 +10,10 @@ import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
+import { getFormatedDate, getTimeDate } from "../utils/helperFunctions";
 import { MultiSelect } from "../components/ui/multi-select";
 
-const Amendment = () => {
+const PendingSpecial = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
@@ -23,27 +24,48 @@ const Amendment = () => {
           <i>IN</i> Part No.
         </span>
       ),
+      width: "min-w-[40px]",
+    },
+    {
+      key: "item_type",
+      header: "Type",
+      width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-
-    { key: "quantity", header: "Increase Qty" },
-    { key: "modified_obs", header: "OBS Authorised" },
-    { key: "obs_maintained", header: "OBS Maintained" },
-    { key: "obs_held", header: "OBS Held" },
-    { key: "maintained_qty", header: "Maintained Qty" },
-    { key: "qty_held", header: "Qty Held" },
+    { key: "quantity", header: "Qty" },
+    {
+      key: "modified_obs",
+      header: (
+        <span>
+          Modified OBS <br /> Authorised
+        </span>
+      ),
+    },
+    { key: "quote_authority", header: "Quote Authority" },
+    { key: "demandno", header: "Internal Demand No." },
+    { key: "demanddate", header: "Internal Demand Date." },
+    { key: "requisition", header: "Requisition No." },
+    { key: "Reqdate", header: "Requisition Date." },
+    { key: "modemand", header: "MO Demand No." },
+    { key: "modate", header: "MO Demand Date" },
+    // { key: "status", header: "Status" },
+    { key: "created_at", header: "Created On" },
   ]);
 
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
     { value: "category", label: "Category" },
-    { value: "obs_increase_qty", label: "Increase Qty" },
-    { value: "obs_authorised", label: "OBS Authorised" },
-    { value: "obs_maintained", label: "OBS Maintained" },
-    { value: "obs_held", label: "OBS Held" },
-    { value: "maintained_qty", label: "Maintained Qty" },
-    { value: "qty_held", label: "Qty Held" },
+    { value: "quantity", label: "Issued Quantity" },
+    { value: "modified_obs", label: "Modified OBS Authorised" },
+    { value: "quote_authority", label: "Quote Authority" },
+    { value: "demandno", label: "Internal Demand No." },
+    { value: "demanddate", label: "Internal Demand Date." },
+    { value: "requisition", label: "Requisition No." },
+    { value: "Reqdate", label: "Requisition Date." },
+    { value: "modemand", label: "MO Demand No." },
+    { value: "modate", label: "MO Demand Date" },
+    { value: "status", label: "Status" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -88,7 +110,7 @@ const Amendment = () => {
 
   const fetchdata = async (page = currentPage) => {
     try {
-      const response = await apiService.get("/specialDemand/d787", {
+      const response = await apiService.get("/specialDemand/logs", {
         params: {
           page,
           limit: config.row_per_page,
@@ -96,6 +118,7 @@ const Amendment = () => {
           cols: selectedValues.join(","),
         },
       });
+      console.log("response==>", response);
       if (response.success) {
         setFetchedData(response.data);
       } else {
@@ -122,14 +145,8 @@ const Amendment = () => {
 
     setSelectedValues([]);
     setCurrentPage(1);
-
     fetchdata(1);
   };
-
-  // Pagination change
-  useEffect(() => {
-    fetchdata(currentPage);
-  }, [currentPage]);
 
   // Column change auto search
   useEffect(() => {
@@ -137,18 +154,79 @@ const Amendment = () => {
     fetchdata(1);
   }, [selectedValues]);
 
+  // Pagination change
+  useEffect(() => {
+    fetchdata(currentPage);
+  }, [currentPage]);
+
+  const getSpecialDemandStatus = (row) => {
+    if (!row.internal_demand_no) return "Awaiting for Internal Demand No";
+
+    if (row.internal_demand_no && !row.requisition_no)
+      return "Awaiting for Requisition No";
+
+    if (row.requisition_no && !row.mo_demand_no)
+      return "Awaiting for MO Demand No";
+
+    return "Completed";
+  };
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-
+      item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
+      // Qty increased from spares
       quantity: row.obs_increase_qty || "--",
+      created_at: getTimeDate(row.created_at),
+      // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",
+      quote_authority: row.quote_authority || "--",
 
-      obs_maintained: row.obs_maintained || "--",
-      obs_held: row.obs_held || "--",
+      demandno: row.internal_demand_no || "--",
+      demanddate: row.internal_demand_date
+        ? getFormatedDate(row.internal_demand_date)
+        : "--",
 
-      maintained_qty: row.maintained_qty || "--",
-      qty_held: row.qty_held || "--",
+      requisition: row.requisition_no || "--",
+      Reqdate: row.requisition_date
+        ? getFormatedDate(row.requisition_date)
+        : "--",
+
+      modemand: row.mo_demand_no || "--",
+      modate: row.mo_demand_date ? getFormatedDate(row.mo_demand_date) : "--",
+
+      status: getSpecialDemandStatus(row),
+
+      processed: (
+        <Button
+          size="icon"
+          className="bg-white text-black shadow-md border"
+          onClick={() => {
+            setSelectedRow(row);
+
+            setInputs({
+              internal_demand_no: row.internal_demand_no || "",
+              internal_demand_date: row.internal_demand_date
+                ? new Date(row.internal_demand_date)
+                : null,
+
+              requisition_no: row.requisition_no || "",
+              requisition_date: row.requisition_date
+                ? new Date(row.requisition_date)
+                : null,
+
+              mo_demand_no: row.mo_demand_no || "",
+              mo_demand_date: row.mo_demand_date
+                ? new Date(row.mo_demand_date)
+                : null,
+            });
+
+            // open dialog
+            setIsOpen((prev) => ({ ...prev, issue: true }));
+          }}
+        >
+          <FaChevronRight />
+        </Button>
+      ),
     }));
 
     setTableData(t);
@@ -181,6 +259,7 @@ const Amendment = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
+
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
@@ -217,9 +296,12 @@ const Amendment = () => {
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}
-          pageSize={fetchedData.items?.length || 10}
+          pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages || 1}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            fetchdata(page);
+          }}
           className="h-[calc(100vh-230px)]"
         />
       </div>
@@ -227,4 +309,4 @@ const Amendment = () => {
   );
 };
 
-export default Amendment;
+export default PendingSpecial;

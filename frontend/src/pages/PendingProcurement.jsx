@@ -771,6 +771,7 @@ const Procurement = () => {
                     fetchDetails={fetchOemDetails}
                     AddNewModal={OEMFirm}
                     onDelete={onDeleteOem}
+                    isEditable={false}
                   />
                 </div>
                 <div>

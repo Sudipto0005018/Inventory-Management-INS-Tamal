@@ -19,7 +19,7 @@ import {
 } from "../components/ui/dialog";
 
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
-import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
+import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 
 import PaginationTable from "../components/PaginationTableTwo";
@@ -32,7 +32,6 @@ import { Table, TableBody, TableCell, TableRow } from "../components/ui/table";
 import { cn } from "../lib/utils";
 import BoxNoInputs from "../components/BoxNoInputs";
 import BoxNoInputsSimple from "../components/BoxNoInputsSimple";
-import DynamicInputList from "../components/DynamicInputList";
 import MultiImageSelect from "../components/MultiImageSelect";
 import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
 import OEMFirm from "../components/OEMFirm";
@@ -45,17 +44,12 @@ import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 const SEARCH_FIELDS = [
   { label: "Document Description", value: "description" },
   { label: "Equipment / System", value: "equipment_system" },
-  { label: "Denos", value: "denos" },
-  { label: "Denos", value: "denos" },
   { label: "Book Authorised", value: "obs_authorised" },
   { label: "Book Held", value: "obs_held" },
+  { label: "Book Maintained", value: "obs_maintained" },
   { label: "Item Storage Distribution", value: "boxNo" },
   { label: "Location of Storage", value: "storage_location" },
   { label: "Item Distribution", value: "item_distribution" },
-  { label: "IN Part No.", value: "indian_pattern" },
-  { label: "Item Code", value: "item_code" },
-  { label: "Price/Unit", value: "price_unit" },
-  { label: "Sub Component", value: "sub_component" },
 ];
 const DocumentsCorner = ({ type = "" }) => {
   const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
@@ -67,7 +61,7 @@ const DocumentsCorner = ({ type = "" }) => {
         header: "Document Description",
         width: "w-[160px]",
       },
-      { key: "indian_pattern", header: "Folder No.", width: "w-[120px]" },
+      { key: "folder_no", header: "Folder No.", width: "w-[120px]" },
       {
         key: "equipment_system",
         header: (
@@ -146,6 +140,7 @@ const DocumentsCorner = ({ type = "" }) => {
     equipment_system: "",
     denos: "",
     obs_authorised: "",
+    obs_maintained: "",
     obs_held: "",
     b_d_authorised: "",
     category: "",
@@ -160,7 +155,7 @@ const DocumentsCorner = ({ type = "" }) => {
     storage_location: "",
     storage_type: "",
     remarks: "",
-    oem: "",
+    uidoem: "",
     supplier: "",
     nac_date: "",
   });
@@ -366,7 +361,7 @@ const DocumentsCorner = ({ type = "" }) => {
         fetchOems();
         if (selectedOem === id) {
           setSelectedOem(null);
-          setInputs((prev) => ({ ...prev, oem: "" }));
+          setInputs((prev) => ({ ...prev, uidoem: "" }));
         }
       } else {
         toaster("error", res.message || "Failed to delete OEM");
@@ -498,6 +493,111 @@ const DocumentsCorner = ({ type = "" }) => {
 
   const handleAddDocument = async () => {
     try {
+      let s = 0,
+        s1 = 0,
+        s2 = 0;
+
+      // Validate boxNo exists and parseable
+      const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
+      if (!boxes.length) {
+        toaster("error", "Item Storage Distribution is required");
+        return;
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
+        const { no, location, qtyHeld, qn, qnMain } = boxes[i];
+
+        if (!no?.trim()) {
+          toaster("error", `Box No is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qn === "" || qn === null || isNaN(qn)) {
+          toaster("error", `Authorised Qty is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
+          toaster("error", `Qty Held is required in row ${i + 1}`);
+          return;
+        }
+
+        if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
+          toaster("error", `Qty Maintained is required in row ${i + 1}`);
+          return;
+        }
+
+        if (!location?.trim()) {
+          toaster("error", `Location is required in row ${i + 1}`);
+          return;
+        }
+      }
+
+      for (let i = 0; i < boxes.length; i++) {
+        const qty = boxes[i].qn;
+        if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
+          toaster("error", "Invalid Authorised Qty");
+          return;
+        }
+        const qty1 = boxes[i].qtyHeld;
+        if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
+          toaster("error", "Invalid Held Qty");
+          return;
+        }
+
+        const qty2 = boxes[i].qnMain;
+        if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+          toaster("error", "Invalid Maintained Qty");
+          return;
+        }
+        s += Number(boxes[i].qn || 0);
+        s1 += Number(qty1 || 0);
+        s2 += Number(qty2 || 0);
+      }
+
+      const obsAuthorised = Number(inputs.obs_authorised);
+      const obsMaintained = Number(inputs.obs_maintained);
+      const obsHeld = Number(inputs.obs_held);
+      const prevHeld = Number(savedHeld || 0);
+      const currentHeld = Number(obsHeld || 0);
+
+      if (s !== obsAuthorised) {
+        toaster("error", "Authorised Qty not matched with OBS Authorised");
+        return;
+      }
+
+      if (s2 !== obsMaintained) {
+        toaster("error", "Maintained Qty not matched with OBS Maintained");
+        return;
+      }
+
+      if (currentHeld < prevHeld) {
+        toaster("error", "Follow manual withdrawal procedure");
+        return;
+      }
+
+      // Qty-Held totals comparison against any existing saved boxes (if present)
+      let prevTotal = 0;
+      let currentTotal = 0;
+      if (savedRow?.box_no) {
+        const prevBoxes = JSON.parse(savedRow.box_no);
+        for (let i = 0; i < prevBoxes.length; i++) {
+          prevTotal += parseInt(prevBoxes[i]?.qtyHeld || 0);
+        }
+        for (let i = 0; i < boxes.length; i++) {
+          currentTotal += parseInt(boxes[i]?.qtyHeld || 0);
+        }
+        if (currentTotal < prevTotal) {
+          toaster("error", "Follow manual withdrawal procedure");
+          return;
+        }
+      }
+
+      if (s1 !== obsHeld) {
+        toaster("error", "Qty Held not matched with OBS Held");
+        return;
+      }
+
       // Validation
       if (!inputs.description?.trim()) {
         toaster("error", "Description is required");
@@ -509,30 +609,37 @@ const DocumentsCorner = ({ type = "" }) => {
         return;
       }
 
-      const payload = {
-        description: inputs.description || "",
-        folder_no: inputs.folder_no || "", // NEW
-        equipment_system: inputs.equipment_system || "",
-        denos: inputs.denos || "",
-        obs_authorised: inputs.obs_authorised || "",
-        obs_authorised_new: inputs.obs_authorised || "", // if same
-        obs_held: inputs.obs_held || "",
-        b_d_authorised: inputs.b_d_authorised || "",
-        category: inputs.category || "",
-        box_no: JSON.stringify(boxNo || []),
-        item_distribution: inputs.item_distribution || "",
-        storage_location: inputs.storage_location || "",
-        item_code: inputs.item_code || "",
-        indian_pattern: inputs.indian_pattern || "",
-        remarks: inputs.remarks || "",
-        nac_date: inputs.nac_date || null,
-        uidoem: inputs.oem || "",
-        supplier: inputs.supplier || "",
-        substitute_name: inputs.substitute_name || "",
-        local_terminology: inputs.local_terminology || "",
-      };
+      const formData = new FormData();
+      // append images same as spare
+      Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
+        formData.append("images", file);
+      });
+      // append rest of fields
+      formData.append("description", inputs.description || "");
+      formData.append("folder_no", inputs.folder_no || "");
+      formData.append("equipment_system", inputs.equipment_system || "");
+      formData.append("denos", inputs.denos || "");
+      formData.append("obs_authorised", inputs.obs_authorised || "");
+      formData.append("obs_authorised_new", inputs.obs_authorised || "");
+      formData.append("obs_held", inputs.obs_held || "");
+      formData.append("obs_maintained", inputs.obs_maintained || "");
+      formData.append("b_d_authorised", inputs.b_d_authorised || "");
+      formData.append("category", inputs.category || "");
+      formData.append("box_no", JSON.stringify(boxNo || []));
+      formData.append("item_distribution", inputs.item_distribution || "");
+      formData.append("storage_location", inputs.storage_location || "");
+      formData.append("item_code", inputs.item_code || "");
+      formData.append("indian_pattern", inputs.indian_pattern || "");
+      formData.append("remarks", inputs.remarks || "");
+      formData.append("nac_date", inputs.nac_date || null);
+      formData.append("uidoem", inputs.oem || "");
+      formData.append("supplier", inputs.supplier || "");
+      formData.append("substitute_name", inputs.substitute_name || "");
+      formData.append("local_terminology", inputs.local_terminology || "");
 
-      const res = await apiService.post("/document", payload);
+      const res = await apiService.post("/document", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (res.success) {
         toaster("success", "Document added successfully");
@@ -551,6 +658,7 @@ const DocumentsCorner = ({ type = "" }) => {
           denos: "",
           obs_authorised: "",
           obs_held: "",
+          obs_maintained: "",
           b_d_authorised: "",
           category: "",
           storage_location: "",
@@ -558,7 +666,7 @@ const DocumentsCorner = ({ type = "" }) => {
           indian_pattern: "",
           remarks: "",
           nac_date: "",
-          oem: "",
+          uidoem: "",
           supplier: "",
           substitute_name: [],
           local_terminology: [],
@@ -577,10 +685,23 @@ const DocumentsCorner = ({ type = "" }) => {
     }
   };
 
+  const resetImageState = () => {
+    setImagePayload({
+      newImageFiles: {},
+      imageStatus: [],
+    });
+
+    setImage({
+      fileEdit: null,
+      preview: null,
+    });
+  };
+
   const handleEditDocument = async () => {
     try {
       let s = 0,
-        s1 = 0;
+        s1 = 0,
+        s2 = 0;
 
       let boxes = boxNo;
 
@@ -625,16 +746,29 @@ const DocumentsCorner = ({ type = "" }) => {
           return;
         }
 
+        const qty2 = boxes[i].qnMain;
+        if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+          toaster("error", "Invalid Maintained Qty");
+          return;
+        }
+
         s += Number(boxes[i].qn || 0);
         s1 += Number(qty1 || 0);
+        s2 += Number(qty2 || 0);
       }
 
       const obsAuthorised = Number(selectedRow.obs_authorised);
+      const obsMaintained = Number(selectedRow.obs_maintained);
       const obsHeld = Number(selectedRow.obs_held);
 
       // QN must match authorised
       if (s !== obsAuthorised) {
         toaster("error", "Authorised Qty not matched with Book Authorised");
+        return;
+      }
+
+      if (s2 !== obsMaintained) {
+        toaster("error", "Maintained Qty not matched with Book Maintained");
         return;
       }
 
@@ -694,12 +828,23 @@ const DocumentsCorner = ({ type = "" }) => {
         img = selectedRow.image;
       }
       const formData = new FormData();
-      formData.append("image", img);
+      Object.entries(imagePayload?.newImageFiles || {}).forEach(
+        ([index, file]) => {
+          formData.append(`images_${index}`, file);
+        },
+      );
+      // Status (delete / replace info)
+      formData.append(
+        "imageStatus",
+        JSON.stringify(imagePayload?.imageStatus || []),
+      );
       formData.append("description", selectedRow.description || "");
       formData.append("equipment_system", selectedRow.equipment_system || "");
+      formData.append("folder_no", selectedRow.folder_no || "");
       formData.append("denos", selectedRow.denos || "");
       formData.append("obs_authorised", selectedRow.obs_authorised || "");
       formData.append("obs_held", selectedRow.obs_held || "");
+      formData.append("obs_maintained", selectedRow.obs_maintained || "");
       formData.append("b_d_authorised", selectedRow.b_d_authorised || "");
       formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(selectedRow.box_no) || "");
@@ -709,7 +854,7 @@ const DocumentsCorner = ({ type = "" }) => {
       formData.append("storage_location", selectedRow.storage_location || "");
       formData.append("indian_pattern", selectedRow.indian_pattern || "");
       formData.append("remarks", selectedRow.remarks || "");
-      formData.append("oem", selectedRow.oem || "");
+      formData.append("uidoem", selectedRow.uidoem || "");
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("supplier", selectedRow.supplier || "");
@@ -724,6 +869,8 @@ const DocumentsCorner = ({ type = "" }) => {
       if (response.success) {
         toaster("success", "Document updated successfully");
         setIsOpen({ ...isOpen, editDocument: false });
+        resetImageState(); // clear image payload
+        setSelectedRow({}); // clear edit data
         fetchdata();
       } else {
         toaster("error", response.message);
@@ -1004,32 +1151,10 @@ const DocumentsCorner = ({ type = "" }) => {
             <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
               <Table className="mt-2">
                 <TableBody className="">
-                  <TableRow>
-                    <TableCell>
-                      Sub Component<span className="text-red-500">*</span>
-                    </TableCell>
-                    <TableCell>{panelProduct.sub_component || "--"}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Substitute Part No.</TableCell>
-                    <TableCell>
-                      {panelProduct.substitute_name || "--"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Local Terminology</TableCell>
-                    <TableCell>
-                      {panelProduct.local_terminology || "--"}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Price</TableCell>
-                    <TableCell>{panelProduct.price_unit || "--"}</TableCell>
-                  </TableRow>
                   {panelProduct.obs_held && (
                     <TableRow>
                       <TableCell>OEM Details</TableCell>
-                      <TableCell>{panelProduct.oem || "--"}</TableCell>
+                      <TableCell>{panelProduct.uidoem || "--"}</TableCell>
                     </TableRow>
                   )}
                   <TableRow>
@@ -1106,8 +1231,8 @@ const DocumentsCorner = ({ type = "" }) => {
                   </Label>
                   <Input
                     type="text"
-                    name="indian_pattern"
-                    value={inputs.indian_pattern}
+                    name="folder_no"
+                    value={inputs.folder_no}
                     onChange={handleChange}
                   />
                 </div>
@@ -1123,22 +1248,6 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Denos<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="denos"
-                    value={inputs.denos}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     Book Authorised<span className="text-red-500">*</span>
@@ -1150,6 +1259,10 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
+              </div>
+
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <Label className="ms-2 mb-1">
                     Book Held<span className="text-red-500">*</span>
@@ -1161,110 +1274,14 @@ const DocumentsCorner = ({ type = "" }) => {
                     onChange={handleChange}
                   />
                 </div>
-
                 <div>
                   <Label className="ms-2 mb-1">
-                    B & D Authorised<span className="text-red-500">*</span>
+                    Book Maintained<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="text"
-                    name="b_d_authorised"
-                    value={inputs.b_d_authorised}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Category<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="category"
-                    value={inputs.category}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Item Code<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="item_code"
-                    value={inputs.item_code}
-                    onChange={handleChange}
-                  />
-                </div>
-                {/* IN Part No */}
-                <div>
-                  <Label className="ms-2 mb-1">
-                    <i>IN</i> Part No.<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="indian_pattern"
-                    value={inputs.indian_pattern}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Substitute <i>IN</i> Part No.
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <DynamicInputList
-                    id="substitute_name"
-                    data={inputs.substitute_name}
-                    placeholder="Substitute name"
-                    onChange={(values) =>
-                      updateDynamicInputs(values, "substitute_name")
-                    }
-                  />
-                </div>
-
-                {/* Local Terminology */}
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Local Terminology<span className="text-red-500">*</span>
-                  </Label>
-                  <DynamicInputList
-                    id="local_terminology"
-                    data={inputs.local_terminology}
-                    placeholder="Local Terminology"
-                    onChange={(values) => {
-                      updateDynamicInputs(values, "local_terminology");
-                    }}
-                    editable={editableFields.local_terminology}
-                    onEdit={() => enableEdit("local_terminology")}
-                    onBlur={() => disableEdit("local_terminology")}
-                  />
-                </div>
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Sub Component<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="sub_component"
-                    value={inputs.sub_component}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Price/Unit Cost<span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="price_unit"
-                    value={inputs.price_unit}
+                    name="obs_maintained"
+                    value={inputs.obs_maintained}
                     onChange={handleChange}
                   />
                 </div>
@@ -1346,11 +1363,13 @@ const DocumentsCorner = ({ type = "" }) => {
                 <AsyncSelectBox
                   label="OEM"
                   value={
-                    selectedOem ? { id: selectedOem, name: inputs.oem } : null
+                    selectedOem
+                      ? { id: selectedOem, name: inputs.uidoem }
+                      : null
                   }
                   onChange={(val) => {
                     setSelectedOem(val.id);
-                    setInputs((prev) => ({ ...prev, oem: val.name }));
+                    setInputs((prev) => ({ ...prev, uidoem: val.name }));
                   }}
                   fetchOptions={fetchOemOptions}
                   fetchDetails={async (id) => {
@@ -1470,12 +1489,12 @@ const DocumentsCorner = ({ type = "" }) => {
                   Folder No.<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
-                  name="indian_pattern"
-                  value={selectedRow.indian_pattern}
+                  name="folder_no"
+                  value={selectedRow.folder_no}
                   onChange={handleEditChange}
-                  editable={editableFields.indian_pattern}
-                  onEdit={() => enableEdit("indian_pattern")}
-                  onBlur={() => disableEdit("indian_pattern")}
+                  editable={editableFields.folder_no}
+                  onEdit={() => enableEdit("folder_no")}
+                  onBlur={() => disableEdit("folder_no")}
                 />
               </div>
               <div>
@@ -1489,20 +1508,6 @@ const DocumentsCorner = ({ type = "" }) => {
                   editable={editableFields.equipment_system}
                   onEdit={() => enableEdit("equipment_system")}
                   onBlur={() => disableEdit("equipment_system")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  Denos<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="denos"
-                  value={selectedRow.denos}
-                  onChange={handleEditChange}
-                  editable={editableFields.denos}
-                  onEdit={() => enableEdit("denos")}
-                  onBlur={() => disableEdit("denos")}
                 />
               </div>
 
@@ -1541,159 +1546,17 @@ const DocumentsCorner = ({ type = "" }) => {
                   onBlur={() => disableEdit("obs_held")}
                 />
               </div>
-
               <div>
                 <Label>
-                  B & D Authorised<span className="text-red-500">*</span>
+                  Book Maintained<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
-                  name="b_d_authorised"
-                  value={selectedRow.b_d_authorised}
+                  name="obs_maintained"
+                  value={selectedRow.obs_maintained}
                   onChange={handleEditChange}
-                  editable={editableFields.b_d_authorised}
-                  onEdit={() => enableEdit("b_d_authorised")}
-                  onBlur={() => disableEdit("b_d_authorised")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  Category<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="category"
-                  value={selectedRow.category}
-                  onChange={handleEditChange}
-                  editable={editableFields.category}
-                  onEdit={() => enableEdit("category")}
-                  onBlur={() => disableEdit("category")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  Item Code<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="item_code"
-                  value={selectedRow.item_code}
-                  onChange={handleEditChange}
-                  editable={editableFields.item_code}
-                  onEdit={() => enableEdit("item_code")}
-                  onBlur={() => disableEdit("item_code")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  <i>IN</i> Part No.<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="indian_pattern"
-                  value={selectedRow.indian_pattern}
-                  onChange={handleEditChange}
-                  editable={editableFields.indian_pattern}
-                  onEdit={() => enableEdit("indian_pattern")}
-                  onBlur={() => disableEdit("indian_pattern")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  Substitute <i>IN</i> Part No.
-                  <span className="text-red-500">*</span>
-                </Label>
-
-                {/* VIEW MODE */}
-                {!editableFields.substitute_name ? (
-                  <InputWithPencil
-                    name="substitute_name"
-                    value={normalizeToArray(selectedRow.substitute_name).join(
-                      ", ",
-                    )}
-                    editable={false}
-                    onEdit={() => enableEdit("substitute_name")}
-                  />
-                ) : (
-                  /* EDIT MODE */
-                  <div
-                    onBlur={() => disableEdit("substitute_name")}
-                    tabIndex={0} // IMPORTANT for onBlur to work
-                    className="outline-none"
-                  >
-                    <DynamicInputList
-                      data={normalizeToArray(selectedRow.substitute_name)}
-                      placeholder="Substitute name"
-                      onChange={(values) =>
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          substitute_name: values,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label>
-                  Local Terminology<span className="text-red-500">*</span>
-                </Label>
-                {!editableFields.local_terminology ? (
-                  <InputWithPencil
-                    name="local_terminology"
-                    value={normalizeToArray(selectedRow.local_terminology).join(
-                      ", ",
-                    )}
-                    editable={false}
-                    onEdit={() => enableEdit("local_terminology")}
-                  />
-                ) : (
-                  <div
-                    onBlur={() => disableEdit("local_terminology")}
-                    tabIndex={0}
-                    className="outline-none"
-                  >
-                    <DynamicInputList
-                      data={normalizeToArray(selectedRow.local_terminology)}
-                      placeholder="Local terminology"
-                      onChange={(values) =>
-                        setSelectedRow((prev) => ({
-                          ...prev,
-                          local_terminology: values,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label className="ms-2 mb-1">
-                  Sub Component<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  type="text"
-                  name="sub_component"
-                  value={selectedRow.sub_component}
-                  onChange={handleEditChange}
-                  editable={editableFields.sub_component}
-                  onEdit={() => enableEdit("sub_component")}
-                  onBlur={() => disableEdit("sub_component")}
-                />
-              </div>
-
-              <div>
-                <Label className="ms-2 mb-1">
-                  Price/Unit Cost<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  type="text"
-                  name="price_unit"
-                  value={selectedRow.price_unit}
-                  onChange={handleEditChange}
-                  editable={editableFields.price_unit}
-                  onEdit={() => enableEdit("price_unit")}
-                  onBlur={() => disableEdit("price_unit")}
+                  editable={editableFields.obs_maintained}
+                  onEdit={() => enableEdit("obs_maintained")}
+                  onBlur={() => disableEdit("obs_maintained")}
                 />
               </div>
             </div>
@@ -1777,19 +1640,19 @@ const DocumentsCorner = ({ type = "" }) => {
                 <AsyncSelectBox
                   label="OEM"
                   value={
-                    selectedRow.oem
+                    selectedRow.uidoem
                       ? {
                           id: oemList.find(
-                            (item) => item.name === selectedRow.oem,
+                            (item) => item.name === selectedRow.uidoem,
                           )?.id,
-                          name: selectedRow.oem,
+                          name: selectedRow.uidoem,
                         }
                       : null
                   }
                   onChange={(val) => {
                     setSelectedRow((prev) => ({
                       ...prev,
-                      oem: val.name,
+                      uidoem: val.name,
                     }));
                   }}
                   fetchOptions={fetchOemOptions}
@@ -1850,9 +1713,11 @@ const DocumentsCorner = ({ type = "" }) => {
           </div>
           <DialogFooter>
             <Button
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, editDocument: false }))
-              }
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, editDocument: false }));
+                resetImageState(); // clear image payload
+                setSelectedRow({});
+              }}
               variant="outline"
               className="cursor-pointer"
             >
@@ -1898,33 +1763,11 @@ const DocumentsCorner = ({ type = "" }) => {
             ✕
           </button>
           <DialogTitle className="relative text-base -mt-8">
-            Manual Withdrawal
+            Temporary Issue (Local)
           </DialogTitle>
 
           <div>
-            <RadioGroup
-              value={selectedIssue}
-              onValueChange={(e) => {
-                setSelectedIssue(e);
-                console.log(boxNo, "prev");
-
-                const temp = JSON.parse(JSON.stringify(boxNo));
-                for (let i = 0; i < temp.length; i++) {
-                  delete temp[i].withdraw;
-                }
-                console.log(temp, "current");
-
-                setBoxNo(temp);
-              }}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-3">
-                <RadioGroupItem value="temporary" id="r2" />
-                <Label htmlFor="r2">Temporary Issue (Local)</Label>
-              </div>
-            </RadioGroup>
-
-            {selectedIssue === "temporary" && (
+            {true && (
               <div className="space-y-6 mt-4">
                 {/* Row 1 */}
                 <div className="grid grid-cols-4 gap-4">
@@ -1950,12 +1793,12 @@ const DocumentsCorner = ({ type = "" }) => {
                     </Label>
                     <Input
                       readOnly
-                      name="indian_pattern"
-                      value={selectedRow.indian_pattern}
+                      name="folder_no"
+                      value={selectedRow.folder_no}
                       onChange={handleEditChange}
-                      editable={editableFields.indian_pattern}
-                      onEdit={() => enableEdit("indian_pattern")}
-                      onBlur={() => disableEdit("indian_pattern")}
+                      editable={editableFields.folder_no}
+                      onEdit={() => enableEdit("folder_no")}
+                      onBlur={() => disableEdit("folder_no")}
                     />
                   </div>
 
@@ -1973,7 +1816,7 @@ const DocumentsCorner = ({ type = "" }) => {
                       onBlur={() => disableEdit("equipment_system")}
                     />
                   </div>
-                  <div className="flex flex-col gap-1 mt-[-10px]">
+                  <div className="flex flex-col gap-1 mt-[-2px]">
                     <label className="text-sm font-medium text-gray-700">
                       Issue to <span className="text-red-500">*</span>
                     </label>
