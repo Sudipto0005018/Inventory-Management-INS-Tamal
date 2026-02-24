@@ -34,16 +34,34 @@ const parseJsonSafe = (data) => {
   }
 };
 
-const DefaultRenderDetail = ({ details, onEdit, onDelete }) => {
-  if (!details) return null;
+export const DefaultRenderDetail = ({
+  details,
+  onEdit,
+  onDelete,
+  isFromOldSuppliers = false,
+  fetchSupplier = async () => {},
+}) => {
+  // if (!details) return null;
+  const [supplier, setSupplier] = useState({});
+  useEffect(() => {
+    if (isFromOldSuppliers) {
+      fetchSupplier().then((data) => {
+        setSupplier(data);
+      });
+    }
+  }, []);
 
-  const contacts = parseJsonSafe(details.contacts);
-  const persons = parseJsonSafe(details.details);
+  const contacts = supplier?.contacts || parseJsonSafe(details.contacts);
+  const persons = supplier?.details || parseJsonSafe(details.details);
 
   return (
     <div className="relative text-sm space-y-1">
       <div className="absolute top-0 right-4 z-10 flex gap-2">
-        <Button variant="ghost" onClick={() => onEdit(details)}>
+        <Button
+          variant="ghost"
+          className={isFromOldSuppliers ? "hidden" : ""}
+          onClick={() => onEdit(details)}
+        >
           <MdEdit className="h-5 w-5 text-primary" />
         </Button>
         <Button
@@ -55,10 +73,10 @@ const DefaultRenderDetail = ({ details, onEdit, onDelete }) => {
         </Button>
       </div>
       <p>
-        <strong>Name:</strong> {details.name || "N/A"}
+        <strong>Name:</strong> {supplier.name || details.name || "N/A"}
       </p>
       <p>
-        <strong>Address:</strong> {details.address || "N/A"}
+        <strong>Address:</strong> {supplier.address || details.address || "N/A"}
       </p>
       <p>
         <strong>Contacts:</strong>{" "}

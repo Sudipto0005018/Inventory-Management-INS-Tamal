@@ -1,6 +1,6 @@
 const spares = [
   { header: "Item Description", key: "description", width: 30 },
-  { header: "Indian Part No.", key: "indian_pattern", width: 20 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
   { header: "Category", key: "category", width: 20 },
   { header: "Denos", key: "denos", width: 12 },
@@ -14,7 +14,7 @@ const spares = [
 
 const tools = [
   { header: "Item Description", key: "description", width: 30 },
-  { header: "Indian Part No.", key: "indian_pattern", width: 20 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
   { header: "Category", key: "category", width: 20 },
   { header: "Denos", key: "denos", width: 12 },
@@ -226,6 +226,37 @@ const docCorner = [
   { header: "Updated On", key: "updated_at", width: 20 },
 ];
 
+const d787 = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 25 },
+  { header: "Category", key: "category", width: 25 },
+  { header: "Equipment / System", key: "equipment_system", width: 30 },
+
+  { header: "Modified OBS Authorised", key: "obs_authorised", width: 30 },
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created On", key: "created_at", width: 20 },
+];
+
+const d787_amendment = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 25 },
+  { header: "Category", key: "category", width: 25 },
+
+  { header: "Modified OBS Authorised", key: "obs_authorised", width: 30 },
+  { header: "OBS Authorised Inc Qty", key: "obs_increase_qty", width: 30 },
+  { header: "Quote Authority", key: "quote_authority", width: 25 },
+
+  { header: "Internal Demand No.", key: "internal_demand_no", width: 25 },
+  { header: "Internal Demand Date", key: "internal_demand_date", width: 25 },
+  { header: "Requisition No.", key: "requisition_no", width: 20 },
+  { header: "Requisition Date", key: "requisition_date", width: 20 },
+  { header: "MO Demand No.", key: "mo_demand_no", width: 20 },
+  { header: "MO Demand Date", key: "mo_demand_date", width: 20 },
+
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created On", key: "created_at", width: 20 },
+];
+
 module.exports = {
   spares,
   tools,
@@ -239,4 +270,6 @@ module.exports = {
   temp,
   docIssue,
   docCorner,
+  d787,
+  d787_amendment,
 };

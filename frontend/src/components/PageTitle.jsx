@@ -40,7 +40,12 @@ const PageTitle = () => {
   if (pathname.startsWith("/permanent")) {
     title = pageTitles[pathname] || "Permanent Issue";
   }
-
+  if (pathname.startsWith("/spares/low-stock")) {
+    title = "Low Stock Spares";
+  }
+  if (pathname.startsWith("/tools/low-stock")) {
+    title = "Low Stock Tools";
+  }
   // Fallback
   // if (!title) {
   //   title = "Worklist"

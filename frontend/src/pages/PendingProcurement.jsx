@@ -184,6 +184,7 @@ const Procurement = () => {
           no: b.no,
           deposit: Number(b.deposit || 0),
         })),
+        supplier: selectedRow.supplier,
         approve: true,
       };
 
@@ -300,6 +301,7 @@ const Procurement = () => {
         box_no: JSON.stringify(boxNo),
         source: selectedRow.source,
         uid: selectedRow.uid,
+        supplier: selectedSupplier.name,
       });
       if (response.success) {
         toaster("success", "Item added in inventory successfully");

@@ -4,6 +4,7 @@ import PaginationTable from "../components/PaginationTableTwo";
 import apiService from "../utils/apiService";
 import { Button } from "../components/ui/button";
 import { IoMdRefresh } from "react-icons/io";
+import { FaTriangleExclamation, FaBell, FaClock } from "react-icons/fa6";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import Chip from "../components/Chip";
 import {
@@ -28,7 +29,7 @@ import { Label } from "../components/ui/label";
 import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
-const PendingTempLoan = () => {
+const PendingTempLoan = ({ type = "" }) => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Document Description" },
@@ -41,6 +42,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
+    { key: "days_until_return", header: "Days Until Return" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
   ]);
@@ -107,14 +109,17 @@ const PendingTempLoan = () => {
   const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
-      const response = await apiService.get("/document/list", {
-        params: {
-          page,
-          limit: config.row_per_page,
-          search: inputs.search || "",
-          cols: selectedValues.join(","),
+      const response = await apiService.get(
+        type == "overdue" ? "/document/overdue" : "/document/list",
+        {
+          params: {
+            page,
+            limit: config.row_per_page,
+            search: inputs.search || "",
+            cols: selectedValues.join(","),
+          },
         },
-      });
+      );
 
       if (response.success) {
         const items = Array.isArray(response.data)
@@ -161,6 +166,35 @@ const PendingTempLoan = () => {
     }, 0);
   };
 
+  const getDaysUntilReturn = (
+    issueDate,
+    loanDuration,
+    qtyWithdrawn,
+    qtyReceived,
+  ) => {
+    if (!issueDate || loanDuration == null) return "-";
+
+    if (Number(qtyReceived || 0) >= Number(qtyWithdrawn || 0)) {
+      return "Returned";
+    }
+
+    const issue = new Date(issueDate);
+    const expected = new Date(issue);
+    expected.setDate(expected.getDate() + Number(loanDuration));
+
+    const today = new Date();
+
+    expected.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = expected - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) return `+${diffDays} days`;
+    if (diffDays === 0) return "0 days";
+    return `${diffDays} days`;
+  };
+
   useEffect(() => {
     if (!Array.isArray(fetchedData.items)) return;
 
@@ -176,15 +210,68 @@ const PendingTempLoan = () => {
 
         loan_duration: row.loan_duration ?? "-",
 
+        days_until_return: (() => {
+          const result = getDaysUntilReturn(
+            row.issue_date,
+            row.loan_duration || row.days_untill_return,
+            row.qty_withdrawn,
+            row.qty_received,
+          );
+
+          if (result === "Returned") {
+            return <span className="text-gray-500 font-medium">Returned</span>;
+          }
+
+          const days = parseInt(result);
+
+          if (!isNaN(days)) {
+            if (days < 0) {
+              return (
+                <span className="flex items-center gap-1 text-red-600 font-semibold">
+                  <FaTriangleExclamation />
+                  {result}
+                </span>
+              );
+            }
+
+            if (days >= 0 && days <= 5) {
+              return (
+                <span className="flex items-center gap-1 text-blue-500 font-semibold">
+                  <FaBell />
+                  {result}
+                </span>
+              );
+            }
+
+            return (
+              <span className="flex items-center gap-1 text-green-600 font-medium">
+                <FaClock />
+                {result}
+              </span>
+            );
+          }
+
+          return result;
+        })(),
+
         service_no: row.service_no || "-",
 
         issue_date_formated: row.issue_date
           ? getFormatedDate(row.issue_date)
           : "-",
 
+        // submission_date: row.issue_date
+        //   ? getFormatedDate(
+        //       addDate(row.issue_date, parseInt(row.loan_duration || 0)),
+        //     )
+        //   : "-",
+
         submission_date: row.issue_date
           ? getFormatedDate(
-              addDate(row.issue_date, parseInt(row.loan_duration || 0)),
+              addDate(
+                row.issue_date,
+                parseInt(row.loan_duration || row.days_untill_return || 0),
+              ),
             )
           : "-",
 
@@ -198,8 +285,8 @@ const PendingTempLoan = () => {
             return <Chip text="Pending" varient="info" />;
           }
 
-          if (s === "partial") {
-            return <Chip text="Partial" varient="warning" />;
+          if (s === "overdue") {
+            return <Chip text="Overdue" varient="danger" />;
           }
 
           if (s === "complete") {
@@ -367,6 +454,49 @@ const PendingTempLoan = () => {
 
         loan_duration: row.loan_duration ?? "-",
         returned_date_formatted: getFormatedDate(row.return_date),
+        days_until_return: (() => {
+          const result = getDaysUntilReturn(
+            row.issue_date,
+            row.loan_duration || row.days_untill_return,
+            row.qty_withdrawn,
+            row.qty_received,
+          );
+
+          if (result === "Returned") {
+            return <span className="text-gray-500 font-medium">Returned</span>;
+          }
+
+          const days = parseInt(result);
+
+          if (!isNaN(days)) {
+            if (days < 0) {
+              return (
+                <span className="flex items-center gap-1 text-red-600 font-semibold">
+                  <FaTriangleExclamation />
+                  {result}
+                </span>
+              );
+            }
+
+            if (days <= 5) {
+              return (
+                <span className="flex items-center gap-1 text-blue-500 font-semibold">
+                  <FaBell />
+                  {result}
+                </span>
+              );
+            }
+
+            return (
+              <span className="flex items-center gap-1 text-green-600 font-medium">
+                <FaClock />
+                {result}
+              </span>
+            );
+          }
+
+          return result;
+        })(),
 
         loan_status:
           Number(row.qty_received || 0) >= issuedQty ? "Completed" : "Pending",
@@ -379,18 +509,31 @@ const PendingTempLoan = () => {
 
         submission_date: row.issue_date
           ? getFormatedDate(
-              addDate(row.issue_date, parseInt(row.loan_duration || 0)),
+              addDate(
+                row.issue_date,
+                parseInt(row.loan_duration || row.days_untill_return || 0),
+              ),
             )
           : "-",
 
         received_quantity: row.qty_received ?? 0,
+        status: (() => {
+          const s = row.loan_status?.toLowerCase();
 
-        status:
-          row.status?.toLowerCase() == "pending" ? (
-            <Chip text="Completed" varient="success" />
-          ) : (
-            <Chip text="Pending" varient="info" />
-          ),
+          if (s === "pending") {
+            return <Chip text="Pending" varient="info" />;
+          }
+
+          if (s === "overdue") {
+            return <Chip text="Overdue" varient="danger" />;
+          }
+
+          if (s === "complete") {
+            return <Chip text="Completed" varient="success" />;
+          }
+
+          return <Chip text="Unknown" varient="default" />;
+        })(),
         receive: (
           <Button
             size="icon"
@@ -545,9 +688,7 @@ const PendingTempLoan = () => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">
-            TY Loan - Item Returned Details
-          </DialogTitle>
+          <DialogTitle className="capitalize">Documents for Issue</DialogTitle>
 
           <>
             <div className="grid grid-cols-3 gap-4"></div>

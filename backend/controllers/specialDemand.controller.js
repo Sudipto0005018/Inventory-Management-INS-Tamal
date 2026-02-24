@@ -527,11 +527,11 @@ async function createD787Original(req, res) {
     console.log("REQ.BODY =>", req.body);
 
     /* =====================================================
-       INSERT ONLY INTO special_demand
+       INSERT ONLY INTO d787_special_demand;
        ===================================================== */
 
     const specialDemandQuery = `
-      INSERT INTO special_demand (
+      INSERT INTO d787_special_demand (
         spare_id,
         tool_id,
         obs_authorised,
@@ -581,7 +581,7 @@ async function createD787Original(req, res) {
 
     res.json({
       success: true,
-      message: "Inserted successfully into Special Demand",
+      message: "Inserted successfully into d787 Special Demand",
     });
   } catch (err) {
     console.error(err);
@@ -630,7 +630,7 @@ async function getD787List(req, res) {
   const [totalCount] = await pool.query(
     `
     SELECT COUNT(sd.id) as count
-    FROM special_demand sd
+    FROM d787_special_demand sd
     LEFT JOIN spares s ON s.id = sd.spare_id
     LEFT JOIN tools t ON t.id = sd.tool_id
     ${whereClause}
@@ -714,7 +714,7 @@ async function getD787List(req, res) {
       ELSE NULL
     END AS denos
 
-  FROM special_demand sd
+  FROM d787_special_demand sd
   LEFT JOIN spares s ON s.id = sd.spare_id
   LEFT JOIN tools t ON t.id = sd.tool_id
   ${whereClause}

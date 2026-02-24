@@ -9,6 +9,7 @@ const {
   updateTyLoan,
   generateQRCode,
   getLogsTy,
+  getTyLoanOverdue,
 } = require("../controllers/tyLoan.controller");
 
 router.post("/ty", authMiddleware, createTyLoan);
@@ -16,5 +17,6 @@ router.get("/list", getTyLoanList);
 router.get("/logs", getLogsTy);
 router.put("/ty-list", authMiddleware, updateTyLoan);
 router.post("/genarate-qr", generateQRCode);
+router.get("/overdue", getTyLoanOverdue);
 
 module.exports = router;

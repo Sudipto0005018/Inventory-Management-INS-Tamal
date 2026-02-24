@@ -46,6 +46,7 @@ function BoxNoConfirmObs({
         return {
           ...row,
           baseQn: Number(row.qn || 0),
+          baseMaintainedQty: Number(row.qnMain || 0),
           incDecQty: row.incDecQty ?? "",
         };
       }
@@ -149,6 +150,11 @@ function BoxNoConfirmObs({
             </TableHead>
 
             <TableHead className="text-center">
+              Maintained Qty
+              <span className="text-red-500">*</span>
+            </TableHead>
+
+            <TableHead className="text-center">
               Qty (Inc / Dec) <span className="text-red-500">*</span>
             </TableHead>
 
@@ -194,6 +200,10 @@ function BoxNoConfirmObs({
 
               <TableCell>
                 <Input required type="number" value={row.qn} disabled />
+              </TableCell>
+
+              <TableCell>
+                <Input required type="number" value={row.qnMain} disabled />
               </TableCell>
 
               <TableCell>

@@ -449,7 +449,14 @@ async function updateStock(req, res) {
 
 async function updateProcurement(req, res) {
   const { id: userId } = req.user;
-  const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  const {
+    id,
+    qty_received,
+    return_date,
+    box_no,
+    approve = true,
+    supplier,
+  } = req.body;
 
   const connection = await pool.getConnection();
 
@@ -460,7 +467,14 @@ async function updateProcurement(req, res) {
        1️⃣ FETCH STOCK ROW
     ===================================================== */
     const [[row2]] = await connection.query(
-      `SELECT * FROM procurement WHERE id = ?`,
+      `SELECT
+        p.*,
+        COALESCE(s.supplier, t.supplier) AS supplier,
+        COALESCE(s.old_supplier, t.old_supplier) AS old_supplier
+      FROM procurement p
+      LEFT JOIN spares s ON p.spare_id = s.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      WHERE p.id = ?`,
       [id],
     );
 
@@ -469,6 +483,22 @@ async function updateProcurement(req, res) {
       return res
         .status(404)
         .json({ success: false, message: "Procurement not found" });
+    }
+
+    if (row2.supplier != supplier) {
+      let old_supplier = row2.old_supplier || [];
+      if (!old_supplier.includes(supplier)) {
+        old_supplier.push(row2.supplier);
+
+        await connection.query(
+          `UPDATE ${row2.spare_id ? "spares" : "tools"} SET supplier = ?, old_supplier=? WHERE id = ?`,
+          [
+            supplier,
+            JSON.stringify(old_supplier),
+            row2.spare_id || row2.tool_id,
+          ],
+        );
+      }
     }
 
     const issuedQty = Number(row2.nac_qty || 0);

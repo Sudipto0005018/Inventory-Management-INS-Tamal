@@ -16,6 +16,7 @@ const {
   updateSpecialDemand,
   generateQRCode,
   generateExcel,
+  getLowStockSpares,
 } = require("../controllers/spares.controller");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateSpare);
@@ -30,5 +31,6 @@ router.get("/approval-pending-all", getAllApprovalPendings);
 router.delete("/:id", authMiddleware, deleteSpare);
 router.post("/genarate-qr", generateQRCode);
 router.get("/excel", generateExcel);
+router.get("/low-stock", getLowStockSpares);
 
 module.exports = router;

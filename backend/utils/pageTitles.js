@@ -3,6 +3,13 @@ export const pageTitles = {
 
   "/spares": "Spares",
   "/spares/critical": "Critical Spares",
+  "/spares/low-stock": "Low Stock Spares",
+  "/spares/low-stock": "Low Stock Tools",
+  "/documents/low-stock": "Low Stock Documents",
+  "/temporary-issue/overdue": "Overdue Temporary Issue",
+  "/temp-loan/overdue": "Overdue TY Loan",
+  "/documents/overdue": "Overdue Documents",
+
   "/tools": "Tools & Accessories",
   "/tools/critical": "Critical Tools",
   "/documents": "Documents Master",

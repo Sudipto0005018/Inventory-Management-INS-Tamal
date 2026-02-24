@@ -17,6 +17,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../components/ui/hover-card";
 
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
@@ -38,7 +43,9 @@ import BoxNoWithdrawl from "../components/BoxNoWithdrawl";
 import OEMFirm from "../components/OEMFirm";
 import SupplierFirm from "../components/Supplier";
 import ComboBox from "../components/ComboBox";
-import AsyncSelectBox from "../components/AsyncSelectBox";
+import AsyncSelectBox, {
+  DefaultRenderDetail,
+} from "../components/AsyncSelectBox";
 import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 import ServicePersonnel from "../components/ServicePersonnel";
 
@@ -259,13 +266,14 @@ const Tools = ({ type = "" }) => {
     return [""];
   };
 
-  const handleInputChange = (index, fieldName, fieldValue) => {
-    const newRows = [...value];
-    newRows[index] = {
-      ...newRows[index],
-      [fieldName]: fieldValue,
-    };
-    onChange(newRows);
+  const fetchSigleOem = async (id) => {
+    try {
+      const res = await apiService.get(`/oem/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error("Failed to fetch OEM details", error);
+      return null;
+    }
   };
 
   const addToDropdown = async (type, value) => {
@@ -519,7 +527,11 @@ const Tools = ({ type = "" }) => {
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
     try {
       const response = await apiService.get(
-        type ? "/tools/critical" : "/tools",
+        type == "critical"
+          ? "/tools/critical"
+          : type == "low-stock"
+            ? "/tools/low-stock"
+            : "/tools",
         {
           params: {
             page,
@@ -678,8 +690,33 @@ const Tools = ({ type = "" }) => {
       const response = await apiService.post("/tools", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
+      const createdToolId =
+        response?.data?.insertId ||
+        response?.data?.data?.insertId ||
+        response?.insertId;
+
+      // if (!createdSpareId) {
+      //   toaster("error", "Spare ID not returned from server");
+      //   return;
+      // }
+
+      // ✅ Call Special Demand API
+      const specialPayload = {
+        tool_id: createdToolId,
+        obs_authorised: Number(inputs.obs_authorised) || 0,
+        obs_increase_qty: Number(inputs.obs_authorised) || 0,
+        obs_maintained: Number(inputs.obs_maintained) || 0,
+        obs_held: Number(inputs.obs_held) || 0,
+        maintained_qty: Number(inputs.obs_maintained) || 0,
+        qty_held: Number(inputs.obs_held) || 0,
+        box_no: boxNo,
+      };
+
+      console.log("specialPayload==>", specialPayload);
+      await apiService.post("/specialDemand/d787", specialPayload);
       if (response.success) {
-        toaster("success", "Spare added successfully");
+        toaster("success", "Tool added successfully");
         setIsOpen({ ...isOpen, addSpare: false });
         fetchdata();
         setInputs({
@@ -883,10 +920,7 @@ const Tools = ({ type = "" }) => {
       formData.append("oem", selectedRow.oem || "");
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
-      formData.append(
-        "critical_tool",
-        selectedRow.critical_tool == "yes" ? 1 : 0 || 0,
-      );
+      formData.append("critical_tool", selectedRow.critical_tool);
       formData.append("supplier", selectedRow.supplier || "");
       const response = await apiService.post(
         "/tools/update/" + selectedRow.id,
@@ -896,7 +930,7 @@ const Tools = ({ type = "" }) => {
         },
       );
       if (response.success) {
-        toaster("success", "Spare updated successfully");
+        toaster("success", "Tool updated successfully");
         resetImageState(); // clear image payload
         setSelectedRow({}); // clear edit data
 
@@ -1124,6 +1158,14 @@ const Tools = ({ type = "" }) => {
 
     console.log("Transformed table data:", t);
     setTableData(t);
+    // ✅ Always select first row if available
+    if (t.length > 0) {
+      setSelectedRowIndex(0);
+      setPanelProduct(t[0]); // also update right-side panel immediately
+    } else {
+      setSelectedRowIndex(null);
+      setPanelProduct({ critical_tool: "no" });
+    }
   }, [fetchedData]);
 
   return (
@@ -1590,7 +1632,8 @@ const Tools = ({ type = "" }) => {
                     Price/Unit Cost<span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    type="text"
+                    type="number"
+                    inputMode="numeric"
                     name="price_unit"
                     value={inputs.price_unit}
                     onChange={handleChange}
@@ -1686,15 +1729,16 @@ const Tools = ({ type = "" }) => {
                     setInputs((prev) => ({ ...prev, oem: val.name }));
                   }}
                   fetchOptions={fetchOemOptions}
-                  fetchDetails={async (id) => {
-                    try {
-                      const res = await apiService.get(`/oem/${id}`);
-                      return res.data;
-                    } catch (error) {
-                      console.error("Failed to fetch OEM details", error);
-                      return null;
-                    }
-                  }}
+                  fetchDetails={fetchSigleOem}
+                  // fetchDetails={async (id) => {
+                  //   try {
+                  //     const res = await apiService.get(`/oem/${id}`);
+                  //     return res.data;
+                  //   } catch (error) {
+                  //     console.error("Failed to fetch OEM details", error);
+                  //     return null;
+                  //   }
+                  // }}
                   AddNewModal={OEMFirm}
                   onDelete={onDeleteOem}
                 />
@@ -2060,8 +2104,9 @@ const Tools = ({ type = "" }) => {
                   Price/Unit Cost<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
-                  type="text"
+                  type="number"
                   name="price_unit"
+                  inputMode="numeric"
                   value={selectedRow.price_unit}
                   onChange={handleEditChange}
                   editable={editableFields.price_unit}
@@ -2143,6 +2188,48 @@ const Tools = ({ type = "" }) => {
                 }}
               />
             </div>
+
+            {selectedRow.old_supplier && (
+              <div className=" mt-4 w-full">
+                <p className="text-sm ms-2">Old Vendors</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedRow.old_supplier &&
+                    selectedRow.old_supplier.map((data, _) => {
+                      let supplier_id = supplierList.filter(
+                        (s) => s.name == data,
+                      );
+                      if (supplier_id) {
+                        supplier_id = supplier_id[0].id;
+                      }
+
+                      return (
+                        <HoverCard
+                          key={Math.random().toString()}
+                          openDelay={10}
+                          closeDelay={100}
+                        >
+                          <HoverCardTrigger asChild>
+                            <div className="bg-white px-2 py-1 rounded-full shadow border">
+                              {data}
+                            </div>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                            <DefaultRenderDetail
+                              details={{}}
+                              isFromOldSuppliers={true}
+                              fetchSupplier={async () => {
+                                return fetchSupplierDetails(supplier_id);
+                              }}
+                              onEdit={() => {}}
+                              onDelete={() => {}}
+                            />
+                          </HoverCardContent>
+                        </HoverCard>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
 
             <div className="w-full mt-6 grid grid-cols-2 gap-4">
               <div>

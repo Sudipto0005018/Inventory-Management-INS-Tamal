@@ -91,6 +91,66 @@ const Router = () => {
       </Route>
       <Route element={<HomeLayout />}>
         <Route
+          path="/spares/low-stock"
+          element={
+            <ProtectedRoute>
+              <Spares type="low-stock" key="2" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/tools/low-stock"
+          element={
+            <ProtectedRoute>
+              <Tools type="low-stock" key="3" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/documents/low-stock"
+          element={
+            <ProtectedRoute>
+              <DocumentsCorner type="low-stock" key="5" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temporary-issue/overdue"
+          element={
+            <ProtectedRoute>
+              <TemporaryIssue type="overdue" key="5" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/temp-loan/overdue"
+          element={
+            <ProtectedRoute>
+              <CompletedTempLoan type="overdue" key="2" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/documents/overdue"
+          element={
+            <ProtectedRoute>
+              <DocumentIssue type="overdue" key="3" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
           path="/departments"
           element={
             <ProtectedRoute>

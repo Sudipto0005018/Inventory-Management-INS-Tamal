@@ -10,8 +10,13 @@ const {
   getOBSAuthApprovalPending,
   rejectObsAuth,
   getCriticalTools,
+  getLowStockTools,
 } = require("../controllers/tools.controller");
-const { authMiddleware, isAdmin, isSuperAdmin } = require("../middlewares/auth");
+const {
+  authMiddleware,
+  isAdmin,
+  isSuperAdmin,
+} = require("../middlewares/auth");
 const { imageMiddleware } = require("../middlewares/file");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateTool);
@@ -22,5 +27,6 @@ router.get("/reject/:id", rejectObsAuth);
 router.get("/", authMiddleware, getTools);
 router.get("/critical", authMiddleware, getCriticalTools);
 router.delete("/:id", authMiddleware, deleteTool);
+router.get("/low-stock", getLowStockTools);
 
 module.exports = router;

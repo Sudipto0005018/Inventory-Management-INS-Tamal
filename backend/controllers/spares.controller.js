@@ -26,6 +26,8 @@ const createSpare = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_spare,
+    sub_component,
+    price_unit,
     supplier,
   } = req.body;
   const department = req.department;
@@ -43,9 +45,9 @@ const createSpare = async (req, res) => {
 
     const query = `
             INSERT INTO spares
-                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -68,6 +70,8 @@ const createSpare = async (req, res) => {
       oem || null,
       substitute_name || null,
       local_terminology || null,
+      sub_component || null,
+      price_unit || null,
       isCriticalSpare,
       supplier || null,
     ]);
@@ -320,6 +324,8 @@ async function updateSpare(req, res) {
     substitute_name,
     local_terminology,
     critical_spare,
+    sub_component,
+    price_unit,
     supplier,
   } = req.body;
 
@@ -493,6 +499,8 @@ async function updateSpare(req, res) {
           substitute_name = ?,
           local_terminology = ?,
           critical_spare = ?,
+          sub_component = ?,
+          price_unit = ?,
           supplier = ?
       WHERE id = ?
       `,
@@ -515,6 +523,8 @@ async function updateSpare(req, res) {
         substitute_name || null,
         local_terminology || null,
         critical_spare,
+        sub_component || null,
+        price_unit || null,
         supplier || null,
         id,
       ],
@@ -1319,6 +1329,97 @@ ORDER BY til.created_at DESC;
   `);
     }
 
+    if (module === "d787") {
+      [rows] = await pool.query(
+        `
+      SELECT 
+          sd.obs_authorised,
+          sd.created_by_name,
+          sd.created_at,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.description
+            WHEN sd.tool_id IS NOT NULL THEN t.description
+            ELSE NULL
+          END AS description,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+            WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+            ELSE NULL
+          END AS indian_pattern,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.category
+            WHEN sd.tool_id IS NOT NULL THEN t.category
+            ELSE NULL
+          END AS category,
+
+          
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.equipment_system
+            WHEN sd.tool_id IS NOT NULL THEN t.equipment_system
+            ELSE NULL
+          END AS equipment_system
+
+    FROM d787_special_demand sd
+        LEFT JOIN spares s ON s.id = sd.spare_id
+        LEFT JOIN tools t on t.id = sd.tool_id
+      ORDER BY sd.created_at DESC
+  `,
+      );
+    }
+
+    if (module === "d787_amendment") {
+      const whereClause = completed
+        ? "WHERE (sd.internal_demand_no IS NOT NULL AND sd.requisition_no IS NOT NULL AND sd.mo_demand_no IS NOT NULL) AND sd.created_at BETWEEN ? AND ?"
+        : "WHERE sd.internal_demand_no IS NULL OR sd.requisition_no IS NULL OR sd.mo_demand_no IS NULL";
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
+      SELECT 
+          sd.obs_authorised,
+          sd.obs_increase_qty,
+          sd.quote_authority,
+          sd.internal_demand_no,
+          sd.internal_demand_date,
+          sd.requisition_no,
+          sd.requisition_date,
+          sd.mo_demand_no,
+          sd.mo_demand_date,
+
+          sd.created_by_name,
+          sd.created_at,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.description
+            WHEN sd.tool_id IS NOT NULL THEN t.description
+            ELSE NULL
+          END AS description,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.indian_pattern
+            WHEN sd.tool_id IS NOT NULL THEN t.indian_pattern
+            ELSE NULL
+          END AS indian_pattern,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.category
+            WHEN sd.tool_id IS NOT NULL THEN t.category
+            ELSE NULL
+          END AS category
+
+
+    FROM special_demand sd
+        LEFT JOIN spares s ON s.id = sd.spare_id
+        LEFT JOIN tools t on t.id = sd.tool_id
+      ${whereClause}
+      ORDER BY sd.created_at DESC
+  `,
+        args,
+      );
+    }
+
     // Workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(module);
@@ -1335,6 +1436,8 @@ ORDER BY til.created_at DESC;
       temp: tempHeaders,
       docIssue: docIssueHeaders,
       docCorner: docCornerHeaders,
+      d787: D787Headers,
+      d787_amendment: D787AmendHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -1361,6 +1464,10 @@ ORDER BY til.created_at DESC;
       worksheet.columns = docIssueHeaders;
     } else if (module === "docCorner") {
       worksheet.columns = docCornerHeaders;
+    } else if (module === "d787") {
+      worksheet.columns = D787Headers;
+    } else if (module === "d787_amndment") {
+      worksheet.columns = D787AmendHeaders;
     }
 
     rows.forEach((row) => {
@@ -1578,6 +1685,62 @@ async function getDaashboardData(req, res) {
   }
 }
 
+async function getLowStockSpares(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = req.query?.search || "";
+  const offset = (page - 1) * limit;
+  const department = req.department;
+  try {
+    let whereClause = "WHERE obs_held <(SELECT COUNT(*) / 4 FROM spares)";
+    let params = [];
+    if (search) {
+      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM spares ${whereClause}`,
+      params,
+    );
+    const totalSpares = totalCount[0].count;
+
+    if (totalSpares === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          search ? "No matching spares found" : "No spare found",
+        ),
+      );
+    }
+    const [rows] = await pool.query(
+      `SELECT * FROM spares ${whereClause}
+            ORDER BY description ASC
+            LIMIT ? OFFSET ?;
+        `,
+      [...params, limit, offset],
+    );
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems: totalSpares,
+        totalPages: Math.ceil(totalSpares / limit),
+        currentPage: page,
+      },
+      "Low stock spares",
+    ).send(res);
+  } catch (error) {
+    console.log(error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  }
+}
+
 module.exports = {
   createSpare,
   getSpares,
@@ -1591,4 +1754,5 @@ module.exports = {
   updateSpecialDemand,
   generateQRCode,
   generateExcel,
+  getLowStockSpares,
 };

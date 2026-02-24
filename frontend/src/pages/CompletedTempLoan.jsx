@@ -32,7 +32,7 @@ import { Label } from "../components/ui/label";
 import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
-const PendingTempLoan = () => {
+const PendingTempLoan = ({ type = "" }) => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
@@ -115,14 +115,17 @@ const PendingTempLoan = () => {
   const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
-      const response = await apiService.get("/tyLoan/list", {
-        params: {
-          page,
-          limit: config.row_per_page,
-          search: inputs.search || "",
-          cols: selectedValues.join(","),
+      const response = await apiService.get(
+        type == "overdue" ? "/tyLoan/overdue" : "/tyLoan/list",
+        {
+          params: {
+            page,
+            limit: config.row_per_page,
+            search: inputs.search || "",
+            cols: selectedValues.join(","),
+          },
         },
-      });
+      );
 
       if (response.success) {
         const items = Array.isArray(response.data)

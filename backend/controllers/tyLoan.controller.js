@@ -709,10 +709,169 @@ async function getLogsTy(req, res) {
   }
 }
 
+async function getTyLoanOverdue(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE ---------- */
+  let whereClause = `
+  WHERE ty.status IN ('pending','partial')
+  AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
+`;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR ty.service_no LIKE ?
+        OR ty.concurred_by LIKE ?
+        OR ty.box_no LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+
+  try {
+    /* ---------- TOTAL COUNT ---------- */
+    const [countResult] = await pool.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM ty_loan ty
+      LEFT JOIN spares s ON s.id = ty.spare_id
+      LEFT JOIN tools t ON t.id = ty.tool_id
+      LEFT JOIN users u1 ON u1.id = ty.created_by
+      LEFT JOIN users u2 ON u2.id = ty.approved_by
+      ${whereClause}
+      `,
+      searchParams,
+    );
+
+    const total = countResult[0].count;
+
+    if (total === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          "No ty loans found",
+        ),
+      );
+    }
+
+    /* ---------- LIST QUERY ---------- */
+    const query = `
+      SELECT
+        ty.id,
+        ty.spare_id,
+        ty.tool_id,
+
+        ty.qty_withdrawn,
+        ty.qty_received,
+
+        (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
+
+        ty.service_no,
+        ty.concurred_by,
+        ty.issue_date,
+        ty.loan_duration,
+        ty.return_date,
+
+        ty.created_by,
+        u1.name AS created_by_name,
+        ty.created_at,
+
+        ty.approved_by,
+        u2.name AS approved_by_name,
+        ty.approved_at,
+        ty.box_no,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN 'spare'
+          WHEN ty.tool_id IS NOT NULL THEN 'tool'
+          ELSE 'unknown'
+        END AS source,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.description
+          WHEN ty.tool_id IS NOT NULL THEN t.description
+        END AS description,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.indian_pattern
+          WHEN ty.tool_id IS NOT NULL THEN t.indian_pattern
+        END AS indian_pattern,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.category
+          WHEN ty.tool_id IS NOT NULL THEN t.category
+        END AS category,
+
+        CASE
+          WHEN ty.status IN ('pending','partial')
+          AND DATE_ADD(ty.issue_date, INTERVAL ty.loan_duration DAY) < CURDATE()
+          THEN 'overdue'
+          ELSE ty.status
+        END AS loan_status,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.days_untill_return
+          WHEN ty.tool_id IS NOT NULL THEN t.days_untill_return
+        END AS days_untill_return
+
+      FROM ty_loan ty
+      LEFT JOIN spares s ON s.id = ty.spare_id
+      LEFT JOIN tools t ON t.id = ty.tool_id
+      LEFT JOIN users u1 ON u1.id = ty.created_by
+      LEFT JOIN users u2 ON u2.id = ty.approved_by
+
+      ${whereClause}
+      ORDER BY ty.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+        "Ty Loan list retrieved successfully",
+      ),
+    );
+  } catch (err) {
+    console.error("GET Ty Loan ERROR =>", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Ty Loan list",
+    });
+  }
+}
 module.exports = {
   getTyLoanList,
   createTyLoan,
   updateTyLoan,
   generateQRCode,
   getLogsTy,
+  getTyLoanOverdue,
 };

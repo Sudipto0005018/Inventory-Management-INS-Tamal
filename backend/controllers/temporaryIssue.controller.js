@@ -844,6 +844,244 @@ async function getLogsTemporary(req, res) {
     });
   }
 }
+
+// async function getOverdueTempIssue(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const search = req.query?.search || "";
+//   const offset = (page - 1) * limit;
+
+//   try {
+//     let whereClause = `
+//   WHERE til.status IN ('pending','partial')
+//   AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
+// `;
+
+//     let params = [];
+
+//     if (search) {
+//       whereClause += `
+//         AND (
+//           til.issue_to LIKE ?
+//           OR til.service_no LIKE ?
+//         )
+//       `;
+//       params.push(`%${search}%`, `%${search}%`);
+//     }
+
+//     const [countResult] = await pool.query(
+//       `
+//       SELECT COUNT(*) AS count
+//       FROM temporary_issue_local til
+//       ${whereClause}
+//       `,
+//       params,
+//     );
+
+//     const total = countResult[0].count;
+
+//     if (!total) {
+//       return res.json({
+//         items: [],
+//         totalItems: 0,
+//         totalPages: 1,
+//         currentPage: page,
+//       });
+//     }
+
+//     const [rows] = await pool.query(
+//       `
+//       SELECT *
+//       FROM temporary_issue_local til
+//       ${whereClause}
+//       ORDER BY til.created_at DESC
+//       LIMIT ? OFFSET ?
+//       `,
+//       [...params, limit, offset],
+//     );
+
+//     return res.json({
+//       items: rows,
+//       totalItems: total,
+//       totalPages: Math.ceil(total / limit),
+//       currentPage: page,
+//     });
+//   } catch (err) {
+//     console.error("OVERDUE ERROR =>", err);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// }
+
+async function getOverdueTempIssue(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query?.search ? req.query.search.trim() : "";
+
+  /* ---------- BASE WHERE ---------- */
+  let whereClause = `
+  WHERE til.status IN ('pending','partial')
+  AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
+`;
+
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
+    whereClause += `
+      AND (
+        s.description LIKE ?
+        OR t.description LIKE ?
+        OR s.indian_pattern LIKE ?
+        OR t.indian_pattern LIKE ?
+        OR s.category LIKE ?
+        OR t.category LIKE ?
+        OR s.equipment_system LIKE ?
+        OR t.equipment_system LIKE ?
+        OR til.service_no LIKE ?
+        OR til.issue_to LIKE ?
+        OR u1.name LIKE ?
+        OR u2.name LIKE ?
+        OR til.box_no LIKE ?
+      )
+    `;
+  }
+
+  const searchParams = search ? Array(13).fill(`%${search}%`) : [];
+
+  try {
+    /* ---------- TOTAL COUNT ---------- */
+    const [countResult] = await pool.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM temporary_issue_local til
+      LEFT JOIN spares s ON s.id = til.spare_id
+      LEFT JOIN tools t ON t.id = til.tool_id
+      LEFT JOIN users u1 ON u1.id = til.created_by
+      LEFT JOIN users u2 ON u2.id = til.approved_by
+      ${whereClause}
+      `,
+      searchParams,
+    );
+
+    const total = countResult[0].count;
+
+    if (total === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          "No temporary issues found",
+        ),
+      );
+    }
+
+    /* ---------- MAIN LIST QUERY ---------- */
+    const query = `
+      SELECT
+        til.id,
+        til.spare_id,
+        til.tool_id,
+
+        til.qty_withdrawn,
+        til.qty_received,
+
+        (til.qty_withdrawn - IFNULL(til.qty_received,0)) AS balance_qty,
+
+        til.service_no,
+        til.issue_to,
+        til.issue_date,
+        til.loan_duration,
+        til.return_date,
+
+        til.created_by,
+        u1.name AS created_by_name,
+        til.created_at,
+
+        til.approved_by,
+        u2.name AS approved_by_name,
+        til.approved_at,
+        til.box_no,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN 'spare'
+          WHEN til.tool_id IS NOT NULL THEN 'tool'
+          ELSE 'unknown'
+        END AS source,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.description
+          WHEN til.tool_id IS NOT NULL THEN t.description
+          ELSE NULL
+        END AS description,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.indian_pattern
+          WHEN til.tool_id IS NOT NULL THEN t.indian_pattern
+          ELSE NULL
+        END AS indian_pattern,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.category
+          WHEN til.tool_id IS NOT NULL THEN t.category
+          ELSE NULL
+        END AS category,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.equipment_system
+          WHEN til.tool_id IS NOT NULL THEN t.equipment_system
+          ELSE NULL
+        END AS equipment_system,
+
+        CASE
+          WHEN til.status IN ('pending','partial')
+          AND DATE_ADD(til.issue_date, INTERVAL til.loan_duration DAY) < CURDATE()
+          THEN 'overdue'
+          ELSE til.status
+        END AS loan_status,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.days_untill_return
+          WHEN til.tool_id IS NOT NULL THEN t.days_untill_return
+        END AS days_untill_return
+
+      FROM temporary_issue_local til
+      LEFT JOIN spares s ON s.id = til.spare_id
+      LEFT JOIN tools t ON t.id = til.tool_id
+      LEFT JOIN users u1 ON u1.id = til.created_by
+      LEFT JOIN users u2 ON u2.id = til.approved_by
+
+      ${whereClause}
+      ORDER BY til.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [rows] = await pool.query(query, [...searchParams, limit, offset]);
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+        },
+        "Temporary issue list retrieved successfully",
+      ),
+    );
+  } catch (err) {
+    console.error("GET TEMPORARY ISSUE ERROR =>", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch temporary issue list",
+    });
+  }
+}
+
 module.exports = {
   createTemporaryIssue,
   getTemporaryIssueList,
@@ -852,4 +1090,5 @@ module.exports = {
   categoryWiseUpdate,
   generateQRCode,
   getLogsTemporary,
+  getOverdueTempIssue,
 };

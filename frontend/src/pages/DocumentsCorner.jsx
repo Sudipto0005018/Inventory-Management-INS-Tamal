@@ -72,7 +72,8 @@ const DocumentsCorner = ({ type = "" }) => {
         ),
         width: "w-[140px]",
       },
-      { key: "obs_authorised", header: "Quantity", width: "w-[120px]" },
+      { key: "obs_authorised", header: "Book Authorised", width: "w-[120px]" },
+      { key: "obs_held", header: "Book Held", width: "w-[120px]" },
       {
         key: "boxNo",
         header: <p>Box No./ Rack No.</p>,
@@ -480,13 +481,16 @@ const DocumentsCorner = ({ type = "" }) => {
 
   const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
     try {
-      const response = await apiService.get("/document", {
-        params: {
-          page,
-          search: searchValue,
-          limit: config.row_per_page,
+      const response = await apiService.get(
+        type == "low-stock" ? "/document/low-stock" : "/document",
+        {
+          params: {
+            page,
+            search: searchValue,
+            limit: config.row_per_page,
+          },
         },
-      });
+      );
       setFetchedData(response.data);
     } catch (error) {}
   };
@@ -896,6 +900,8 @@ const DocumentsCorner = ({ type = "" }) => {
 
     setActualSearch("");
 
+    setPanelProduct("");
+
     setSelectedRowIndex(null);
 
     fetchdata("", 1);
@@ -939,9 +945,9 @@ const DocumentsCorner = ({ type = "" }) => {
       }
 
       setIsOpen((prev) => ({ ...prev, withdrawSpare: false }));
-    } catch (err) {
-      console.error(err);
-      toaster("error", "Server error");
+    } catch (error) {
+      console.error("API failed:", error);
+      toaster("error", "Issue failed");
     }
   };
 
@@ -1041,6 +1047,22 @@ const DocumentsCorner = ({ type = "" }) => {
 
     console.log("Transformed table data:", t);
     setTableData(t);
+    // ✅ Always select first row if available
+    if (t.length > 0) {
+      setSelectedRowIndex(0);
+      setPanelProduct(t[0]); // also update right-side panel immediately
+    } else {
+      setSelectedRowIndex(null);
+      setPanelProduct({
+        description: "",
+        indian_pattern: "",
+        category: "",
+        folder_no: "",
+        box_no: "",
+        equipment_system: "",
+        imgUrl: "",
+      });
+    }
   }, [fetchedData]);
 
   return (
@@ -2085,7 +2107,7 @@ const DocumentsCorner = ({ type = "" }) => {
                   return;
                 }
 
-                if (selectedIssue === "temporary") {
+                if (true) {
                   const payload = {
                     doc_id: selectedRow.id || null,
                     qty_withdrawn:

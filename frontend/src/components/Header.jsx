@@ -38,6 +38,8 @@ const Header = ({ onSidebarOpen }) => {
       "/temporary/temporary-issue": "temp",
       "/documents/issue": "docIssue",
       "/documents": "docCorner",
+      "/d787/amendment": "special_demand",
+      "/d787/original": "d787",
 
       "/logs/pending-survey": "survey",
       "/logs/pending-demand": "demand",
@@ -55,6 +57,7 @@ const Header = ({ onSidebarOpen }) => {
     "/temp-loan/complete",
     "/temporary/completed",
     "/documents/completed",
+    "/d787/amendment",
 
     "/logs/pending-survey",
     "/logs/pending-demand",

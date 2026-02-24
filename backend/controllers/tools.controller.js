@@ -23,6 +23,8 @@ const createTool = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_tool,
+    sub_component,
+    price_unit,
     supplier,
   } = req.body;
   const department = req.department;
@@ -40,9 +42,9 @@ const createTool = async (req, res) => {
 
     const query = `
             INSERT INTO tools
-                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -66,6 +68,8 @@ const createTool = async (req, res) => {
       substitute_name || null,
       local_terminology || null,
       isCriticalTool,
+      sub_component || null,
+      price_unit || null,
       supplier || null,
     ]);
     if (result.length === 0) {
@@ -75,7 +79,7 @@ const createTool = async (req, res) => {
     }
     res
       .status(201)
-      .json(new ApiResponse(201, result[0], "Tools created successfully"));
+      .json(new ApiResponse(201, result, "Tools created successfully"));
   } catch (error) {
     console.log("Error creating spare: ", error);
     res
@@ -149,6 +153,7 @@ async function getCriticalTools(req, res) {
   const search = req.query?.search || "";
   const offset = (page - 1) * limit;
   const department = req.department;
+  console.log("called");
 
   try {
     let whereClause = "WHERE department = ? AND critical_tool = 1";
@@ -226,11 +231,12 @@ async function updateTool(req, res) {
     substitute_name,
     local_terminology,
     critical_tool,
+    sub_component,
+    price_unit,
     supplier,
   } = req.body;
 
   // const filename = req.file ? req.file.filename : image || null;
-  const isCriticalTool = critical_tool === "yes" ? 1 : 0;
 
   const imageStatus = req.body.imageStatus
     ? JSON.parse(req.body.imageStatus)
@@ -405,6 +411,8 @@ async function updateTool(req, res) {
           substitute_name = ?,
           local_terminology = ?,
           critical_tool = ?,
+          sub_component = ?,
+          price_unit = ?,
           supplier = ?
       WHERE id = ?
       `,
@@ -426,7 +434,9 @@ async function updateTool(req, res) {
         oem || null,
         substitute_name || null,
         local_terminology || null,
-        isCriticalTool,
+        critical_tool,
+        sub_component || null,
+        price_unit || null,
         supplier || null,
         id,
       ],
@@ -593,6 +603,62 @@ async function rejectObsAuth(req, res) {
   }
 }
 
+async function getLowStockTools(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = req.query?.search || "";
+  const offset = (page - 1) * limit;
+  const department = req.department;
+  try {
+    let whereClause = "WHERE obs_held <(SELECT COUNT(*) / 4 FROM tools)";
+    let params = [];
+    if (search) {
+      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM tools ${whereClause}`,
+      params,
+    );
+    const totalTools = totalCount[0].count;
+
+    if (totalTools === 0) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: [],
+            totalItems: 0,
+            totalPages: 1,
+            currentPage: page,
+          },
+          search ? "No matching tools found" : "No tool found",
+        ),
+      );
+    }
+    const [rows] = await pool.query(
+      `SELECT * FROM tools ${whereClause}
+            ORDER BY description ASC
+            LIMIT ? OFFSET ?;
+        `,
+      [...params, limit, offset],
+    );
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems: totalTools,
+        totalPages: Math.ceil(totalTools / limit),
+        currentPage: page,
+      },
+      "Low stock tools",
+    ).send(res);
+  } catch (error) {
+    console.log(error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  }
+}
+
 module.exports = {
   createTool,
   getTools,
@@ -602,4 +668,5 @@ module.exports = {
   getOBSAuthApprovalPending,
   rejectObsAuth,
   getCriticalTools,
+  getLowStockTools,
 };

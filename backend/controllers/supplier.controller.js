@@ -151,6 +151,7 @@ async function getSupplierById(req, res) {
     const { id } = req.params;
     const query = "SELECT * FROM supplier WHERE id = ?";
     const [rows] = await pool.query(query, [id]);
+    console.log(id);
 
     if (rows.length === 0) {
       return res
