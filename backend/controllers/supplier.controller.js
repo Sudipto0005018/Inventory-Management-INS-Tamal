@@ -20,7 +20,13 @@ async function addSupplier(req, res) {
     }
     res
       .status(201)
-      .json(new ApiResponse(201, {}, "Supplier added successfully"));
+      .json(
+        new ApiResponse(
+          201,
+          { id: result.insertId, name },
+          "Supplier added successfully",
+        ),
+      );
   } catch (error) {
     console.log("Error adding supplier: ", error);
     res

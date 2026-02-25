@@ -18,7 +18,15 @@ async function addOem(req, res) {
         .status(400)
         .json(new ApiErrorResponse(400, {}, "Failed to add OEM"));
     }
-    res.status(201).json(new ApiResponse(201, {}, "OEM added successfully"));
+    res
+      .status(201)
+      .json(
+        new ApiResponse(
+          201,
+          { id: result.insertId, name },
+          "OEM added successfully",
+        ),
+      );
   } catch (error) {
     console.log("Error adding OEM: ", error);
     res

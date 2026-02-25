@@ -21,6 +21,7 @@ const SupplierFirm = ({
   isEditable = true,
   val,
   onEdited = () => {},
+  onAdded = () => {},
   fetchData = async () => {},
 }) => {
   const [value, setValue] = useState(() => {
@@ -97,6 +98,10 @@ const SupplierFirm = ({
       }
       await fetchData();
       toaster("success", "Supplier added successfully");
+
+      if (res.data && typeof onAdded === "function") {
+        onAdded(res.data);
+      }
 
       // Reset form
       setValue({

@@ -766,7 +766,7 @@ const Procurement = () => {
                 }}
               />
               <div className="w-full mt-6 grid grid-cols-2 gap-4">
-                <div>
+                <div className="pointer-events-none">
                   <Label className="ms-2 mb-1">OEM Details</Label>
                   <AsyncSelectBox
                     label="OEM"
@@ -781,9 +781,20 @@ const Procurement = () => {
                         : null
                     }
                     onChange={(val) => {
+                      setOemList((prev) => {
+                        if (
+                          val &&
+                          val.id &&
+                          !prev.find((item) => item.id === val.id)
+                        ) {
+                          return [...prev, val];
+                        }
+                        return prev;
+                      });
+
                       setSelectedRow((prev) => ({
                         ...prev,
-                        oem: val.name,
+                        oem: val?.name || "",
                       }));
                     }}
                     fetchOptions={fetchOemOptions}
@@ -810,14 +821,20 @@ const Procurement = () => {
                         : null
                     }
                     onChange={(val) => {
-                      const id = supplierList.find(
-                        (item) => item.name === selectedRow.supplier,
-                      )?.id;
-                      console.log(supplierList);
+                      setSupplierList((prev) => {
+                        if (
+                          val &&
+                          val.id &&
+                          !prev.find((item) => item.id === val.id)
+                        ) {
+                          return [...prev, val];
+                        }
+                        return prev;
+                      });
 
                       setSelectedRow((prev) => ({
                         ...prev,
-                        supplier: val.name,
+                        supplier: val?.name || "",
                       }));
                     }}
                     fetchOptions={fetchSupplierOptions}

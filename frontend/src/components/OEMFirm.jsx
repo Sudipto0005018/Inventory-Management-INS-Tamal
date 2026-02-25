@@ -22,6 +22,8 @@ const OEMFirm = ({
   val,
   onEdited = () => {},
   editable = true,
+  onAdded = () => {},
+  fetchData = async () => {},
 }) => {
   const [value, setValue] = useState(() => {
     if (val && val != null) {
@@ -96,7 +98,12 @@ const OEMFirm = ({
         return;
       }
 
+      if (fetchData) await fetchData();
       toaster("success", "OEM added successfully");
+
+      if (res.data && typeof onAdded === "function") {
+        onAdded(res.data);
+      }
 
       // Reset form
       setValue({

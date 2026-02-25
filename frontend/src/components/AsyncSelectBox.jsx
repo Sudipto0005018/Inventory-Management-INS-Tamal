@@ -303,6 +303,10 @@ const AsyncSelectBox = ({
             const data = await fetchDetails(id);
             setDetails(data);
           }}
+          onAdded={(newItem) => {
+            onChange(newItem);
+            setOpen(false);
+          }}
           editable={isEditable}
           fetchData={fetchOptions}
         />
