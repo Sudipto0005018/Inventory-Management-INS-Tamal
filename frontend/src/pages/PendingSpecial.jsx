@@ -18,7 +18,11 @@ import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
-import { formatDate, getFormatedDate } from "../utils/helperFunctions";
+import {
+  formatDate,
+  getFormatedDate,
+  getTimeDate,
+} from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
 
@@ -36,7 +40,7 @@ const PendingSpecial = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    { key: "quantity", header: "Qty" },
+    { key: "quantity", header: "OBS Inc/Dec Qty" },
     { key: "modified_obs", header: "Modified OBS Authorised" },
     { key: "quote_authority", header: "Quote Authority" },
     { key: "demandno", header: "Internal Demand No." },
@@ -45,6 +49,7 @@ const PendingSpecial = () => {
     { key: "Reqdate", header: "Requisition Date." },
     { key: "modemand", header: "MO Demand No." },
     { key: "modate", header: "MO Demand Date" },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
     { key: "processed", header: "Proceed" },
   ]);
@@ -260,7 +265,7 @@ const PendingSpecial = () => {
 
       // Qty increased from spares
       quantity: row.obs_increase_qty || "--",
-
+      created_at: getTimeDate(row.created_at),
       // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",
 

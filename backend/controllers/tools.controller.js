@@ -28,6 +28,8 @@ const createTool = async (req, res) => {
     supplier,
   } = req.body;
   const department = req.department;
+  console.log(category);
+
   try {
     if (!description || !equipment_system) {
       return res
@@ -610,7 +612,10 @@ async function getLowStockTools(req, res) {
   const offset = (page - 1) * limit;
   const department = req.department;
   try {
-    let whereClause = "WHERE obs_held <(SELECT COUNT(*) / 4 FROM tools)";
+    let whereClause = `
+  WHERE obs_authorised > 0
+  AND IFNULL(obs_held,0) < (0.25 * obs_authorised)
+`;
     let params = [];
     if (search) {
       whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";

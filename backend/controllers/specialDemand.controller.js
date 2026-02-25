@@ -320,8 +320,8 @@ async function updateSpecialDemand(req, res) {
       const pendingIssueQuery = `
               INSERT INTO pending_issue (
                 spare_id, tool_id, demand_no, demand_date, demand_quantity,
-                requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?)
+                requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id, source_type
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, ?)
             `;
 
       await connection.query(pendingIssueQuery, [
@@ -336,6 +336,7 @@ async function updateSpecialDemand(req, res) {
         mo_demand_date,
         userId,
         "SD-" + Date.now(),
+        "special_demand",
       ]);
     }
     const query = `

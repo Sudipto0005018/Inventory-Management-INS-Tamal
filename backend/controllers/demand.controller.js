@@ -85,12 +85,14 @@ async function getDemands(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
   const status = req.query.status || "pending";
+  console.log(rawCols);
 
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    survey_qty: ["d.survey_qty"],
   };
 
   const connection = await pool.getConnection();
@@ -129,6 +131,8 @@ async function getDemands(req, res) {
       whereConditions.length > 0
         ? "WHERE " + whereConditions.join(" AND ")
         : "";
+
+    console.log(finalWhereClause);
 
     const [totalCountRows] = await connection.query(
       `SELECT COUNT(*) as count 
@@ -235,9 +239,10 @@ async function createPendingIssue(req, res) {
         rate_unit,
         mo_no,
         mo_date,
-        status
+        status,
+         source_type
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         demand_no,
@@ -256,6 +261,7 @@ async function createPendingIssue(req, res) {
         mo_no || null,
         mo_date || null,
         "pending",
+        "demand",
       ],
     );
 

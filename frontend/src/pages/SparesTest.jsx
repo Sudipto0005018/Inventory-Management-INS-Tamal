@@ -67,11 +67,11 @@ const SEARCH_FIELDS = [
   { label: "Sub Component", value: "sub_component" },
 ];
 
-const Tools = ({ type = "" }) => {
+const Spares = ({ type = "" }) => {
   const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
     useContext(Context);
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description", width: "max-w-[80px]" },
+    { key: "description", header: "Item Description", width: "max-w-[50px]" },
     {
       key: "indian_pattern",
       header: (
@@ -79,7 +79,7 @@ const Tools = ({ type = "" }) => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[80px]",
+      width: "min-w-[150px]",
     },
     {
       key: "equipment_system",
@@ -89,15 +89,21 @@ const Tools = ({ type = "" }) => {
           <br /> System
         </span>
       ),
-      width: "max-w-[60px]",
+      width: "max-w-[20px]",
     },
     { key: "category", header: "Category", width: "max-w-[60px]" },
     { key: "denos", header: "Denos", width: "max-w-[60px]" },
 
     {
       key: "obs_authorised",
-      header: <span>OBS Authorised</span>,
-      width: "max-w-[60px]",
+      header: (
+        <span>
+          OBS Authorised/
+          <br />
+          Maintained
+        </span>
+      ),
+      width: "max-w-[20px]",
     },
     {
       key: "obs_held",
@@ -120,14 +126,14 @@ const Tools = ({ type = "" }) => {
     {
       key: "itemDistribution",
       header: "Item Distribution",
-      width: "max-w-[50px]",
+      width: "max-w-[90px]",
     },
     {
       key: "location",
       header: "Location of Storage",
-      width: "max-w-[90px]",
+      width: "max-w-[40px]",
     },
-    { key: "edit", header: "Actions", width: "max-w-[100px]" },
+    { key: "edit", header: "Actions", width: "max-w-[40px]" },
   ]);
 
   const [open, setOpen] = useState(false);
@@ -206,7 +212,7 @@ const Tools = ({ type = "" }) => {
     remarks: "",
     oem: "",
     supplier: "",
-    critical_tool: "no",
+    critical_spare: "no",
   });
 
   const [isOpen, setIsOpen] = useState({
@@ -216,7 +222,7 @@ const Tools = ({ type = "" }) => {
     withdrawDialog: false,
   });
   const [selectedRow, setSelectedRow] = useState({
-    critical_tool: "no",
+    critical_spare: "no",
   });
   const [image, setImage] = useState({
     preview: null,
@@ -227,7 +233,7 @@ const Tools = ({ type = "" }) => {
   const [panelProduct, setPanelProduct] = useState({
     description: "",
     imgUrl: "",
-    critical_tool: "no",
+    critical_spare: "no",
   });
   const [boxNo, setBoxNo] = useState([]);
   const [selectedIssue, setSelectedIssue] = useState("parmenent");
@@ -515,10 +521,10 @@ const Tools = ({ type = "" }) => {
     try {
       const response = await apiService.get(
         type == "critical"
-          ? "/tools/critical"
+          ? "/spares/critical"
           : type == "low-stock"
-            ? "/tools/low-stock"
-            : "/tools",
+            ? "/spares/low-stock"
+            : "/spares",
         {
           params: {
             page,
@@ -611,6 +617,11 @@ const Tools = ({ type = "" }) => {
         return;
       }
 
+      if (currentHeld < prevHeld) {
+        toaster("error", "Follow manual withdrawal procedure");
+        return;
+      }
+
       // Qty-Held totals comparison against any existing saved boxes (if present)
       let prevTotal = 0;
       let currentTotal = 0;
@@ -621,6 +632,10 @@ const Tools = ({ type = "" }) => {
         }
         for (let i = 0; i < boxes.length; i++) {
           currentTotal += parseInt(boxes[i]?.qtyHeld || 0);
+        }
+        if (currentTotal < prevTotal) {
+          toaster("error", "Follow manual withdrawal procedure");
+          return;
         }
       }
 
@@ -641,7 +656,7 @@ const Tools = ({ type = "" }) => {
         formData.append("images", file);
       });
 
-      formData.append("is_loose_tool", isLooseSpare);
+      formData.append("is_loose_spare", isLooseSpare);
       formData.append("description", inputs.description || "");
       formData.append("equipment_system", inputs.equipment_system || "");
       formData.append("denos", inputs.denos || "");
@@ -649,7 +664,7 @@ const Tools = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", selectedRow.category || "P");
+      formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");
@@ -661,19 +676,17 @@ const Tools = ({ type = "" }) => {
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append(
-        "critical_tool",
-        inputs.critical_tool == "yes" ? 1 : 0 || 0,
+        "critical_spare",
+        inputs.critical_spare == "yes" ? 1 : 0 || 0,
       );
       formData.append("supplier", inputs.supplier || "");
-      console.log(selectedRow.category);
-
-      const response = await apiService.post("/tools", formData, {
+      const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      console.log("TOOL RESPONSE =>", response);
+      console.log("SPARE RESPONSE =>", response);
 
       //d787 logic
-      const createdToolId =
+      const createdSpareId =
         response?.data?.insertId ||
         response?.data?.data?.insertId ||
         response?.insertId;
@@ -685,7 +698,7 @@ const Tools = ({ type = "" }) => {
 
       // ✅ Call Special Demand API
       const specialPayload = {
-        tool_id: createdToolId,
+        spare_id: createdSpareId,
         obs_authorised: Number(inputs.obs_authorised) || 0,
         obs_increase_qty: Number(inputs.obs_authorised) || 0,
         obs_maintained: Number(inputs.obs_maintained) || 0,
@@ -700,7 +713,7 @@ const Tools = ({ type = "" }) => {
       //d787 logic end
 
       if (response.success) {
-        toaster("success", "Tool added successfully");
+        toaster("success", "Spare added successfully");
         setIsOpen({ ...isOpen, addSpare: false });
         fetchdata();
         setInputs({
@@ -719,7 +732,7 @@ const Tools = ({ type = "" }) => {
           sub_component: "",
           indian_pattern: "",
           remarks: "",
-          critical_tool: "",
+          critical_spare: "",
           oem: "",
           supplier: "",
         });
@@ -733,7 +746,7 @@ const Tools = ({ type = "" }) => {
       }
     } catch (error) {
       const errMsg =
-        error.response?.data?.message || error.message || "Failed to add tool";
+        error.response?.data?.message || error.message || "Failed to add spare";
       toaster("error", errMsg);
     }
   };
@@ -917,17 +930,17 @@ const Tools = ({ type = "" }) => {
       formData.append("oem", selectedRow.oem || "");
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
-      formData.append("critical_tool", selectedRow.critical_tool);
+      formData.append("critical_spare", selectedRow.critical_spare);
       formData.append("supplier", selectedRow.supplier || "");
       const response = await apiService.post(
-        "/tools/update/" + selectedRow.id,
+        "/spares/update/" + selectedRow.id,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
       if (response.success) {
-        toaster("success", "Tool updated successfully");
+        toaster("success", "Spare updated successfully");
         resetImageState(); // clear image payload
         setSelectedRow({}); // clear edit data
 
@@ -959,7 +972,7 @@ const Tools = ({ type = "" }) => {
 
     setSelectedRowIndex(null);
 
-    setPanelProduct({ critical_tool: "no" });
+    setPanelProduct({ critical_spare: "no" });
 
     fetchdata("", 1);
   };
@@ -1028,7 +1041,7 @@ const Tools = ({ type = "" }) => {
     try {
       const res = await apiService.post("/survey/create", {
         box_no: boxNo,
-        tool_id: selectedRow.id,
+        spare_id: selectedRow.id,
         withdrawl_qty: selectedRow.new_val,
         withdrawl_date: formatDate(),
         service_no: selectedPerson.person?.serviceNumber,
@@ -1163,7 +1176,7 @@ const Tools = ({ type = "" }) => {
       setPanelProduct(t[0]); // also update right-side panel immediately
     } else {
       setSelectedRowIndex(null);
-      setPanelProduct({ critical_tool: "no" });
+      setPanelProduct({ critical_spare: "no" });
     }
   }, [fetchedData]);
 
@@ -1195,39 +1208,16 @@ const Tools = ({ type = "" }) => {
     });
 
     const payload = {
-      tool_id: selectedRow.id,
+      spare_id: selectedRow.id,
       obs_authorised: finalValue,
       obs_increase_qty: obsDialog.quantity,
       box_no: JSON.stringify(updatedBox),
       quoteAuthority: obsDialog.quoteAuthority,
       obs_maintained: newObsMaintained,
-      internal_demand_no:
-        obsDialog.demandGenerated === "yes"
-          ? obsDialog.internalDemandNo?.trim()
-          : null,
-      internal_demand_date:
-        obsDialog.demandGenerated === "yes"
-          ? getISTTimestamp(obsDialog.internalDemandDate)
-          : null,
-      requisition_no: obsDialog.requisitionNo?.trim() || null,
-      requisition_date: obsDialog.requisitionDate
-        ? getISTTimestamp(obsDialog.requisitionDate)
-        : null,
-      mo_demand_no: obsDialog.moDemandNo?.trim() || null,
-      mo_demand_date: obsDialog.moDemandDate
-        ? getISTTimestamp(obsDialog.requisitionDate)
-        : null,
     };
-    console.log("payload==>", payload);
 
     await apiService.post("/specialDemand/special", payload);
     await fetchdata();
-
-    // const updatedRow = tableData.find((row) => row.id === selectedRow.id);
-
-    // if (updatedRow) {
-    //   setSelectedRow(updatedRow);
-    // }
 
     // Reset input
     const resetBox = updatedBox.map((box) => ({
@@ -1240,7 +1230,6 @@ const Tools = ({ type = "" }) => {
     setSelectedRow((prev) => ({
       ...prev,
       ...payload,
-      //  obs_authorised: finalValue,
       status: "demanded",
       box_no: JSON.stringify(resetBox),
       obs_maintained: newObsMaintained,
@@ -1269,7 +1258,7 @@ const Tools = ({ type = "" }) => {
           <div className="flex items-center mb-4 gap-2 w-full">
             <Input
               type="text"
-              placeholder="Search tools..."
+              placeholder="Search spares..."
               className="bg-white"
               value={inputs.search}
               onChange={(e) =>
@@ -1318,7 +1307,7 @@ const Tools = ({ type = "" }) => {
               }}
               className="cursor-pointer hover:bg-primary/85"
             >
-              <FaPlus /> Add Tool
+              <FaPlus /> Add Spare
             </Button>
           </div>
 
@@ -1330,25 +1319,25 @@ const Tools = ({ type = "" }) => {
               pageSize={fetchedData.items?.length || 10}
               totalPages={fetchedData.totalPages || 1}
               onPageChange={setCurrentPage}
-              bodyClassName="tools-table"
+              bodyClassName="spares-table"
               selectedRowIndex={selectedRowIndex}
               onClickRow={(row, index) => {
                 setSelectedRowIndex(index);
                 setPanelProduct(row);
-                calssName = "h-[65vh]";
+                className = "h-[28vh]";
               }}
             />
           </div>
         </div>
         <div
           className={cn(
-            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
+            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(114vh-185px)]",
             !panelProduct.description && "flex justify-center items-center",
           )}
         >
           {!panelProduct.description && (
             <div className="h-150 flex items-center justify-center">
-              <p className="text-sm text-gray-500">No tools is selected</p>
+              <p className="text-sm text-gray-500">No spares is selected</p>
             </div>
           )}
           {panelProduct.description && (
@@ -1359,7 +1348,7 @@ const Tools = ({ type = "" }) => {
                   image={panelProduct.images}
                 />
               </div>
-              <div className="max-h-[calc(100vh-295px)] overflow-y-auto description-table">
+              <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
                 <Table className="mt-2">
                   <TableBody className="">
                     <TableRow>
@@ -1377,9 +1366,9 @@ const Tools = ({ type = "" }) => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical Tools</TableCell>
+                      <TableCell>Critical Spares</TableCell>
                       <TableCell>
-                        {panelProduct.critical_tool ? "Yes" : "No"}
+                        {panelProduct.critical_spare ? "Yes" : "No"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -1448,7 +1437,7 @@ const Tools = ({ type = "" }) => {
               ✕
             </button>
             <DialogTitle className="relative -mt-10 text-base">
-              Add Tool
+              Add Spare
             </DialogTitle>
             <DialogDescription className="hidden" />
             <div className="-mt-4">
@@ -1628,15 +1617,15 @@ const Tools = ({ type = "" }) => {
                   <div>
                     <div>
                       <Label className="ms-2 mb-1">
-                        Critical Tool<span className="text-red-500">*</span>
+                        Critical Spare<span className="text-red-500">*</span>
                       </Label>
 
                       <RadioGroup
-                        value={inputs.critical_tool}
+                        value={inputs.critical_spare}
                         onValueChange={(value) =>
                           setInputs((prev) => ({
                             ...prev,
-                            critical_tool: value,
+                            critical_spare: value,
                           }))
                         }
                         className="mt-2"
@@ -1674,20 +1663,20 @@ const Tools = ({ type = "" }) => {
                       </Label>
 
                       <RadioGroup
-                        value={inputs.part_of}
+                        value={inputs.critical_spare}
                         onValueChange={(value) =>
                           setInputs((prev) => ({
                             ...prev,
-                            part_of: value,
+                            critical_spare: value,
                           }))
                         }
                         className="mt-2"
                       >
                         <div className="flex gap-6">
                           <div className="flex items-center gap-2">
-                            <RadioGroupItem value="yes" id="Part of original" />
+                            <RadioGroupItem value="yes" id="critical_yes" />
                             <Label
-                              htmlFor="Part of original"
+                              htmlFor="critical_yes"
                               className="cursor-pointer"
                             >
                               Yes
@@ -1737,7 +1726,7 @@ const Tools = ({ type = "" }) => {
 
               <div className="flex flex-col mt-5">
                 <div className="mt-4">
-                  <Label className="ms-2 mb-1">Loose Tool</Label>
+                  <Label className="ms-2 mb-1">Loose Spare</Label>
                   <RadioGroup
                     value={isLooseSpare ? "yes" : "no"}
                     onValueChange={(val) => setIsLooseSpare(val === "yes")}
@@ -1907,7 +1896,7 @@ const Tools = ({ type = "" }) => {
               ✕
             </button>
             <DialogTitle className="relative text-base -mt-10">
-              Update Tool
+              Update Spare
             </DialogTitle>
             <DialogDescription className="hidden" />
             <div className="-mt-6">
@@ -2139,15 +2128,15 @@ const Tools = ({ type = "" }) => {
 
                 <div>
                   <Label className="ms-2 mb-1">
-                    Critical Tool<span className="text-red-500">*</span>
+                    Critical Spare<span className="text-red-500">*</span>
                   </Label>
 
                   <RadioGroup
-                    value={selectedRow.critical_tool == 1 ? "yes" : "no"}
+                    value={selectedRow.critical_spare == 1 ? "yes" : "no"}
                     onValueChange={(value) =>
                       setSelectedRow((prev) => ({
                         ...prev,
-                        critical_tool: value == "yes" ? 1 : 0,
+                        critical_spare: value == "yes" ? 1 : 0,
                       }))
                     }
                     className="mt-2"
@@ -2207,7 +2196,7 @@ const Tools = ({ type = "" }) => {
 
               <div className="flex flex-col mt-3">
                 <div className="mt-4">
-                  <Label className="ms-2 mb-1">Loose Tool</Label>
+                  <Label className="ms-2 mb-1">Loose Spare</Label>
                   <RadioGroup
                     value={isLooseSpare ? "yes" : "no"}
                     onValueChange={(val) => setIsLooseSpare(val === "yes")}
@@ -3205,8 +3194,8 @@ const Tools = ({ type = "" }) => {
                     submitPermanentIssue();
                   } else if (selectedIssue === "temporary") {
                     const payload = {
-                      a: selectedRow.id ? "tool" : "spare",
-                      tool_id: selectedRow.id || null,
+                      a: selectedRow.id ? "spare" : "tool",
+                      spare_id: selectedRow.id || null,
                       qty_withdrawn:
                         selectedRow.withdraw_type === "single"
                           ? 1
@@ -3226,8 +3215,8 @@ const Tools = ({ type = "" }) => {
                     submitTemporaryIssue(payload);
                   } else if (selectedIssue === "ty") {
                     const payload = {
-                      a: selectedRow.id ? "tool" : "spare",
-                      tool_id: selectedRow.id || null,
+                      a: selectedRow.id ? "spare" : "tool",
+                      spare_id: selectedRow.id || null,
                       qty_withdrawn:
                         selectedRow.withdraw_type === "single"
                           ? 1
@@ -3694,4 +3683,4 @@ const Tools = ({ type = "" }) => {
   );
 };
 
-export default Tools;
+export default Spares;

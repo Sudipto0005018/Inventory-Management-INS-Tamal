@@ -47,7 +47,7 @@ const menuItems = [
       { name: "Pending for Procurement", path: "/permanent/procurement" },
       { name: "Pending for Stock Update", path: "/permanent/stock-update" },
       { name: "Pending for Special Demand", path: "/permanent/special-demand" },
-      { name: "Completed", path: "/permanent/complete" },
+      // { name: "Completed", path: "/permanent/complete" },
     ],
   },
   {
@@ -90,21 +90,21 @@ const menuItems = [
     icon: <BsClockHistory size={20} />,
     superAdmin: true,
   },
-  {
-    name: "Successor Board",
-    path: "/successor-board",
-    icon: <LuNotebookPen />,
-    submenu: [
-      {
-        name: "Officer Incharge",
-        path: "/successor-board/officer-incharge",
-      },
-      {
-        name: "Storekeeper Incharge",
-        path: "/successor-board/storekeeper-incharge",
-      },
-    ],
-  },
+  // {
+  //   name: "Successor Board",
+  //   path: "/successor-board",
+  //   icon: <LuNotebookPen />,
+  //   submenu: [
+  //     {
+  //       name: "Officer Incharge",
+  //       path: "/successor-board/officer-incharge",
+  //     },
+  //     {
+  //       name: "Storekeeper Incharge",
+  //       path: "/successor-board/storekeeper-incharge",
+  //     },
+  //   ],
+  // },
   {
     name: "Documents Corner",
     path: "/documents",

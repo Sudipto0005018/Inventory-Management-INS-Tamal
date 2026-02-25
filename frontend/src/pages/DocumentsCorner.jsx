@@ -937,7 +937,7 @@ const DocumentsCorner = ({ type = "" }) => {
       console.log("Selected Row =>", selectedRow);
       const res = await apiService.post("/document/issue", payload);
       if (res.success) {
-        toaster("success", "Temporary Issue created successfully");
+        toaster("success", "Document Issued successfully");
         console.log(boxNo);
 
         setBoxNo([{ withdraw: "" }]);
@@ -1785,7 +1785,7 @@ const DocumentsCorner = ({ type = "" }) => {
             ✕
           </button>
           <DialogTitle className="relative text-base -mt-8">
-            Temporary Issue (Local)
+            Documents Issue
           </DialogTitle>
 
           <div>
@@ -2030,11 +2030,6 @@ const DocumentsCorner = ({ type = "" }) => {
               onClick={() => {
                 if (!selectedRow.description?.trim()) {
                   toaster("error", "Item Description is required");
-                  return;
-                }
-
-                if (!selectedRow.indian_pattern?.trim()) {
-                  toaster("error", "IN Part No. is required");
                   return;
                 }
 

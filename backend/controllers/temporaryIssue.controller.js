@@ -183,6 +183,17 @@ async function categoryWiseUpdate(req, res) {
       [id],
     );
 
+    const withdrawnQty = parseInt(issue.qty_withdrawn || 0);
+    const returnedQty = parseInt(issue.qty_received || 0);
+    const remainingQty = withdrawnQty - returnedQty;
+
+    if (remainingQty <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No remaining quantity available for utilisation",
+      });
+    }
+
     if (!issue) {
       return res
         .status(404)
@@ -221,7 +232,7 @@ async function categoryWiseUpdate(req, res) {
           issue.spare_id || null,
           issue.tool_id || null,
           issue.issue_to,
-          issue.qty_withdrawn,
+          remainingQty,
           issue.service_no,
           issue.issue_date,
           userId,
@@ -245,7 +256,7 @@ async function categoryWiseUpdate(req, res) {
           issue.spare_id || null,
           issue.tool_id || null,
           issue.issue_to,
-          issue.qty_withdrawn,
+          remainingQty,
           issue.issue_date,
           JSON.stringify(issue.box_no),
           issue.service_no,

@@ -209,7 +209,19 @@ async function getPendingIssue(req, res) {
     const [rows] = await connection.query(
       `
       SELECT 
-        pi.*,
+       pi.*,
+
+CASE 
+  WHEN pi.source_type = 'special_demand' 
+  THEN pi.mo_no 
+  ELSE pi.demand_no 
+END AS display_demand_no,
+
+CASE 
+  WHEN pi.source_type = 'special_demand' 
+  THEN pi.mo_date 
+  ELSE pi.demand_date 
+END AS display_demand_date,
         COALESCE(sp.description, t.description) as description,
         COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
         COALESCE(sp.category, t.category) as category,

@@ -70,9 +70,9 @@ const createSpare = async (req, res) => {
       oem || null,
       substitute_name || null,
       local_terminology || null,
+      isCriticalSpare,
       sub_component || null,
       price_unit || null,
-      isCriticalSpare,
       supplier || null,
     ]);
 
@@ -472,12 +472,7 @@ async function updateSpare(req, res) {
       finalImages.pop();
     }
 
-    console.log("REQ.FILES:", req.files);
-    console.log("IMAGE STATUS:", imageStatus);
-    console.log("OLD IMAGES:", oldImages);
-    console.log("UPLOAD MAP:", uploadMap);
-    console.log("FINAL IMAGES:", finalImages);
-
+    console.log(obs_maintained);
     await pool.query(
       `
       UPDATE spares
@@ -504,13 +499,14 @@ async function updateSpare(req, res) {
           supplier = ?
       WHERE id = ?
       `,
+
       [
         description,
         equipment_system,
         denos || null,
         obs_held || null,
-        obs_maintained || null,
         b_d_authorised || null,
+        obs_maintained || null,
         category || null,
         box_no || null,
         item_distribution || null,
@@ -770,11 +766,6 @@ async function getAllApprovalPendings(req, res) {
 }
 
 async function generateQRCode(req, res) {
-  //     {
-  //     "tool_id":1,
-  //     "copy_count":5,
-  //     "box_no" :"001"
-  // }
   const { tool_id, spare_id, copy_count, box_no } = req.body;
   console.log("req.body", req.body);
   const PDFDocument = require("pdfkit");
@@ -1692,7 +1683,10 @@ async function getLowStockSpares(req, res) {
   const offset = (page - 1) * limit;
   const department = req.department;
   try {
-    let whereClause = "WHERE obs_held <(SELECT COUNT(*) / 4 FROM spares)";
+    let whereClause = `
+  WHERE obs_authorised > 0
+  AND IFNULL(obs_held,0) < (0.25 * obs_authorised)
+`;
     let params = [];
     if (search) {
       whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";

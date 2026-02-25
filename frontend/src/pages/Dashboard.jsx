@@ -59,7 +59,7 @@ export default function Dashboard() {
       </h2>
 
       {/* ===== BIG CARDS ROW ===== */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
         {/* ================= TOTAL SPARES ================= */}
         <BigCard
           title="Spares"
@@ -128,7 +128,7 @@ export default function Dashboard() {
           </div>
         </BigCard>
 
-        <BigCard
+        {/* <BigCard
           title="Documents Corner"
           icon={<IoDocument size={22} className="text-gray-700" />}
         >
@@ -150,10 +150,10 @@ export default function Dashboard() {
               onClick={() => navigate("/documents/low-stock")}
             />
           </div>
-        </BigCard>
+        </BigCard> */}
       </div>
       {/* ================= PERMANENT ISSUE WORKFLOW ================= */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-3">
         Permanent Issue Workflow
       </h2>
 
@@ -338,3 +338,9 @@ function BigCard({ title, icon, children }) {
     </div>
   );
 }
+
+//dropdown issue P, temp issue local 0, 0 asign default value in dialog
+//utilised qty, after partial return, utilised qty ta minus hoye hobe
+//in ty loan asign withdrawal qty 0 default value
+//add column utilised qty in temp issue local frontend
+//obs authorised not modified in tools

@@ -294,13 +294,17 @@ const AsyncSelectBox = ({
       {AddNewModal && (
         <AddNewModal
           open={isAddModalOpen}
-          onOpenChange={setIsAddModalOpen}
+          onOpenChange={(open) => {
+            setIsAddModalOpen(open);
+            if (!open) fetchOptions();
+          }}
           val={editData}
           onEdited={async (id) => {
             const data = await fetchDetails(id);
             setDetails(data);
           }}
           editable={isEditable}
+          fetchData={fetchOptions}
         />
       )}
 

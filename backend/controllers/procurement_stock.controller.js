@@ -92,8 +92,18 @@ async function getProcurementPending(req, res) {
         COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
 
         'PROCUREMENT' AS source,
-        pi.demand_no,
-        pi.demand_date,
+        CASE 
+         WHEN pi.mo_no IS NOT NULL AND pi.mo_no != '' 
+         THEN pi.mo_no 
+         ELSE pi.demand_no 
+        END AS demand_no,
+
+        CASE 
+         WHEN pi.mo_date IS NOT NULL 
+         THEN pi.mo_date 
+         ELSE pi.demand_date 
+        END AS demand_date,
+
         pi.demand_quantity
 
       FROM procurement p
@@ -214,8 +224,18 @@ async function getStockUpdatePending(req, res) {
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
 
         'STOCK_UPDATE' AS source,
-        pi.demand_no,
-        pi.demand_date,
+           CASE 
+           WHEN pi.mo_no IS NOT NULL AND pi.mo_no != '' 
+           THEN pi.mo_no 
+           ELSE pi.demand_no 
+          END AS demand_no,
+
+         CASE 
+         WHEN pi.mo_date IS NOT NULL 
+         THEN pi.mo_date 
+         ELSE pi.demand_date 
+        END AS demand_date,
+
         pi.demand_quantity
 
       FROM stock_update s

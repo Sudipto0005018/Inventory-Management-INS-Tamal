@@ -15,6 +15,7 @@ import {
   formatSimpleDate,
   getDate,
   getFormatedDate,
+  getTimeDate,
 } from "../utils/helperFunctions";
 import BoxNoDeposit from "../components/BoxNoDeposit";
 import { MultiSelect } from "../components/ui/multi-select";
@@ -53,6 +54,7 @@ const PendingTempLoan = ({ type = "" }) => {
     { key: "submission_date", header: "Expected Return Date" },
     { key: "days_until_return", header: "Days Until Return" },
     { key: "qty_received", header: "Returned Qty" },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
     { key: "receive", header: "Proceed" },
   ]);
@@ -79,6 +81,7 @@ const PendingTempLoan = ({ type = "" }) => {
       label: "Surveyed Quantity",
       width: "min-w-[40px]",
     },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { value: "status", label: "Status", width: "min-w-[40px]" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
@@ -216,7 +219,7 @@ const PendingTempLoan = ({ type = "" }) => {
         quantity: issuedQty,
 
         concurred_by: row.concurred_by?.toUpperCase() || "-",
-
+        created_at: getTimeDate(row.created_at),
         loan_duration: row.loan_duration ?? "-",
 
         service_no: row.service_no || "-",

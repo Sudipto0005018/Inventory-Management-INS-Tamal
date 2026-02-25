@@ -21,6 +21,7 @@ const SupplierFirm = ({
   isEditable = true,
   val,
   onEdited = () => {},
+  fetchData = async () => {},
 }) => {
   const [value, setValue] = useState(() => {
     if (val && val != null) {
@@ -94,7 +95,7 @@ const SupplierFirm = ({
         toaster("error", res.message || "Failed to add Supplier");
         return;
       }
-
+      await fetchData();
       toaster("success", "Supplier added successfully");
 
       // Reset form

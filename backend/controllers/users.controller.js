@@ -258,10 +258,10 @@ async function getDashboardData(req, res) {
     /* ================= SPARES ================= */
     const sparesQuery = pool.query(
       `SELECT
-            COUNT(*) AS total,
-             SUM(critical_spare = 1) AS criticalSpare,
-            SUM(obs_held < (SELECT COUNT(*) / 4 FROM spares)) AS lowStock
-        FROM spares`,
+        COUNT(*) AS total,
+        SUM(critical_spare = 1) AS criticalSpare,
+        SUM(obs_authorised > 0 AND IFNULL(obs_held,0) < (0.25 * obs_authorised)) AS lowStock
+      FROM spares`,
     );
 
     /* ================= TOOLS ================= */
@@ -269,8 +269,8 @@ async function getDashboardData(req, res) {
       SELECT
             COUNT(*) AS total,
              SUM(critical_tool = 1) AS criticalTool,
-            SUM(obs_held < (SELECT COUNT(*) / 4 FROM tools)) AS lowStock
-        FROM tools
+            SUM(obs_authorised > 0 AND IFNULL(obs_held,0) < (0.25 * obs_authorised)) AS lowStock
+      FROM tools
     `);
 
     /* ================= DOCUMENTS ================= */

@@ -25,7 +25,11 @@ import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
 import { ChevronDownIcon, Plus } from "lucide-react";
-import { formatDate, getFormatedDate } from "../utils/helperFunctions";
+import {
+  formatDate,
+  getFormatedDate,
+  getTimeDate,
+} from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
 import Chip from "../components/Chip";
 // substitute in pattern name (non men)
@@ -58,6 +62,7 @@ const PendingSurvey = () => {
       header: "Surveyed Qty",
       width: "max-w-[40px]",
     },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
@@ -219,6 +224,7 @@ const PendingSurvey = () => {
       survey_quantity: row.survey_quantity || "0",
       issue_date: getFormatedDate(row.issue_date),
       withdrawl_date_str: getFormatedDate(row.withdrawl_date),
+      created_at: getTimeDate(row.created_at),
       status:
         row.status?.toLowerCase() == "pending" ? (
           <Chip text="Pending" varient="info" />

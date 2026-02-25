@@ -25,6 +25,7 @@ import {
   getFormatedDate,
   formatSimpleDate,
   getDate,
+  getTimeDate,
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
@@ -51,6 +52,7 @@ const PermanentPendings = () => {
     { key: "mo_date", header: "MO Date" },
 
     { key: "qty_received", header: "Received Qty" },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "statusBadge", header: "Status" },
     { key: "processed", header: "Proceed" },
   ]);
@@ -322,6 +324,7 @@ const PermanentPendings = () => {
       .map((row) => ({
         ...row,
         survey_quantity: row.survey_quantity || "0",
+        created_at: getTimeDate(row.created_at),
         demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
         qty_received:
           row.qty_received && row.qty_received > 0 ? row.qty_received : null,
@@ -557,7 +560,7 @@ const PermanentPendings = () => {
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Demanded Qty
+                    Stocked In Qty
                   </Label>
                   <Input
                     className="mt-2"

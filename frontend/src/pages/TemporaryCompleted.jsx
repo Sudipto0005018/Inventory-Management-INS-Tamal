@@ -44,6 +44,7 @@ const PendingTempLoan = () => {
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
     { key: "qty_received", header: "Returned Qty" },
+    { key: "utilised_qty", header: "Utilised Qty" },
     { key: "status", header: "Status" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
@@ -252,11 +253,13 @@ const PendingTempLoan = () => {
 
     const t = fetchedData.items.map((row) => {
       const issuedQty = Number(row.qty_withdrawn || 0);
+      const receivedQty = Number(row.qty_received || 0);
 
       return {
         ...row,
 
         quantity: issuedQty,
+        utilised_qty: Math.max(issuedQty - receivedQty, 0),
         created_at: getTimeDate(row.created_at),
 
         item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",

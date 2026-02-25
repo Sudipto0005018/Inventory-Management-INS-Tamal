@@ -21,7 +21,11 @@ import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 import toaster from "../utils/toaster";
-import { formatSimpleDate, getFormatedDate } from "../utils/helperFunctions";
+import {
+  formatSimpleDate,
+  getFormatedDate,
+  getTimeDate,
+} from "../utils/helperFunctions";
 
 import GenerateQRDialog from "../components/GenerateQRDialog";
 
@@ -87,15 +91,58 @@ const PermanentPendings = () => {
         ),
       },
       { key: "category", header: "Category" },
-      { key: "demand_no", header: "Demand No." },
-      { key: "demand_date", header: "Demand Date" },
+      {
+        key: "display_demand_no",
+        header: "Demand No.",
+        // cell renderer receives row data (adjust prop names to your table library)
+        cell: ({ row }) => {
+          const demandNo = row?.demand_no || null;
+          const moNo = row?.mo_no || null;
+          if (!demandNo && !moNo) return null;
+          return (
+            <div>
+              {demandNo && <div>{demandNo}</div>}
+              {moNo && (
+                <div style={{ color: "#666", fontSize: 12 }}>{moNo}</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        key: "display_demand_date",
+        header: "Demand Date",
+        cell: ({ row }) => {
+          const demandDate = row?.demand_date || null;
+          const moDate = row?.mo_date || null;
+          if (!demandDate && !moDate) return null;
+          return (
+            <div>
+              {demandDate && <div>{formatDate(demandDate)}</div>}
+              {moDate && (
+                <div style={{ color: "#666", fontSize: 12 }}>
+                  {formatDate(moDate)}
+                </div>
+              )}
+            </div>
+          );
+        },
+      },
       { key: "demand_quantity", header: "Demanded Qty" },
       { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
+      { key: "created_at", header: "Created On", width: "min-w-[40px]" },
       { key: "status_badge", header: "Status" },
       { key: "processed", header: "Proceed" },
     ],
     [],
   );
+
+  // helper date formatter (adjust to your needs)
+  function formatDate(d) {
+    if (!d) return "";
+    const date = typeof d === "string" ? new Date(d) : d;
+    return date.toLocaleDateString();
+  }
 
   const [currentPage, setCurrentPage] = useState(1);
   const [tableData, setTableData] = useState([]);
@@ -184,8 +231,9 @@ const PermanentPendings = () => {
         );
       return {
         ...row,
-        demand_date: getFormatedDate(row.demand_date),
+        display_demand_date: getFormatedDate(row.display_demand_date),
         demand_quantity: row.demand_quantity || "0",
+        created_at: getTimeDate(row.created_at),
         status_badge: statusBadge,
         processed: (
           <Button
@@ -441,7 +489,7 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Previous NAC Qty</Label>
+                  <Label>Previous NAC/Stocked In Qty</Label>
                   <Input
                     className="mt-3"
                     placeholder="Previous NAC Qty"
@@ -532,7 +580,7 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Previous Stocked In Qty</Label>
+                  <Label>Previous NAC/Stocked In Qty</Label>
                   <Input
                     className="mt-3"
                     placeholder="Previous Stocked In Qty"

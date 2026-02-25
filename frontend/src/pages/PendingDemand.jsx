@@ -27,8 +27,7 @@ import toaster from "../utils/toaster";
 import { ChevronDownIcon, Plus } from "lucide-react";
 import {
   formatDate,
-  formatSimpleDate,
-  getDate,
+  getTimeDate,
   getFormatedDate,
 } from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
@@ -63,6 +62,7 @@ const PendingDemand = () => {
       header: "Surveyed Date / Utilised Date",
       width: "min-w-[40px]",
     },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
@@ -83,7 +83,7 @@ const PendingDemand = () => {
     { value: "category", label: "Category", width: "min-w-[40px]" },
     { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
     {
-      value: "survey_quantity",
+      value: "survey_qty",
       label: "Surveyed / Consumable / Local Perchase Qty",
       width: "min-w-[40px]",
     },
@@ -121,12 +121,15 @@ const PendingDemand = () => {
 
   // Placeholder fetch function as requested
   const fetchdata = async (page = currentPage, search = inputs.search) => {
+    console.log(selectedValues);
+
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
       const response = await apiService.get("/demand", {
         params: {
           page,
           search,
+          cols: selectedValues.join(","),
           limit: config.row_per_page,
         },
       });
@@ -201,6 +204,7 @@ const PendingDemand = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       survey_date: getFormatedDate(row.survey_date), // Assuming date format
+      created_at: getTimeDate(row.created_at),
       processed: (
         <Button
           size="icon"

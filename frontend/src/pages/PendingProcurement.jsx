@@ -25,6 +25,7 @@ import {
   getFormatedDate,
   formatSimpleDate,
   getDate,
+  getTimeDate,
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
@@ -48,15 +49,15 @@ const Procurement = () => {
     { key: "category", header: "Category" },
     { key: "demand_no", header: "Demand No." },
     { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Ordered Qty" },
-    { key: "nac_qty", header: "NAC Qty" },
+    { key: "demand_quantity", header: "Demanded Qty" },
+    { key: "nac_qty", header: "NAC / Ordered Qty" },
     { key: "nac_no", header: "NAC No." },
     { key: "nac_date", header: "NAC Date" },
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
     { key: "qty_received", header: "Received Qty" },
+    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "statusBadge", header: "Status" },
-
     { key: "processed", header: "Proceed" },
   ]);
 
@@ -340,6 +341,7 @@ const Procurement = () => {
         survey_quantity: row.survey_quantity || "0",
         demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
         nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",
+        created_at: getTimeDate(row.created_at),
         qty_received:
           row.qty_received && row.qty_received > 0 ? row.qty_received : null,
         statusBadge:

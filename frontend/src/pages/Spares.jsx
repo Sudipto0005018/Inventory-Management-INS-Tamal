@@ -96,13 +96,7 @@ const Spares = ({ type = "" }) => {
 
     {
       key: "obs_authorised",
-      header: (
-        <span>
-          OBS Authorised/
-          <br />
-          Maintained
-        </span>
-      ),
+      header: <span>OBS Authorised</span>,
       width: "max-w-[20px]",
     },
     {
@@ -617,11 +611,6 @@ const Spares = ({ type = "" }) => {
         return;
       }
 
-      if (currentHeld < prevHeld) {
-        toaster("error", "Follow manual withdrawal procedure");
-        return;
-      }
-
       // Qty-Held totals comparison against any existing saved boxes (if present)
       let prevTotal = 0;
       let currentTotal = 0;
@@ -632,10 +621,6 @@ const Spares = ({ type = "" }) => {
         }
         for (let i = 0; i < boxes.length; i++) {
           currentTotal += parseInt(boxes[i]?.qtyHeld || 0);
-        }
-        if (currentTotal < prevTotal) {
-          toaster("error", "Follow manual withdrawal procedure");
-          return;
         }
       }
 
@@ -664,7 +649,7 @@ const Spares = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", selectedRow.category || "");
+      formData.append("category", selectedRow.category || "P");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");
@@ -1183,10 +1168,20 @@ const Spares = ({ type = "" }) => {
   const handleFinalSubmit = async (shouldUpdateMaintained) => {
     const { parsedBox, finalValue } = maintainConfirm;
 
+    const totalIncDec = parsedBox.reduce(
+      (sum, box) => sum + Number(box.incDecQty || 0),
+      0,
+    );
+
+    const newObsMaintained = shouldUpdateMaintained
+      ? obsDialog.action === "increase"
+        ? Number(selectedRow.obs_maintained || 0) + totalIncDec
+        : Number(selectedRow.obs_maintained || 0) - totalIncDec
+      : Number(selectedRow.obs_maintained || 0);
+
     let updatedBox = parsedBox.map((box) => {
       const incDec = Number(box.incDecQty || 0);
       const baseMaintained = Number(box.baseMaintainedQty || box.qnMain || 0);
-
       return {
         ...box,
         qnMain: shouldUpdateMaintained
@@ -1203,10 +1198,34 @@ const Spares = ({ type = "" }) => {
       obs_increase_qty: obsDialog.quantity,
       box_no: JSON.stringify(updatedBox),
       quoteAuthority: obsDialog.quoteAuthority,
+      obs_maintained: newObsMaintained,
+      internal_demand_no:
+        obsDialog.demandGenerated === "yes"
+          ? obsDialog.internalDemandNo?.trim()
+          : null,
+      internal_demand_date:
+        obsDialog.demandGenerated === "yes"
+          ? getISTTimestamp(obsDialog.internalDemandDate)
+          : null,
+      requisition_no: obsDialog.requisitionNo?.trim() || null,
+      requisition_date: obsDialog.requisitionDate
+        ? getISTTimestamp(obsDialog.requisitionDate)
+        : null,
+      mo_demand_no: obsDialog.moDemandNo?.trim() || null,
+      mo_demand_date: obsDialog.moDemandDate
+        ? getISTTimestamp(obsDialog.requisitionDate)
+        : null,
     };
+    console.log("payload==>", payload);
 
     await apiService.post("/specialDemand/special", payload);
     await fetchdata();
+
+    // const updatedRow = tableData.find((row) => row.id === selectedRow.id);
+
+    // if (updatedRow) {
+    //   setSelectedRow(updatedRow);
+    // }
 
     // Reset input
     const resetBox = updatedBox.map((box) => ({
@@ -1219,8 +1238,10 @@ const Spares = ({ type = "" }) => {
     setSelectedRow((prev) => ({
       ...prev,
       ...payload,
+      //  obs_authorised: finalValue,
       status: "demanded",
       box_no: JSON.stringify(resetBox),
+      obs_maintained: newObsMaintained,
     }));
 
     setMaintainConfirm({ open: false, parsedBox: [], finalValue: null });
@@ -1312,14 +1333,13 @@ const Spares = ({ type = "" }) => {
               onClickRow={(row, index) => {
                 setSelectedRowIndex(index);
                 setPanelProduct(row);
-                className = "h-[28vh]";
               }}
             />
           </div>
         </div>
         <div
           className={cn(
-            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(114vh-185px)]",
+            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
             !panelProduct.description && "flex justify-center items-center",
           )}
         >
@@ -1336,7 +1356,7 @@ const Spares = ({ type = "" }) => {
                   image={panelProduct.images}
                 />
               </div>
-              <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
+              <div className="max-h-[calc(100vh-295px)] overflow-y-auto description-table">
                 <Table className="mt-2">
                   <TableBody className="">
                     <TableRow>
@@ -1651,20 +1671,20 @@ const Spares = ({ type = "" }) => {
                       </Label>
 
                       <RadioGroup
-                        value={inputs.critical_spare}
+                        value={inputs.part_of}
                         onValueChange={(value) =>
                           setInputs((prev) => ({
                             ...prev,
-                            critical_spare: value,
+                            part_of: value,
                           }))
                         }
                         className="mt-2"
                       >
                         <div className="flex gap-6">
                           <div className="flex items-center gap-2">
-                            <RadioGroupItem value="yes" id="critical_yes" />
+                            <RadioGroupItem value="yes" id="Part of original" />
                             <Label
-                              htmlFor="critical_yes"
+                              htmlFor="Part of original"
                               className="cursor-pointer"
                             >
                               Yes
@@ -2256,47 +2276,6 @@ const Spares = ({ type = "" }) => {
                   }}
                 />
               </div>
-              {selectedRow.old_supplier && (
-                <div className=" mt-4 w-full">
-                  <p className="text-sm ms-2">Old Vendors</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedRow.old_supplier &&
-                      selectedRow.old_supplier.map((data, _) => {
-                        let supplier_id = supplierList.filter(
-                          (s) => s.name == data,
-                        );
-                        if (supplier_id) {
-                          supplier_id = supplier_id[0].id;
-                        }
-
-                        return (
-                          <HoverCard
-                            key={Math.random().toString()}
-                            openDelay={10}
-                            closeDelay={100}
-                          >
-                            <HoverCardTrigger asChild>
-                              <div className="bg-white px-2 py-1 rounded-full shadow border">
-                                {data}
-                              </div>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                              <DefaultRenderDetail
-                                details={{}}
-                                isFromOldSuppliers={true}
-                                fetchSupplier={async () => {
-                                  return fetchSupplierDetails(supplier_id);
-                                }}
-                                onEdit={() => {}}
-                                onDelete={() => {}}
-                              />
-                            </HoverCardContent>
-                          </HoverCard>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
 
               <div className="w-full mt-6 grid grid-cols-2 gap-4">
                 <div>
@@ -2363,6 +2342,47 @@ const Spares = ({ type = "" }) => {
                   />
                 </div>
               </div>
+              {selectedRow.old_supplier && (
+                <div className=" mt-4 w-full ml-[50%]">
+                  <p className="text-sm ms-2">Old Vendors</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedRow.old_supplier &&
+                      selectedRow.old_supplier.map((data, _) => {
+                        let supplier_id = supplierList.filter(
+                          (s) => s.name == data,
+                        );
+                        if (supplier_id) {
+                          supplier_id = supplier_id[0].id;
+                        }
+
+                        return (
+                          <HoverCard
+                            key={Math.random().toString()}
+                            openDelay={10}
+                            closeDelay={100}
+                          >
+                            <HoverCardTrigger asChild>
+                              <div className="bg-white px-2 py-1 rounded-full shadow border">
+                                {data}
+                              </div>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                              <DefaultRenderDetail
+                                details={{}}
+                                isFromOldSuppliers={true}
+                                fetchSupplier={async () => {
+                                  return fetchSupplierDetails(supplier_id);
+                                }}
+                                onEdit={() => {}}
+                                onDelete={() => {}}
+                              />
+                            </HoverCardContent>
+                          </HoverCard>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
 
               <div className="w-full mt-6">
                 <Label className="ms-1 mb-1">Remarks</Label>
@@ -3317,14 +3337,6 @@ const Spares = ({ type = "" }) => {
             {obsDialog.action === "increase" && (
               <div className="pt-3 border-t">
                 <div className="space-y-4">
-                  {/* <BoxNoInputsSimple
-                  value={boxNo}
-                  onChange={(val) => {
-                    setBoxNo(val);
-                  }}
-                  isLooseSpare={isLooseSpare}
-                  isBoxnumberDisable={false}
-                /> */}
                   <BoxNoConfirmObs
                     value={
                       selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
@@ -3338,19 +3350,6 @@ const Spares = ({ type = "" }) => {
                     isLooseSpare={isLooseSpare}
                     action={obsDialog.action}
                   />
-
-                  {/* <BoxNoInputs
-                  value={
-                    selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
-                  }
-                  onChange={(value) =>
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      box_no: JSON.stringify(value),
-                    }))
-                  }
-                  isLooseSpare={isLooseSpare}
-                /> */}
                 </div>
                 <p className="font-medium text-sm mb-2 mt-2">
                   Quote Authority<span className="text-red-500"> *</span>
@@ -3509,14 +3508,6 @@ const Spares = ({ type = "" }) => {
 
             {obsDialog.action === "decrease" && (
               <div className="pt-3 border-t space-y-4">
-                {/* <BoxNoInputsSimple
-                value={boxNo}
-                onChange={(val) => {
-                  setBoxNo(val);
-                }}
-                isLooseSpare={isLooseSpare}
-                isBoxnumberDisable={false}
-              /> */}
                 <BoxNoConfirmObs
                   value={
                     selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
@@ -3530,17 +3521,6 @@ const Spares = ({ type = "" }) => {
                   isLooseSpare={isLooseSpare}
                   action={obsDialog.action}
                 />
-
-                {/* <BoxNoInputs
-                value={selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []}
-                onChange={(value) =>
-                  setSelectedRow((prev) => ({
-                    ...prev,
-                    box_no: JSON.stringify(value),
-                  }))
-                }
-                isLooseSpare={isLooseSpare}
-              /> */}
               </div>
             )}
 
@@ -3629,12 +3609,6 @@ const Spares = ({ type = "" }) => {
                     );
                     return;
                   }
-
-                  // 🔹 Confirm Maintained Qty Update
-                  // const shouldUpdateMaintained = window.confirm(
-                  //   "Do you want to add Inc/Dec Qty to Maintained Qty also?",
-                  // );
-
                   // Instead of window.confirm
                   setMaintainConfirm({
                     open: true,
@@ -3642,74 +3616,6 @@ const Spares = ({ type = "" }) => {
                     finalValue,
                   });
                   return; // 🚨 Stop execution here
-
-                  let updatedBox = parsedBox.map((box) => {
-                    const incDec = Number(box.incDecQty || 0);
-                    const baseMaintained = Number(
-                      box.baseMaintainedQty || box.qnMain || 0,
-                    );
-
-                    return {
-                      ...box,
-                      qnMain: shouldUpdateMaintained
-                        ? obsDialog.action === "increase"
-                          ? baseMaintained + incDec
-                          : baseMaintained - incDec
-                        : baseMaintained, // keep original if NO
-                    };
-                  });
-
-                  //payload
-                  const payload = {
-                    spare_id: selectedRow.id,
-
-                    obs_authorised: finalValue,
-                    obs_increase_qty: obsDialog.quantity,
-                    internal_demand_no:
-                      obsDialog.demandGenerated === "yes"
-                        ? obsDialog.internalDemandNo?.trim()
-                        : null,
-                    internal_demand_date:
-                      obsDialog.demandGenerated === "yes"
-                        ? getISTTimestamp(obsDialog.internalDemandDate)
-                        : null,
-                    requisition_no: obsDialog.requisitionNo?.trim() || null,
-                    requisition_date: obsDialog.requisitionDate
-                      ? getISTTimestamp(obsDialog.requisitionDate)
-                      : null,
-                    mo_demand_no: obsDialog.moDemandNo?.trim() || null,
-                    mo_demand_date: obsDialog.moDemandDate
-                      ? getISTTimestamp(obsDialog.moDemandDate)
-                      : null,
-                    // box_no: boxNo,
-                    box_no: JSON.stringify(updatedBox),
-                    quoteAuthority: obsDialog.quoteAuthority,
-                  };
-
-                  await apiService.post("/specialDemand/special", payload);
-                  await fetchdata();
-                  // 🔹 Reset incDecQty after submit
-                  const resetBox = updatedBox.map((box) => ({
-                    ...box,
-                    incDecQty: "", // clear input field
-                    baseQn: box.qn, // new base becomes updated authorised
-                    baseMaintainedQty: box.qnMain, // new base maintained
-                  }));
-
-                  // payload.box_no =
-                  //   typeof boxNo == "string" ? boxNo : JSON.stringify(boxNo);
-                  // payload.box_no = JSON.stringify(updatedBox);
-
-                  //new-logic
-                  setSelectedRow((prev) => ({
-                    ...prev,
-                    ...payload,
-                    status: "demanded",
-                    box_no: JSON.stringify(resetBox),
-                  }));
-                  setObsDialog((prev) => ({ ...prev, open: false }));
-
-                  toaster("success", "Quantity updated successfully");
                 }}
               >
                 Submit
