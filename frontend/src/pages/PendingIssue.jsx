@@ -36,7 +36,6 @@ const PermanentPendings = () => {
     {
       value: "description",
       label: "Item Description",
-      width: "min-w-[40px]",
     },
     {
       value: "indian_pattern",
@@ -45,20 +44,17 @@ const PermanentPendings = () => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
-    {
-      value: "survey_quantity",
-      label: "Surveyed / Consumable / Local Perchase Qty",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "survey_voucher_no",
-      label: "Survey Voucher No",
-      width: "min-w-[40px]",
-    },
+    { value: "category", label: "Category" },
+
+    { value: "mo_no", label: "Demand No." },
+
+    { value: "demand_date", label: "Demand Date" },
+
+    { value: "demand_quantity", label: "Demanded Qty" },
+    { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
+
+    { value: "created_at", label: "Created On" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
 

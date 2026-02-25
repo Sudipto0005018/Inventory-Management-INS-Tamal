@@ -93,6 +93,7 @@ async function getDemands(req, res) {
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     survey_qty: ["d.survey_qty"],
+    survey_date: ["d.survey_date"],
   };
 
   const connection = await pool.getConnection();

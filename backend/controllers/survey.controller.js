@@ -139,8 +139,11 @@ async function getSurveys(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    service_no: ["s.service_no"],
+    issue_to: ["s.issue_to"],
+    withdrawl_qty: ["s.withdrawl_qty"],
+    survey_quantity: ["survey_quantity"],
   };
 
   const connection = await pool.getConnection();

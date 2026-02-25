@@ -11,11 +11,23 @@ async function getProcurementPending(req, res) {
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
   const columnMap = {
+    // Item Info
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+
+    // Demand (from pending_issue)
+    demand_no: ["pi.demand_no" || "pi.mo_no"],
+    demand_quantity: ["pi.demand_quantity"],
+
+    // NAC / Procurement (from procurement table p)
+    nac_qty: ["p.nac_qty"],
     nac_no: ["p.nac_no"],
+    nac_date: ["p.nac_date"],
+    validity: ["p.validity"],
+    rate_unit: ["p.rate_unit"],
+    created_at: ["p.created_at"],
+    qty_received: ["p.qty_received"],
   };
 
   const connection = await pool.getConnection();
@@ -137,6 +149,141 @@ async function getProcurementPending(req, res) {
   }
 }
 
+// async function getStockUpdatePending(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const offset = (page - 1) * limit;
+//   const search = req.query.search ? req.query.search.trim() : "";
+//   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+
+//   const columnMap = {
+//     description: ["sp.description", "t.description"],
+//     category: ["sp.category", "t.category"],
+//     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+//     mo_no: ["s.mo_no"],
+//     // demand_no: ["pi.demand_no"],
+//     demand_quantity: ["pi.demand_quantity"],
+//     qty_received: ["s.qty_received"],
+//     stocked_in_qty: ["s.stocked_in_qty"],
+//   };
+
+//   const connection = await pool.getConnection();
+
+//   try {
+//     /* ================= WHERE ================= */
+//     let whereConditions = [`(s.status = 'pending' OR s.status = 'partial')`];
+//     let queryParams = [];
+
+//     /* ================= SEARCH ================= */
+//     if (search) {
+//       let searchFragments = [];
+//       const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+
+//       if (validCols.length > 0) {
+//         for (const col of validCols) {
+//           const dbCols = columnMap[col.trim()];
+//           const sub = dbCols
+//             .map((dbCol) => {
+//               queryParams.push(`%${search}%`);
+//               return `${dbCol} LIKE ?`;
+//             })
+//             .join(" OR ");
+//           searchFragments.push(`(${sub})`);
+//         }
+//       } else {
+//         searchFragments.push(
+//           `(sp.description LIKE ? OR t.description LIKE ? OR s.mo_no LIKE ?)`,
+//         );
+//         queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+//       }
+
+//       whereConditions.push(`(${searchFragments.join(" OR ")})`);
+//     }
+
+//     const finalWhere =
+//       whereConditions.length > 0
+//         ? "WHERE " + whereConditions.join(" AND ")
+//         : "";
+
+//     /* ================= COUNT ================= */
+//     const [countRows] = await connection.query(
+//       `
+//       SELECT COUNT(*) AS count
+//       FROM stock_update s
+//       LEFT JOIN spares sp ON s.spare_id = sp.id
+//       LEFT JOIN tools t ON s.tool_id = t.id
+//       ${finalWhere}
+//       `,
+//       queryParams,
+//     );
+
+//     const totalItems = countRows[0].count;
+
+//     if (totalItems === 0) {
+//       return new ApiResponse(
+//         200,
+//         { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+//         "No pending stock update found",
+//       ).send(res);
+//     }
+
+//     /* ================= DATA ================= */
+//     const [rows] = await connection.query(
+//       `
+//       SELECT
+//         s.*,
+//         COALESCE(sp.description, t.description) AS description,
+//         COALESCE(sp.category, t.category) AS category,
+//         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+//         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+//         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
+
+//         'STOCK_UPDATE' AS source,
+//            CASE
+//            WHEN pi.mo_no IS NOT NULL AND pi.mo_no != ''
+//            THEN pi.mo_no
+//            ELSE pi.demand_no
+//           END AS demand_no,
+
+//          CASE
+//          WHEN pi.mo_date IS NOT NULL
+//          THEN pi.mo_date
+//          ELSE pi.demand_date
+//         END AS demand_date,
+
+//         pi.demand_quantity
+
+//       FROM stock_update s
+//       LEFT JOIN spares sp ON s.spare_id = sp.id
+//       LEFT JOIN tools t ON s.tool_id = t.id
+//       LEFT JOIN pending_issue pi ON s.issued_id = pi.id
+
+//       ${finalWhere}
+
+//       ORDER BY s.id DESC
+//       LIMIT ? OFFSET ?
+//       `,
+//       [...queryParams, limit, offset],
+//     );
+
+//     return new ApiResponse(
+//       200,
+//       {
+//         items: rows,
+//         totalItems,
+//         totalPages: Math.ceil(totalItems / limit),
+//         currentPage: page,
+//       },
+//       "Stock update pending list fetched successfully",
+//     ).send(res);
+//   } catch (error) {
+//     console.log("Stock update pending error:", error);
+//     return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+//   } finally {
+//     connection.release();
+//   }
+// }
+
 async function getStockUpdatePending(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
@@ -147,11 +294,15 @@ async function getStockUpdatePending(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     mo_no: ["s.mo_no"],
+    mo_date: ["s.mo_date"],
+    // demand_no: ["pi.demand_no"],
+    demand_quantity: ["pi.demand_quantity"],
+    qty_received: ["s.qty_received"],
+    stocked_in_qty: ["s.stocked_in_qty"],
+    created_at: ["s.created_at"],
   };
-
   const connection = await pool.getConnection();
 
   try {
@@ -176,10 +327,22 @@ async function getStockUpdatePending(req, res) {
           searchFragments.push(`(${sub})`);
         }
       } else {
-        searchFragments.push(
-          `(sp.description LIKE ? OR t.description LIKE ? OR s.mo_no LIKE ?)`,
+        // default fallback search
+        searchFragments.push(`
+          (
+            sp.description LIKE ?
+            OR t.description LIKE ?
+            OR pi.mo_no LIKE ?
+            OR pi.demand_no LIKE ?
+          )
+        `);
+
+        queryParams.push(
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
         );
-        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
       whereConditions.push(`(${searchFragments.join(" OR ")})`);
@@ -197,6 +360,7 @@ async function getStockUpdatePending(req, res) {
       FROM stock_update s
       LEFT JOIN spares sp ON s.spare_id = sp.id
       LEFT JOIN tools t ON s.tool_id = t.id
+      LEFT JOIN pending_issue pi ON s.issued_id = pi.id
       ${finalWhere}
       `,
       queryParams,
@@ -224,16 +388,17 @@ async function getStockUpdatePending(req, res) {
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
 
         'STOCK_UPDATE' AS source,
-           CASE 
-           WHEN pi.mo_no IS NOT NULL AND pi.mo_no != '' 
-           THEN pi.mo_no 
-           ELSE pi.demand_no 
-          END AS demand_no,
 
-         CASE 
-         WHEN pi.mo_date IS NOT NULL 
-         THEN pi.mo_date 
-         ELSE pi.demand_date 
+        CASE
+          WHEN pi.mo_no IS NOT NULL AND pi.mo_no != ''
+          THEN pi.mo_no
+          ELSE pi.demand_no
+        END AS demand_no,
+
+        CASE
+          WHEN pi.mo_date IS NOT NULL
+          THEN pi.mo_date
+          ELSE pi.demand_date
         END AS demand_date,
 
         pi.demand_quantity
@@ -242,9 +407,7 @@ async function getStockUpdatePending(req, res) {
       LEFT JOIN spares sp ON s.spare_id = sp.id
       LEFT JOIN tools t ON s.tool_id = t.id
       LEFT JOIN pending_issue pi ON s.issued_id = pi.id
-
       ${finalWhere}
-
       ORDER BY s.id DESC
       LIMIT ? OFFSET ?
       `,

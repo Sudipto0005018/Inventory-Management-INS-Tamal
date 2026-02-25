@@ -138,10 +138,23 @@ async function getPendingIssue(req, res) {
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
   const columnMap = {
+    // Item Info
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+
+    // Demand fields (pending_issue table)
+    mo_no: ["pi.mo_no"],
+
+    demand_date: ["pi.demand_date"],
+
+    demand_quantity: ["pi.demand_quantity"],
+
+    // Stock / NAC
+    stocked_nac_qty: ["pi.stocked_nac_qty"],
+
+    // Created
+    created_at: ["pi.created_at"],
   };
 
   const connection = await pool.getConnection();

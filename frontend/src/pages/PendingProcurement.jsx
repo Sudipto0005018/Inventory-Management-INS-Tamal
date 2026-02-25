@@ -63,10 +63,25 @@ const Procurement = () => {
 
   const options = [
     { value: "description", label: "Item Description" },
-    { value: "indian_pattern", label: "IN Part No." },
+    {
+      value: "indian_pattern",
+      label: (
+        <p>
+          <i>IN</i> Part No.
+        </p>
+      ),
+      width: "min-w-[40px]",
+    },
     { value: "category", label: "Category" },
-    { value: "equipment_system", label: "Equipment System" },
+    // { value: "demand_no", label: "Demand No." },
+    // { value: "demand_quantity", label: "Demanded Qty" },
+    { value: "nac_qty", label: "NAC / Ordered Qty" },
     { value: "nac_no", label: "NAC No." },
+    { value: "nac_date", label: "NAC Date" },
+    { value: "validity", label: "Validity" },
+    { value: "rate_unit", label: "Rate/ Unit" },
+    { value: "qty_received", label: "Received Qty" },
+    { value: "created_at", label: "Created On" },
   ];
 
   const [generateQR, setGenerateQR] = useState("no");

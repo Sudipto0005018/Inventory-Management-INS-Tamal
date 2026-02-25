@@ -138,6 +138,28 @@ async function getSpecialDemandList(req, res) {
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
   const search = req.query?.search ? req.query.search.trim() : "";
+  const rawCols = req.query?.cols ? req.query.cols.split(",") : [];
+
+  const columnMap = {
+    description: ["s.description", "t.description"],
+    indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
+    category: ["s.category", "t.category"],
+
+    quantity: ["sd.obs_increase_qty"],
+    obs_authorised: ["sd.obs_authorised"],
+    quote_authority: ["sd.quote_authority"],
+
+    internal_demand_no: ["sd.internal_demand_no"],
+    internal_demand_date: ["sd.internal_demand_date"],
+
+    requisition_no: ["sd.requisition_no"],
+    requisition_date: ["sd.requisition_date"],
+
+    modemand: ["sd.mo_demand_no"],
+    modate: ["sd.mo_demand_date"],
+
+    // created_at: ["sd.created_at"],
+  };
 
   /* ---------------- BASE WHERE ---------------- */
   let whereClause = `
@@ -146,11 +168,45 @@ async function getSpecialDemandList(req, res) {
       OR sd.requisition_no IS NULL 
       OR sd.mo_demand_no IS NULL)
   `;
-
+  let searchParams = [];
+  /* ---------------- SEARCH WHERE ---------------- */
   /* ---------------- SEARCH WHERE ---------------- */
   if (search) {
-    whereClause += `
-      AND (
+    let searchFragments = [];
+    const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+
+    if (validCols.length > 0) {
+      for (const col of validCols) {
+        const dbCols = columnMap[col.trim()];
+
+        const sub = dbCols
+          .map((dbCol) => {
+            // Numeric fields exact match
+            if (["quantity", "modified_obs"].includes(col)) {
+              searchParams.push(Number(search));
+              return `${dbCol} = ?`;
+            }
+
+            // Date fields
+            if (
+              ["demanddate", "Reqdate", "modate", "created_at"].includes(col)
+            ) {
+              searchParams.push(search);
+              return `DATE(${dbCol}) = ?`;
+            }
+
+            // Default LIKE search
+            searchParams.push(`%${search}%`);
+            return `${dbCol} LIKE ?`;
+          })
+          .join(" OR ");
+
+        searchFragments.push(`(${sub})`);
+      }
+    } else {
+      // Default global search if no column selected
+      searchFragments.push(`
+      (
         s.description LIKE ?
         OR t.description LIKE ?
         OR s.indian_pattern LIKE ?
@@ -162,10 +218,25 @@ async function getSpecialDemandList(req, res) {
         OR sd.mo_demand_no LIKE ?
         OR sd.created_by_name LIKE ?
       )
-    `;
-  }
+    `);
 
-  const searchParams = search ? Array(10).fill(`%${search}%`) : [];
+      searchParams.push(
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`,
+      );
+    }
+
+    whereClause += ` AND (${searchFragments.join(" OR ")})`;
+  }
+  // const searchParams = search ? Array(10).fill(`%${search}%`) : [];
 
   /* ---------------- TOTAL COUNT ---------------- */
   const [totalCount] = await pool.query(

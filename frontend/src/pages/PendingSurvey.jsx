@@ -66,28 +66,21 @@ const PendingSurvey = () => {
     { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
+    { value: "description", label: "Item Description" },
     {
-      value: "description",
-      label: "Item Description",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "vue",
+      value: "indian_pattern",
       label: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
-    {
-      value: "survey_quantity",
-      label: "Surveyed Quantity",
-      width: "min-w-[40px]",
-    },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    { value: "category", label: "Category" },
+    { value: "service_no", label: "Service No." },
+    { value: "issue_to", label: "Issued To" },
+    { value: "withdrawl_qty", label: "Withdrawal Qty" },
+    { value: "survey_quantity", label: "Surveyed Qty" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -142,7 +135,11 @@ const PendingSurvey = () => {
   //   }
   // };
 
-  const fetchdata = async (page = currentPage, search = inputs.search) => {
+  const fetchdata = async (
+    page = currentPage,
+    search = inputs.search,
+    cols = selectedValues,
+  ) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
@@ -152,6 +149,7 @@ const PendingSurvey = () => {
           search,
           limit: config.row_per_page,
           status: "pending",
+          cols: cols.length ? cols.join(",") : "",
         },
       });
 
@@ -164,15 +162,16 @@ const PendingSurvey = () => {
     }
   };
 
-  const handleSearch = async (e) => {
+  const handleSearch = async () => {
     const searchTerm = inputs.search.trim();
-    if (searchTerm === actualSearch) {
-      return;
-    } else {
-      setActualSearch(searchTerm);
-    }
+
+    if (searchTerm === actualSearch) return;
+
+    setActualSearch(searchTerm);
+
     setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
+    await fetchdata(1, searchTerm, selectedValues);
+    setCurrentPage(1);
     setIsLoading((prev) => ({ ...prev, search: false }));
   };
 
@@ -215,7 +214,7 @@ const PendingSurvey = () => {
   };
 
   useEffect(() => {
-    fetchdata();
+    fetchdata(currentPage, actualSearch, selectedValues);
   }, [currentPage]);
 
   useEffect(() => {

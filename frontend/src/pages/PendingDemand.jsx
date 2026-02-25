@@ -74,9 +74,9 @@ const PendingDemand = () => {
     {
       value: "indian_pattern",
       label: (
-        <p>
+        <span>
           <i>IN</i> Part No.
-        </p>
+        </span>
       ),
       width: "min-w-[40px]",
     },
@@ -84,7 +84,7 @@ const PendingDemand = () => {
     { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
     {
       value: "survey_qty",
-      label: "Surveyed / Consumable / Local Perchase Qty",
+      label: "Surveyed / Utilised Qty",
       width: "min-w-[40px]",
     },
     {
