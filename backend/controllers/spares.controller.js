@@ -870,8 +870,18 @@ async function generateExcel(req, res) {
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
 
         'PROCUREMENT' AS source,
-        pi.demand_no,
-        pi.demand_date,
+       CASE
+          WHEN pi.mo_no IS NOT NULL AND pi.mo_no != ''
+          THEN pi.mo_no
+          ELSE pi.demand_no
+        END AS demand_no,
+
+        CASE
+          WHEN pi.mo_date IS NOT NULL
+          THEN pi.mo_date
+          ELSE pi.demand_date
+        END AS demand_date,
+
         pi.demand_quantity
 
       FROM procurement p
@@ -903,8 +913,18 @@ async function generateExcel(req, res) {
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
 
         'STOCK_UPDATE' AS source,
-        pi.demand_no,
-        pi.demand_date,
+        CASE
+          WHEN pi.mo_no IS NOT NULL AND pi.mo_no != ''
+          THEN pi.mo_no
+          ELSE pi.demand_no
+        END AS demand_no,
+
+        CASE
+          WHEN pi.mo_date IS NOT NULL
+          THEN pi.mo_date
+          ELSE pi.demand_date
+        END AS demand_date,
+
         pi.demand_quantity
 
       FROM stock_update s
@@ -1411,6 +1431,39 @@ ORDER BY til.created_at DESC;
       );
     }
 
+    if (module === "nac") {
+      const whereClause = completed
+        ? `WHERE p.status = 'complete'
+       AND p.created_at BETWEEN ? AND ?`
+        : `WHERE (p.status = 'pending' OR p.status = 'partial')`;
+
+      const args = completed ? [startDate, endDate] : [];
+      [rows] = await pool.query(
+        `
+      SELECT p.nac_qty, p.nac_no, p.nac_date, p.validity, p.rate_unit, p.issue_date,
+      p.qty_received, p.box_no, p.created_at, p.status,
+
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+
+        'PROCUREMENT' AS source,
+        pi.demand_no,
+        pi.demand_date,
+        pi.demand_quantity
+
+      FROM procurement p
+      LEFT JOIN spares sp ON p.spare_id = sp.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+       ${whereClause}
+      ORDER BY p.created_at DESC
+      `,
+        args,
+      );
+    }
+
     // Workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(module);
@@ -1429,6 +1482,7 @@ ORDER BY til.created_at DESC;
       docCorner: docCornerHeaders,
       d787: D787Headers,
       d787_amendment: D787AmendHeaders,
+      nac: NACHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -1459,6 +1513,8 @@ ORDER BY til.created_at DESC;
       worksheet.columns = D787Headers;
     } else if (module === "d787_amndment") {
       worksheet.columns = D787AmendHeaders;
+    } else if (module === "nac") {
+      worksheet.columns = NACHeaders;
     }
 
     rows.forEach((row) => {

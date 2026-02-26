@@ -40,6 +40,7 @@ const Header = ({ onSidebarOpen }) => {
       "/documents": "docCorner",
       "/d787/amendment": "special_demand",
       "/d787/original": "d787",
+      "/permanent/nac": "nac",
 
       "/logs/pending-survey": "survey",
       "/logs/pending-demand": "demand",

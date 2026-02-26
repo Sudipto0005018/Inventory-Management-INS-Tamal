@@ -57,7 +57,7 @@ const stock_update = [
   { header: "Equipment /System", key: "equipment_system", width: 25 },
 
   { header: "Stocked In Qty", key: "stocked_in_qty", width: 20 },
-  { header: "MO No.", key: "mo_no", width: 20 },
+  { header: "MO Gate Pass No.", key: "mo_no", width: 20 },
   { header: "MO Date", key: "mo_date", width: 20 },
   { header: "Demand No.", key: "demand_no", width: 20 },
   { header: "Denmand Date", key: "demand_date", width: 20 },
@@ -257,6 +257,25 @@ const d787_amendment = [
   { header: "Created On", key: "created_at", width: 20 },
 ];
 
+const nac = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+  { header: "Equipment /System", key: "equipment_system", width: 25 },
+
+  { header: "NAC Qty", key: "nac_qty", width: 10 },
+  { header: "NAC No.", key: "nac_no", width: 20 },
+  { header: "NAC Date", key: "nac_date", width: 20 },
+  { header: "Validity", key: "validity", width: 10 },
+  { header: "Rate/ Unit", key: "rate_unit", width: 12 },
+
+  { header: "Issue Date", key: "issue_date", width: 20 },
+  { header: "Box No.", key: "boxes", width: 20 },
+  { header: "Item Distribution", key: "itemDistribution", width: 25 },
+  { header: "Received Qty", key: "qty_received", width: 15 },
+  { header: "Created On", key: "created_at", width: 20 },
+  { header: "Status", key: "status", width: 20 },
+];
 module.exports = {
   spares,
   tools,
@@ -272,4 +291,5 @@ module.exports = {
   docCorner,
   d787,
   d787_amendment,
+  nac,
 };

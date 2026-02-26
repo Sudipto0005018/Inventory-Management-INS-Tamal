@@ -57,15 +57,15 @@ const PendingSpecial = () => {
     { value: "indian_pattern", label: "IN Part No." },
     { value: "category", label: "Category" },
     { value: "quantity", label: "Issued Quantity" },
-    { value: "modified_obs", label: "Modified OBS Authorised" },
+    { value: "obs_authorised", label: "Modified OBS Authorised" },
     { value: "quote_authority", label: "Quote Authority" },
-    { value: "demandno", label: "Internal Demand No." },
-    { value: "demanddate", label: "Internal Demand Date." },
-    { value: "requisition", label: "Requisition No." },
-    { value: "Reqdate", label: "Requisition Date." },
-    { value: "modemand", label: "MO Demand No." },
-    { value: "modate", label: "MO Demand Date" },
-    { value: "status", label: "Status" },
+    { value: "internal_demand_no", label: "Internal Demand No." },
+    { value: "internal_demand_date", label: "Internal Demand Date." },
+    { value: "requisition_no", label: "Requisition No." },
+    { value: "requisition_date", label: "Requisition Date." },
+    { value: "mo_demand_no", label: "MO Demand No." },
+    { value: "mo_demand_date", label: "MO Demand Date" },
+    // { value: "created_at", label: "Created On" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
