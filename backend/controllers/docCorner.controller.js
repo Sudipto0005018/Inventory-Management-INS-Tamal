@@ -465,37 +465,71 @@ async function getDocIssue(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const cols = req.query?.cols ? req.query.cols.split(",") : [];
   const search = req.query?.search ? req.query.search.trim() : "";
 
-  /* ---------- BASE WHERE ---------- */
+  /* BASE WHERE*/
   let whereClause = `
     WHERE (di.qty_received IS NULL 
            OR di.qty_received < di.qty_withdrawn)
   `;
 
+  /*  SEARCH FILTER  */
+  // if (search) {
+  //   whereClause += `
+  //     AND (
+  //       dc.description LIKE ?
+  //       OR dc.indian_pattern LIKE ?
+  //       OR dc.category LIKE ?
+  //       OR dc.folder_no LIKE ?
+  //       OR dc.box_no LIKE ?
+  //       OR dc.equipment_system LIKE ?
+  //       OR di.service_no LIKE ?
+  //       OR di.concurred_by LIKE ?
+  //       OR di.issue_to LIKE ?
+  //       OR u1.name LIKE ?
+  //       OR u2.name LIKE ?
+  //     )
+  //   `;
+  // }
+  // const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+
   /* ---------- SEARCH FILTER ---------- */
+  let searchClause = "";
+  let searchParams = [];
+
   if (search) {
-    whereClause += `
-      AND (
-        dc.description LIKE ?
-        OR dc.indian_pattern LIKE ?
-        OR dc.category LIKE ?
-        OR dc.folder_no LIKE ?
-        OR dc.box_no LIKE ?
-        OR dc.equipment_system LIKE ?
-        OR di.service_no LIKE ?
-        OR di.concurred_by LIKE ?
-        OR di.issue_to LIKE ?
-        OR u1.name LIKE ?
-        OR u2.name LIKE ?
-      )
-    `;
+    const searchableColumns = {
+      description: "dc.description",
+      indian_pattern: "dc.indian_pattern",
+      category: "dc.category",
+      folder_no: "dc.folder_no",
+      equipment_system: "dc.equipment_system",
+      service_no: "di.service_no",
+      concurred_by: "di.concurred_by",
+      issue_to: "di.issue_to",
+      created_at: "di.created_at",
+    };
+
+    const fieldsToSearch =
+      cols.length > 0
+        ? cols.filter((c) => searchableColumns[c])
+        : Object.keys(searchableColumns);
+
+    if (fieldsToSearch.length > 0) {
+      searchClause =
+        " AND (" +
+        fieldsToSearch
+          .map((field) => `${searchableColumns[field]} LIKE ?`)
+          .join(" OR ") +
+        ")";
+
+      searchParams = fieldsToSearch.map(() => `%${search}%`);
+    }
   }
 
-  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
-
   try {
-    /* ---------- TOTAL COUNT ---------- */
+    /* TOTAL COUNT  */
     const [countResult] = await pool.query(
       `
       SELECT COUNT(*) AS count
@@ -504,6 +538,7 @@ async function getDocIssue(req, res) {
       LEFT JOIN users u1 ON u1.id = di.created_by
       LEFT JOIN users u2 ON u2.id = di.approved_by
       ${whereClause}
+      ${searchClause}
       `,
       searchParams,
     );
@@ -571,7 +606,8 @@ async function getDocIssue(req, res) {
       LEFT JOIN users u1 ON u1.id = di.created_by
       LEFT JOIN users u2 ON u2.id = di.approved_by
 
-      ${whereClause}
+    ${whereClause}
+    ${searchClause}
       ORDER BY di.created_at DESC
       LIMIT ? OFFSET ?
     `;
@@ -1092,6 +1128,7 @@ async function getDocLogs(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const offset = (page - 1) * limit;
+  const cols = req.query?.cols ? req.query.cols.split(",") : [];
   const search = req.query?.search ? req.query.search.trim() : "";
 
   /* ---------- BASE WHERE (Completed) ---------- */
@@ -1100,25 +1137,58 @@ async function getDocLogs(req, res) {
   `;
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search) {
-    whereClause += `
-      AND (
-        dc.description LIKE ?
-        OR dc.indian_pattern LIKE ?
-        OR dc.category LIKE ?
-        OR dc.folder_no LIKE ?
-        OR dc.box_no LIKE ?
-        OR dc.equipment_system LIKE ?
-        OR di.service_no LIKE ?
-        OR di.concurred_by LIKE ?
-        OR di.issue_to LIKE ?
-        OR u1.name LIKE ?
-        OR u2.name LIKE ?
-      )
-    `;
-  }
+  // if (search) {
+  //   whereClause += `
+  //     AND (
+  //       dc.description LIKE ?
+  //       OR dc.indian_pattern LIKE ?
+  //       OR dc.category LIKE ?
+  //       OR dc.folder_no LIKE ?
+  //       OR dc.box_no LIKE ?
+  //       OR dc.equipment_system LIKE ?
+  //       OR di.service_no LIKE ?
+  //       OR di.concurred_by LIKE ?
+  //       OR di.issue_to LIKE ?
+  //       OR u1.name LIKE ?
+  //       OR u2.name LIKE ?
+  //     )
+  //   `;
+  // }
 
-  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+  // const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+
+  let searchClause = "";
+  let searchParams = [];
+
+  if (search) {
+    const searchableColumns = {
+      description: "dc.description",
+      indian_pattern: "dc.indian_pattern",
+      category: "dc.category",
+      folder_no: "dc.folder_no",
+      equipment_system: "dc.equipment_system",
+      service_no: "di.service_no",
+      concurred_by: "di.concurred_by",
+      issue_to: "di.issue_to",
+      created_at: "di.created_at",
+    };
+
+    const fieldsToSearch =
+      cols.length > 0
+        ? cols.filter((c) => searchableColumns[c])
+        : Object.keys(searchableColumns);
+
+    if (fieldsToSearch.length > 0) {
+      searchClause =
+        " AND (" +
+        fieldsToSearch
+          .map((field) => `${searchableColumns[field]} LIKE ?`)
+          .join(" OR ") +
+        ")";
+
+      searchParams = fieldsToSearch.map(() => `%${search}%`);
+    }
+  }
 
   try {
     /* ---------- TOTAL COUNT ---------- */
@@ -1130,6 +1200,7 @@ async function getDocLogs(req, res) {
       LEFT JOIN users u1 ON u1.id = di.created_by
       LEFT JOIN users u2 ON u2.id = di.approved_by
       ${whereClause}
+      ${searchClause}
       `,
       searchParams,
     );
@@ -1196,6 +1267,7 @@ async function getDocLogs(req, res) {
       LEFT JOIN users u2 ON u2.id = di.approved_by
 
       ${whereClause}
+      ${searchClause}
       ORDER BY di.created_at DESC
       LIMIT ? OFFSET ?
     `;

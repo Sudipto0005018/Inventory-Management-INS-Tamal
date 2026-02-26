@@ -67,20 +67,29 @@ function BoxNoConfirmObs({
     onChange(newRows);
   };
 
+  // const handleIncDecChange = (index, val) => {
+  //   const newRows = [...value];
+
+  //   // store raw string for input typing
+  //   newRows[index].incDecQty = val;
+
+  //   const incDec = Number(val || 0);
+  //   const base = Number(newRows[index].baseQn || 0);
+
+  //   let updatedQn = action === "increase" ? base + incDec : base - incDec;
+
+  //   if (updatedQn < 0) updatedQn = 0;
+
+  //   newRows[index].qn = updatedQn;
+
+  //   onChange(newRows);
+  // };
+
   const handleIncDecChange = (index, val) => {
     const newRows = [...value];
 
-    // store raw string for input typing
+    // Only store typed value
     newRows[index].incDecQty = val;
-
-    const incDec = Number(val || 0);
-    const base = Number(newRows[index].baseQn || 0);
-
-    let updatedQn = action === "increase" ? base + incDec : base - incDec;
-
-    if (updatedQn < 0) updatedQn = 0;
-
-    newRows[index].qn = updatedQn;
 
     onChange(newRows);
   };

@@ -60,29 +60,24 @@ const PendingTempLoan = ({ type = "" }) => {
   ]);
 
   const options = [
-    {
-      value: "description",
-      label: "Item Description",
-      width: "min-w-[40px]",
-    },
+    { value: "description", label: "Item Description" },
     {
       value: "indian_pattern",
       label: (
         <span>
-          <i>IN</i> Part No.
+          {" "}
+          <i>IN</i> Part No.{" "}
         </span>
       ),
-      width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
-    {
-      value: "survey_quantity",
-      label: "Surveyed Quantity",
-      width: "min-w-[40px]",
-    },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    { value: "category", label: "Category" },
+    { value: "qty_withdrawn", label: "Issued Qty" },
+    { value: "qty_received", label: "Returned Qty" },
+    { value: "service_no", label: "Service No." },
+    { value: "concurred_by", label: "Concurred By" },
+    { value: "loan_duration", label: "Loan Duration" },
+    { value: "created_at", label: "Created On" },
+    { value: "loan_status", label: "Status" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
@@ -526,6 +521,7 @@ const PendingTempLoan = ({ type = "" }) => {
           </Button>
         </div>
         <PaginationTable
+          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}

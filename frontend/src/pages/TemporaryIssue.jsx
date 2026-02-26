@@ -60,11 +60,7 @@ const PendingTempLoan = ({ type = "" }) => {
   ]);
 
   const options = [
-    {
-      value: "description",
-      label: "Item Description",
-      width: "min-w-[40px]",
-    },
+    { value: "description", label: "Item Description" },
     {
       value: "indian_pattern",
       label: (
@@ -74,14 +70,17 @@ const PendingTempLoan = ({ type = "" }) => {
       ),
       width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
-    {
-      value: "survey_quantity",
-      label: "Surveyed Quantity",
-      width: "min-w-[40px]",
-    },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    { value: "category", label: "Category" },
+    { value: "equipment_system", label: "Equipment / System" },
+    { value: "service_no", label: "Service No." },
+    { value: "issue_to", label: "Issued To" },
+    // { value: "created_by_name", label: "Created By" },
+    // { value: "approved_by_name", label: "Approved By" },
+    // { value: "box_no", label: "Box No." },
+
+    { value: "qty_withdrawn", label: "Issued Qty" },
+    { value: "loan_duration", label: "Loan Duration" },
+    { value: "created_at", label: "Created On)" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");

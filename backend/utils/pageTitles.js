@@ -9,6 +9,7 @@ export const pageTitles = {
   "/temporary-issue/overdue": "Overdue Temporary Issue",
   "/temp-loan/overdue": "Overdue TY Loan",
   "/documents/overdue": "Overdue Documents",
+  "/permanent/nac": "Pending for NAC",
 
   "/tools": "Tools & Accessories",
   "/tools/critical": "Critical Tools",

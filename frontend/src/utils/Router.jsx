@@ -26,6 +26,7 @@ import CompletedTempLoan from "../pages/CompletedTempLoan";
 import PendingIssue from "../pages/PendingIssue";
 import PendingStock from "../pages/PendingStock";
 import PendingProcurement from "../pages/PendingProcurement";
+import PendingNAC from "../pages/PendingNAC";
 import CompletedServays from "../pages/CompletedServays";
 import PendingSpecial from "../pages/PendingSpecial";
 import DocumentsCorner from "../pages/DocumentsCorner";
@@ -315,6 +316,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <PendingProcurement />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/permanent/nac"
+          element={
+            <ProtectedRoute>
+              <PendingNAC />
             </ProtectedRoute>
           }
         />

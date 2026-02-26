@@ -216,7 +216,7 @@ export default function Dashboard() {
           subtitle="items pending"
           icon={<FaClock className="text-gray-800" />}
           valueColor="text-blue-900"
-          onClick={() => navigateTo("/permanent/procurement")}
+          onClick={() => navigateTo("/permanent/nac")}
         />
       </div>
 
@@ -338,9 +338,3 @@ function BigCard({ title, icon, children }) {
     </div>
   );
 }
-
-//dropdown issue P, temp issue local 0, 0 asign default value in dialog
-//utilised qty, after partial return, utilised qty ta minus hoye hobe
-//in ty loan asign withdrawal qty 0 default value
-//add column utilised qty in temp issue local frontend
-//obs authorised not modified in tools

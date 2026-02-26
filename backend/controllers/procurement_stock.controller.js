@@ -876,11 +876,23 @@ async function getLogsProcurement(req, res) {
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
   const columnMap = {
+    // Item Info
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+
+    // Demand (from pending_issue)
+    demand_no: ["pi.demand_no" || "pi.mo_no"],
+    demand_quantity: ["pi.demand_quantity"],
+
+    // NAC / Procurement (from procurement table p)
+    nac_qty: ["p.nac_qty"],
     nac_no: ["p.nac_no"],
+    nac_date: ["p.nac_date"],
+    validity: ["p.validity"],
+    rate_unit: ["p.rate_unit"],
+    created_at: ["p.created_at"],
+    qty_received: ["p.qty_received"],
   };
 
   const connection = await pool.getConnection();
@@ -951,8 +963,18 @@ async function getLogsProcurement(req, res) {
         COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
 
         'PROCUREMENT' AS source,
-        pi.demand_no,
-        pi.demand_date,
+        CASE 
+         WHEN pi.mo_no IS NOT NULL AND pi.mo_no != '' 
+         THEN pi.mo_no 
+         ELSE pi.demand_no 
+        END AS demand_no,
+
+        CASE 
+         WHEN pi.mo_date IS NOT NULL 
+         THEN pi.mo_date 
+         ELSE pi.demand_date 
+        END AS demand_date,
+
         pi.demand_quantity
 
       FROM procurement p
@@ -996,9 +1018,14 @@ async function getLogsStockUpdate(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     mo_no: ["s.mo_no"],
+    mo_date: ["s.mo_date"],
+    // demand_no: ["pi.demand_no"],
+    demand_quantity: ["pi.demand_quantity"],
+    qty_received: ["s.qty_received"],
+    stocked_in_qty: ["s.stocked_in_qty"],
+    created_at: ["s.created_at"],
   };
 
   const connection = await pool.getConnection();
@@ -1069,10 +1096,19 @@ async function getLogsStockUpdate(req, res) {
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
 
         'STOCK_UPDATE' AS source,
-        pi.demand_no,
-        pi.demand_date,
-        pi.demand_quantity
+        CASE
+          WHEN pi.mo_no IS NOT NULL AND pi.mo_no != ''
+          THEN pi.mo_no
+          ELSE pi.demand_no
+        END AS demand_no,
 
+        CASE
+          WHEN pi.mo_date IS NOT NULL
+          THEN pi.mo_date
+          ELSE pi.demand_date
+        END AS demand_date,
+
+        pi.demand_quantity
       FROM stock_update s
       LEFT JOIN spares sp ON s.spare_id = sp.id
       LEFT JOIN tools t ON s.tool_id = t.id

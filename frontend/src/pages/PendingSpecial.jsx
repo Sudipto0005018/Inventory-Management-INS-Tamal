@@ -68,7 +68,6 @@ const PendingSpecial = () => {
     { value: "mo_demand_no", label: "MO Demand No." },
     { value: "mo_demand_date", label: "MO Demand Date" },
     // { value: "created_at", label: "Created On" },
-    // { value: "status", label: "Status" },
   ];
 
   const [date, setDate] = useState(new Date());
@@ -388,7 +387,7 @@ const PendingSpecial = () => {
           pageSize={fetchedData.items?.length || 10}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
-          className="h-[calc(100vh-230px)]"
+          className=" w-[calc(100vw-35px)] h-[calc(100vh-230px)]"
         />
       </div>
 

@@ -81,7 +81,7 @@ async function createSurvey(req, res) {
           return {
             ...spare,
             qtyHeld: (
-              parseInt(spare.qtyHeld) - parseInt(match.withdraw)
+              parseInt(spare.qtyHeld || "0") - parseInt(match.withdraw || "0")
             ).toString(),
           };
         }
@@ -239,14 +239,16 @@ async function getLogSurveys(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
-  // ❌ REMOVE dynamic status
-  // const status = req.query.status || "pending";
-
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    service_no: ["s.service_no"],
+    issue_to: ["s.issue_to"],
+    withdrawl_qty: ["s.withdrawl_qty"],
+    survey_quantity: ["s.survey_quantity"],
+    created_at: ["s.created_at"],
   };
 
   const connection = await pool.getConnection();
@@ -254,7 +256,7 @@ async function getLogSurveys(req, res) {
   try {
     /* ---------- FORCE COMPLETED ---------- */
     let whereConditions = ["s.status = ?"];
-    let queryParams = ["complete"]; // 👈 FIXED STATUS
+    let queryParams = ["complete"];
 
     /* ---------- SEARCH ---------- */
     if (search) {
@@ -264,17 +266,50 @@ async function getLogSurveys(req, res) {
       if (validCols.length > 0) {
         for (const colName of validCols) {
           const dbColumns = columnMap[colName.trim()];
+
           const subQuery = dbColumns
             .map((dbCol) => {
+              // Numeric fields
+              if (["withdrawl_qty", "survey_quantity"].includes(colName)) {
+                queryParams.push(Number(search));
+                return `${dbCol} = ?`;
+              }
+
+              // Date field
+              if (colName === "created_at") {
+                queryParams.push(search);
+                return `DATE(${dbCol}) = ?`;
+              }
+
+              // Default LIKE
               queryParams.push(`%${search}%`);
               return `${dbCol} LIKE ?`;
             })
             .join(" OR ");
+
           searchFragments.push(`(${subQuery})`);
         }
       } else {
-        searchFragments.push(`(sp.description LIKE ? OR t.description LIKE ?)`);
-        queryParams.push(`%${search}%`, `%${search}%`);
+        // Global fallback search
+        searchFragments.push(`
+          (
+            sp.description LIKE ?
+            OR t.description LIKE ?
+            OR sp.indian_pattern LIKE ?
+            OR t.indian_pattern LIKE ?
+            OR s.service_no LIKE ?
+            OR s.issue_to LIKE ?
+          )
+        `);
+
+        queryParams.push(
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+        );
       }
 
       if (searchFragments.length > 0) {
@@ -321,7 +356,6 @@ async function getLogSurveys(req, res) {
       [...queryParams, limit, offset],
     );
 
-    /* ---------- RESPONSE ---------- */
     return new ApiResponse(
       200,
       {
@@ -333,7 +367,7 @@ async function getLogSurveys(req, res) {
       "Completed surveys retrieved successfully",
     ).send(res);
   } catch (error) {
-    console.log("Error while getting survey: ", error);
+    console.log("Error while getting survey logs:", error);
     return new ApiErrorResponse(500, {}, "Internal server error").send(res);
   } finally {
     connection.release();

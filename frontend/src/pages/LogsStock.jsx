@@ -44,10 +44,23 @@ const PermanentPendings = () => {
 
   const options = [
     { value: "description", label: "Item Description" },
-    { value: "indian_pattern", label: "IN Part No." },
+    {
+      value: "indian_pattern",
+      label: (
+        <p>
+          <i>IN</i> Part No.
+        </p>
+      ),
+      width: "min-w-[40px]",
+    },
     { value: "category", label: "Category" },
-    { value: "equipment_system", label: "Equipment System" },
-    { value: "nac_no", label: "NAC No." },
+    // { value: "demand_no", label: "Demand No." },
+    { value: "demand_quantity", label: "Demanded Qty" },
+    { value: "stocked_in_qty", label: "Stocked In Qty" },
+    { value: "mo_no", label: "MO Gate Pass No." },
+    { value: "mo_date", label: "MO Date" },
+    { value: "qty_received", label: "Received Qty" },
+    { value: "created_at", label: "Created On" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

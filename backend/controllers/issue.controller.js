@@ -276,15 +276,32 @@ async function getPendingLogs(req, res) {
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
   const columnMap = {
+    /* ================= ITEM INFO ================= */
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    box_no: ["sp.box_no", "t.box_no"],
+
+    /* ================= DEMAND FIELDS ================= */
+    mo_no: ["pi.mo_no"],
+    demand_no: ["pi.demand_no"],
+    demand_date: ["pi.demand_date"],
+    mo_date: ["pi.mo_date"],
+
+    /* ================= QUANTITY ================= */
+    demand_quantity: ["pi.demand_quantity"],
+    stocked_nac_qty: ["pi.stocked_nac_qty"],
+
+    /* ================= META ================= */
+    source_type: ["pi.source_type"],
+    created_at: ["pi.created_at"],
   };
 
   const connection = await pool.getConnection();
 
   try {
+    /* ================= WHERE ================= */
     let whereConditions = [`pi.status = 'complete'`];
     let queryParams = [];
 
@@ -296,17 +313,50 @@ async function getPendingLogs(req, res) {
       if (validCols.length > 0) {
         for (const colName of validCols) {
           const dbColumns = columnMap[colName.trim()];
+
           const subQuery = dbColumns
             .map((dbCol) => {
+              // Numeric exact match
+              if (["demand_quantity", "stocked_nac_qty"].includes(colName)) {
+                queryParams.push(Number(search));
+                return `${dbCol} = ?`;
+              }
+
+              // Date exact match
+              if (["demand_date", "mo_date", "created_at"].includes(colName)) {
+                queryParams.push(search);
+                return `DATE(${dbCol}) = ?`;
+              }
+
+              // Default LIKE search
               queryParams.push(`%${search}%`);
               return `${dbCol} LIKE ?`;
             })
             .join(" OR ");
+
           searchFragments.push(`(${subQuery})`);
         }
       } else {
-        searchFragments.push(`(sp.description LIKE ? OR t.description LIKE ?)`);
-        queryParams.push(`%${search}%`, `%${search}%`);
+        /* ================= GLOBAL FALLBACK ================= */
+        searchFragments.push(`
+          (
+            sp.description LIKE ?
+            OR t.description LIKE ?
+            OR sp.indian_pattern LIKE ?
+            OR t.indian_pattern LIKE ?
+            OR pi.mo_no LIKE ?
+            OR pi.demand_no LIKE ?
+          )
+        `);
+
+        queryParams.push(
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+          `%${search}%`,
+        );
       }
 
       whereConditions.push(`(${searchFragments.join(" OR ")})`);
@@ -335,7 +385,7 @@ async function getPendingLogs(req, res) {
       return new ApiResponse(
         200,
         { items: [], totalItems: 0, totalPages: 1, currentPage: page },
-        "No complete / partial issue found",
+        "No completed issue logs found",
       ).send(res);
     }
 
@@ -344,16 +394,30 @@ async function getPendingLogs(req, res) {
       `
       SELECT 
         pi.*,
+
+        CASE 
+          WHEN pi.source_type = 'special_demand' 
+          THEN pi.mo_no 
+          ELSE pi.demand_no 
+        END AS display_demand_no,
+
+        CASE 
+          WHEN pi.source_type = 'special_demand' 
+          THEN pi.mo_date 
+          ELSE pi.demand_date 
+        END AS display_demand_date,
+
         COALESCE(sp.description, t.description) as description,
         COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
         COALESCE(sp.category, t.category) as category,
         COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern,
         COALESCE(sp.box_no, t.box_no) as box_no
+
       FROM pending_issue pi
       LEFT JOIN spares sp ON pi.spare_id = sp.id
       LEFT JOIN tools t ON pi.tool_id = t.id
       ${finalWhereClause}
-      ORDER BY pi.id DESC
+      ORDER BY pi.created_at DESC
       LIMIT ? OFFSET ?
       `,
       [...queryParams, limit, offset],
@@ -367,10 +431,10 @@ async function getPendingLogs(req, res) {
         totalPages: Math.ceil(totalPending / limit),
         currentPage: page,
       },
-      "Complete & partial issues retrieved successfully",
+      "Completed issue logs retrieved successfully",
     ).send(res);
   } catch (error) {
-    console.log("Error while getting issues: ", error);
+    console.log("Error while getting issue logs: ", error);
     return new ApiErrorResponse(500, {}, "Internal server error").send(res);
   } finally {
     connection.release();

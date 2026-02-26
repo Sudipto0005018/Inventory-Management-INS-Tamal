@@ -63,8 +63,8 @@ const PendingDemand = () => {
     { value: "category", label: "Category", width: "min-w-[40px]" },
     { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
     {
-      value: "survey_quantity",
-      label: "Surveyed / Consumable / Local Perchase Qty",
+      value: "survey_qty",
+      label: "Surveyed / Utilised Qty",
       width: "min-w-[40px]",
     },
     {

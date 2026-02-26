@@ -2038,6 +2038,36 @@ const DocumentsCorner = ({ type = "" }) => {
                   return;
                 }
 
+                if (
+                  !selectedRow.issue_to_text?.trim() &&
+                  !selectedRow.issue_to?.trim()
+                ) {
+                  toaster("error", "Issue To is required");
+                  return;
+                }
+
+                if (!selectedPerson?.tempPerson?.serviceNumber) {
+                  toaster("error", "Service No. is required");
+                  return;
+                }
+
+                if (
+                  !selectedRow.concurred_by ||
+                  !selectedRow.concurred_by.trim()
+                ) {
+                  toaster("error", "Concurred By is required");
+                  return;
+                }
+
+                if (
+                  selectedRow.loan_duration === undefined ||
+                  selectedRow.loan_duration === null ||
+                  String(selectedRow.loan_duration).trim() === ""
+                ) {
+                  toaster("error", "Loan Duration is required");
+                  return;
+                }
+
                 if (!date) {
                   toaster("error", "Withdrawal date is required");
                   return;

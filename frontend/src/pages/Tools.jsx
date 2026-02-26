@@ -1021,19 +1021,19 @@ const Tools = ({ type = "" }) => {
   };
 
   const submitPermanentIssue = async () => {
-    if (!selectedPerson?.person?.serviceNumber) {
-      toaster("error", "Service No is required");
-      return;
-    }
     try {
+      const qty =
+        selectedRow.withdraw_type === "single"
+          ? 1
+          : Number(selectedRow.new_val);
       const res = await apiService.post("/survey/create", {
         box_no: boxNo,
         tool_id: selectedRow.id,
-        withdrawl_qty: selectedRow.new_val,
+        withdrawl_qty: qty,
         withdrawl_date: formatDate(),
         service_no: selectedPerson.person?.serviceNumber,
         name: selectedPerson.person?.name,
-        issue_to: selectedRow.issue_to_text,
+        issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
       });
       if (res.success) {
         toaster("success", "Survey created successfully");
@@ -2347,7 +2347,10 @@ const Tools = ({ type = "" }) => {
               </div>
               {selectedRow.old_supplier && (
                 <div className=" mt-4 w-full ml-[50%]">
-                  <p className="text-sm ms-2">Old Vendors</p>
+                  <p className="text-sm ms-2 mb-2">
+                    {" "}
+                    Previous Vendors / Third Party Suppliers
+                  </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     {selectedRow.old_supplier &&
                       selectedRow.old_supplier.map((data, _) => {
@@ -2942,10 +2945,7 @@ const Tools = ({ type = "" }) => {
                       />
                     </div>
                     <div>
-                      <Label className="mb-2">
-                        Unit Name (Mention INS){" "}
-                        <span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="mb-2">Unit Name (Mention INS)</Label>
                       <Input
                         name="Unit_name"
                         value={selectedRow.unit_name}
@@ -3202,8 +3202,38 @@ const Tools = ({ type = "" }) => {
                   }
 
                   if (selectedIssue === "permanent") {
+                    if (
+                      !selectedRow.issue_to_text?.trim() &&
+                      !selectedRow.issue_to?.trim()
+                    ) {
+                      toaster("error", "Issue To is required");
+                      return;
+                    }
+                    if (!selectedPerson?.person?.serviceNumber) {
+                      toaster("error", "Service No. is required");
+                      return;
+                    }
                     submitPermanentIssue();
                   } else if (selectedIssue === "temporary") {
+                    if (
+                      !selectedRow.issue_to_text?.trim() &&
+                      !selectedRow.issue_to?.trim()
+                    ) {
+                      toaster("error", "Issue To is required");
+                      return;
+                    }
+                    if (!selectedPerson?.tempPerson?.serviceNumber) {
+                      toaster("error", "Service No. is required");
+                      return;
+                    }
+                    if (
+                      selectedRow.loan_duration === undefined ||
+                      selectedRow.loan_duration === null ||
+                      String(selectedRow.loan_duration).trim() === ""
+                    ) {
+                      toaster("error", "Loan Duration is required");
+                      return;
+                    }
                     const payload = {
                       a: selectedRow.id ? "tool" : "spare",
                       tool_id: selectedRow.id || null,
@@ -3225,6 +3255,25 @@ const Tools = ({ type = "" }) => {
                     };
                     submitTemporaryIssue(payload);
                   } else if (selectedIssue === "ty") {
+                    if (!selectedPerson?.loanPerson?.serviceNumber) {
+                      toaster("error", "Service No. is required");
+                      return;
+                    }
+                    if (
+                      selectedRow.loan_duration === undefined ||
+                      selectedRow.loan_duration === null ||
+                      String(selectedRow.loan_duration).trim() === ""
+                    ) {
+                      toaster("error", "Loan Duration is required");
+                      return;
+                    }
+                    if (
+                      !selectedRow.concurred_by ||
+                      !selectedRow.concurred_by.trim()
+                    ) {
+                      toaster("error", "Concurred By is required");
+                      return;
+                    }
                     const payload = {
                       a: selectedRow.id ? "tool" : "spare",
                       tool_id: selectedRow.id || null,
@@ -3592,8 +3641,25 @@ const Tools = ({ type = "" }) => {
                     return;
                   }
 
+                  const updatedBoxes = parsedBox.map((box) => {
+                    const incDec = Number(box.incDecQty || 0);
+                    const base = Number(box.baseQn ?? box.qn ?? 0);
+
+                    let updatedQn =
+                      obsDialog.action === "increase"
+                        ? base + incDec
+                        : base - incDec;
+
+                    if (updatedQn < 0) updatedQn = 0;
+
+                    return {
+                      ...box,
+                      qn: updatedQn,
+                    };
+                  });
+
                   // Sum qty from boxes
-                  const totalBoxQty = parsedBox.reduce(
+                  const totalBoxQty = updatedBoxes.reduce(
                     (sum, box) => sum + Number(box.qn || 0),
                     0,
                   );
@@ -3615,7 +3681,7 @@ const Tools = ({ type = "" }) => {
                   // Instead of window.confirm
                   setMaintainConfirm({
                     open: true,
-                    parsedBox,
+                    parsedBox: updatedBoxes,
                     finalValue,
                   });
                   return; // 🚨 Stop execution here
