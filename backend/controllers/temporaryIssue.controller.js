@@ -187,48 +187,94 @@ async function getTemporaryIssueList(req, res) {
   let searchParams = [];
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search && cols.length > 0) {
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
     const columnMap = {
-      description: `(s.description LIKE ? OR t.description LIKE ?)`,
-      indian_pattern: `(s.indian_pattern LIKE ? OR t.indian_pattern LIKE ?)`,
-      category: `(s.category LIKE ? OR t.category LIKE ?)`,
-      equipment_system: `(s.equipment_system LIKE ? OR t.equipment_system LIKE ?)`,
-      service_no: `til.service_no LIKE ?`,
-      issue_to: `til.issue_to LIKE ?`,
-      created_by_name: `u1.name LIKE ?`,
-      approved_by_name: `u2.name LIKE ?`,
-      box_no: `til.box_no LIKE ?`,
-
-      // ✅ NEW FIELDS
-      qty_withdrawn: `CAST(til.qty_withdrawn AS CHAR) LIKE ?`,
-      loan_duration: `CAST(til.loan_duration AS CHAR) LIKE ?`,
-      created_at: `DATE_FORMAT(til.created_at, '%Y-%m-%d') LIKE ?`,
+      description: ["s.description", "t.description"],
+      indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
+      category: ["s.category", "t.category"],
+      equipment_system: ["s.equipment_system", "t.equipment_system"],
+      service_no: ["til.service_no"],
+      issue_to: ["til.issue_to"],
+      created_by_name: ["u1.name"],
+      approved_by_name: ["u2.name"],
+      box_no: ["til.box_no"],
+      qty_withdrawn: ["til.qty_withdrawn"],
+      loan_duration: ["til.loan_duration"],
+      created_at: ["til.created_at"],
     };
 
-    const conditions = [];
+    const validCols = cols.map((c) => c.trim()).filter((col) => columnMap[col]);
 
-    cols.forEach((col) => {
-      if (columnMap[col]) {
-        conditions.push(columnMap[col]);
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,\s]+/)
+      .map((word) => word.trim())
+      .filter(Boolean);
 
-        if (
-          [
-            "description",
-            "indian_pattern",
-            "category",
-            "equipment_system",
-          ].includes(col)
-        ) {
-          searchParams.push(`%${search}%`, `%${search}%`);
-        } else {
-          searchParams.push(`%${search}%`);
+    let searchConditions = [];
+
+    for (const word of searchWords) {
+      let wordFragments = [];
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            // Numeric fields
+            if (
+              ["qty_withdrawn", "loan_duration"].includes(col) &&
+              !isNaN(word)
+            ) {
+              searchParams.push(Number(word));
+              wordFragments.push(`${dbCol} = ?`);
+            }
+
+            // Date field
+            else if (col === "created_at") {
+              searchParams.push(word);
+              wordFragments.push(`DATE(${dbCol}) = ?`);
+            }
+
+            // Default LIKE
+            else {
+              searchParams.push(`%${word}%`);
+              wordFragments.push(`${dbCol} LIKE ?`);
+            }
+          }
         }
-      }
-    });
+      } else {
+        // Global fallback
+        searchParams.push(
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+        );
 
-    if (conditions.length > 0) {
-      whereClause += ` AND (${conditions.join(" OR ")})`;
+        wordFragments.push(`
+        (
+          s.description LIKE ?
+          OR t.description LIKE ?
+          OR s.indian_pattern LIKE ?
+          OR t.indian_pattern LIKE ?
+          OR til.service_no LIKE ?
+          OR til.issue_to LIKE ?
+          OR u1.name LIKE ?
+          OR u2.name LIKE ?
+        )
+      `);
+      }
+
+      searchConditions.push(`(${wordFragments.join(" OR ")})`);
     }
+
+    whereClause += ` AND (${searchConditions.join(" AND ")})`;
   }
 
   try {
@@ -896,50 +942,95 @@ async function getLogsTemporary(req, res) {
   let searchParams = [];
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search && cols.length > 0) {
+  /* ---------- SEARCH FILTER ---------- */
+  if (search) {
     const columnMap = {
-      description: `(s.description LIKE ? OR t.description LIKE ?)`,
-      indian_pattern: `(s.indian_pattern LIKE ? OR t.indian_pattern LIKE ?)`,
-      category: `(s.category LIKE ? OR t.category LIKE ?)`,
-      equipment_system: `(s.equipment_system LIKE ? OR t.equipment_system LIKE ?)`,
-      service_no: `til.service_no LIKE ?`,
-      issue_to: `til.issue_to LIKE ?`,
-      created_by_name: `u1.name LIKE ?`,
-      approved_by_name: `u2.name LIKE ?`,
-      box_no: `til.box_no LIKE ?`,
-
-      // ✅ NEW FIELDS
-      qty_withdrawn: `CAST(til.qty_withdrawn AS CHAR) LIKE ?`,
-      loan_duration: `CAST(til.loan_duration AS CHAR) LIKE ?`,
-      created_at: `DATE_FORMAT(til.created_at, '%Y-%m-%d') LIKE ?`,
+      description: ["s.description", "t.description"],
+      indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
+      category: ["s.category", "t.category"],
+      equipment_system: ["s.equipment_system", "t.equipment_system"],
+      service_no: ["til.service_no"],
+      issue_to: ["til.issue_to"],
+      created_by_name: ["u1.name"],
+      approved_by_name: ["u2.name"],
+      box_no: ["til.box_no"],
+      qty_withdrawn: ["til.qty_withdrawn"],
+      loan_duration: ["til.loan_duration"],
+      created_at: ["til.created_at"],
     };
 
-    const conditions = [];
+    const validCols = cols.map((c) => c.trim()).filter((col) => columnMap[col]);
 
-    cols.forEach((col) => {
-      if (columnMap[col]) {
-        conditions.push(columnMap[col]);
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,\s]+/)
+      .map((word) => word.trim())
+      .filter(Boolean);
 
-        if (
-          [
-            "description",
-            "indian_pattern",
-            "category",
-            "equipment_system",
-          ].includes(col)
-        ) {
-          searchParams.push(`%${search}%`, `%${search}%`);
-        } else {
-          searchParams.push(`%${search}%`);
+    let searchConditions = [];
+
+    for (const word of searchWords) {
+      let wordFragments = [];
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            // Numeric fields
+            if (
+              ["qty_withdrawn", "loan_duration"].includes(col) &&
+              !isNaN(word)
+            ) {
+              searchParams.push(Number(word));
+              wordFragments.push(`${dbCol} = ?`);
+            }
+
+            // Date field
+            else if (col === "created_at") {
+              searchParams.push(word);
+              wordFragments.push(`DATE(${dbCol}) = ?`);
+            }
+
+            // Default LIKE
+            else {
+              searchParams.push(`%${word}%`);
+              wordFragments.push(`${dbCol} LIKE ?`);
+            }
+          }
         }
+      } else {
+        // Global fallback
+        searchParams.push(
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+        );
+
+        wordFragments.push(`
+        (
+          s.description LIKE ?
+          OR t.description LIKE ?
+          OR s.indian_pattern LIKE ?
+          OR t.indian_pattern LIKE ?
+          OR til.service_no LIKE ?
+          OR til.issue_to LIKE ?
+          OR u1.name LIKE ?
+          OR u2.name LIKE ?
+        )
+      `);
       }
-    });
 
-    if (conditions.length > 0) {
-      whereClause += ` AND (${conditions.join(" OR ")})`;
+      searchConditions.push(`(${wordFragments.join(" OR ")})`);
     }
-  }
 
+    whereClause += ` AND (${searchConditions.join(" AND ")})`;
+  }
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(

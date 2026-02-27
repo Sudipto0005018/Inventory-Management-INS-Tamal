@@ -41,15 +41,6 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "indian_pattern",
-      label: (
-        <span>
-          <i>IN</i> Part No.
-        </span>
-      ),
-      width: "min-w-[40px]",
-    },
-    {
       value: "equipment_system",
       label: "Equipment / System",
       width: "min-w-[40px]",
@@ -60,7 +51,7 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "folder_no",
+      value: "indian_pattern",
       label: "Folder No.",
       width: "min-w-[40px]",
     },

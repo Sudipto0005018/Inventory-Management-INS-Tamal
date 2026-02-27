@@ -20,6 +20,7 @@ const ALLOWED_SEARCH_FIELDS = [
   "item_code",
   "price_unit",
   "sub_component",
+  "category",
 ];
 
 async function getSpares(req, res) {
@@ -54,6 +55,7 @@ async function getSpares(req, res) {
         "denos",
         "indian_pattern",
         "item_code",
+        "category",
       ];
 
   const offset = (page - 1) * limit;
@@ -65,13 +67,42 @@ async function getSpares(req, res) {
     let params = [department.id];
 
     if (search) {
-      // build grouped OR clauses for the requested fields
-      const likeClauses = validFields.map(() => "?? LIKE ?").join(" OR ");
-      // note: use mysql2 placeholders properly; here we'll build fragments and params
-      // but many mysql clients don't support ?? with pool.query string arrays; instead map to column names directly after validation
-      const orClauses = validFields.map((f) => `${f} LIKE ?`).join(" OR ");
-      whereClause += ` AND (${orClauses})`;
-      validFields.forEach(() => params.push(`%${search}%`));
+      // Split search by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of validFields) {
+          // Numeric fields detection
+          if (
+            [
+              "obs_authorised",
+              "obs_maintained",
+              "obs_held",
+              "price_unit",
+            ].includes(field) &&
+            !isNaN(word)
+          ) {
+            params.push(Number(word));
+            fieldFragments.push(`${field} = ?`);
+          } else {
+            params.push(`%${word}%`);
+            fieldFragments.push(`${field} LIKE ?`);
+          }
+        }
+
+        // Each word must match at least one field (OR)
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match (AND)
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
 
     const [totalCount] = await pool.query(
@@ -355,8 +386,30 @@ async function getCriticalSpares(req, res) {
     let params = [department.id];
 
     if (search) {
-      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+      const searchableFields = ["description", "equipment_system"];
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of searchableFields) {
+          params.push(`%${word}%`);
+          fieldFragments.push(`${field} LIKE ?`);
+        }
+
+        // Each word must match at least one column
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
 
     /* total count */

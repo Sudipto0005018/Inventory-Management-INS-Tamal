@@ -64,7 +64,7 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "quantity", label: "Issued Quantity", width: "min-w-[40px]" },
+    { value: "withdrawl_qty", label: "Withdrawal Qty" },
     {
       value: "survey_quantity",
       label: "Surveyed Quantity",

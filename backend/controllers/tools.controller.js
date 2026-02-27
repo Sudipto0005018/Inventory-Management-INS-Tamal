@@ -18,6 +18,7 @@ const ALLOWED_TOOL_SEARCH_FIELDS = [
   "obs_authorised",
   "obs_maintained",
   "obs_held",
+  "category",
 ];
 
 async function getTools(req, res) {
@@ -50,6 +51,7 @@ async function getTools(req, res) {
         "denos",
         "indian_pattern",
         "item_code",
+        "category",
       ];
 
   const offset = (page - 1) * limit;
@@ -60,9 +62,42 @@ async function getTools(req, res) {
     let params = [department.id];
 
     if (search) {
-      const orClauses = validFields.map((f) => `${f} LIKE ?`).join(" OR ");
-      whereClause += ` AND (${orClauses})`;
-      validFields.forEach(() => params.push(`%${search}%`));
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of validFields) {
+          // Numeric field detection (add more if needed)
+          if (
+            [
+              "price_unit",
+              "obs_authorised",
+              "obs_maintained",
+              "obs_held",
+            ].includes(field) &&
+            !isNaN(word)
+          ) {
+            params.push(Number(word));
+            fieldFragments.push(`${field} = ?`);
+          } else {
+            params.push(`%${word}%`);
+            fieldFragments.push(`${field} LIKE ?`);
+          }
+        }
+
+        // One word must match at least one field (OR)
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match (AND)
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
 
     const [totalCount] = await pool.query(
@@ -268,8 +303,30 @@ async function getCriticalTools(req, res) {
     let whereClause = "WHERE department = ? AND critical_tool = 1";
     let params = [department.id];
     if (search) {
-      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+      const searchableFields = ["description", "equipment_system"];
+
+      // Split search by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of searchableFields) {
+          params.push(`%${word}%`);
+          fieldFragments.push(`${field} LIKE ?`);
+        }
+
+        // Each word must match at least one column (OR)
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match (AND)
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
     const [totalCount] = await pool.query(
       `SELECT COUNT(*) as count FROM tools ${whereClause}`,

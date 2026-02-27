@@ -143,7 +143,7 @@ async function getSurveys(req, res) {
     service_no: ["s.service_no"],
     issue_to: ["s.issue_to"],
     withdrawl_qty: ["s.withdrawl_qty"],
-    survey_quantity: ["survey_quantity"],
+    survey_quantity: ["s.survey_quantity"],
   };
 
   const connection = await pool.getConnection();
@@ -153,27 +153,53 @@ async function getSurveys(req, res) {
     let queryParams = [status];
 
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((col) => columnMap[col.trim()]);
+      let searchConditions = [];
+
+      // Normalize selected columns
+      const validCols = rawCols
+        .map((c) => c.trim())
+        .filter((col) => columnMap[col]);
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
 
       if (validCols.length > 0) {
-        for (const colName of validCols) {
-          const dbColumns = columnMap[colName.trim()];
-          const subQuery = dbColumns
-            .map((dbCol) => {
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-          searchFragments.push(`(${subQuery})`);
-        }
-      } else {
-        searchFragments.push(`(sp.description LIKE ? OR t.description LIKE ?)`);
-        queryParams.push(`%${search}%`, `%${search}%`);
-      }
+        // When specific columns are selected
+        for (const word of searchWords) {
+          let wordConditions = [];
 
-      if (searchFragments.length > 0) {
-        whereConditions.push(`(${searchFragments.join(" OR ")})`);
+          for (const colName of validCols) {
+            const dbColumns = columnMap[colName];
+
+            for (const dbCol of dbColumns) {
+              wordConditions.push(`${dbCol} LIKE ?`);
+              queryParams.push(`%${word}%`);
+            }
+          }
+
+          // Each word must match in any selected column
+          searchConditions.push(`(${wordConditions.join(" OR ")})`);
+        }
+
+        // Combine words using AND
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
+      } else {
+        // Default fallback search (multi-word enabled)
+        for (const word of searchWords) {
+          searchConditions.push(`
+        (
+          sp.description LIKE ?
+          OR t.description LIKE ?
+        )
+      `);
+
+          queryParams.push(`%${word}%`, `%${word}%`);
+        }
+
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
       }
     }
 
@@ -260,60 +286,53 @@ async function getLogSurveys(req, res) {
 
     /* ---------- SEARCH ---------- */
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((col) => columnMap[col.trim()]);
+      let searchConditions = [];
+
+      // Normalize selected columns
+      const validCols = rawCols
+        .map((c) => c.trim())
+        .filter((col) => columnMap[col]);
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
 
       if (validCols.length > 0) {
-        for (const colName of validCols) {
-          const dbColumns = columnMap[colName.trim()];
+        // When specific columns are selected
+        for (const word of searchWords) {
+          let wordConditions = [];
 
-          const subQuery = dbColumns
-            .map((dbCol) => {
-              // Numeric fields
-              if (["withdrawl_qty", "survey_quantity"].includes(colName)) {
-                queryParams.push(Number(search));
-                return `${dbCol} = ?`;
-              }
+          for (const colName of validCols) {
+            const dbColumns = columnMap[colName];
 
-              // Date field
-              if (colName === "created_at") {
-                queryParams.push(search);
-                return `DATE(${dbCol}) = ?`;
-              }
+            for (const dbCol of dbColumns) {
+              wordConditions.push(`${dbCol} LIKE ?`);
+              queryParams.push(`%${word}%`);
+            }
+          }
 
-              // Default LIKE
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-
-          searchFragments.push(`(${subQuery})`);
+          // Each word must match in any selected column
+          searchConditions.push(`(${wordConditions.join(" OR ")})`);
         }
+
+        // Combine words using AND
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
       } else {
-        // Global fallback search
-        searchFragments.push(`
-          (
-            sp.description LIKE ?
-            OR t.description LIKE ?
-            OR sp.indian_pattern LIKE ?
-            OR t.indian_pattern LIKE ?
-            OR s.service_no LIKE ?
-            OR s.issue_to LIKE ?
-          )
-        `);
+        // Default fallback search (multi-word enabled)
+        for (const word of searchWords) {
+          searchConditions.push(`
+        (
+          sp.description LIKE ?
+          OR t.description LIKE ?
+        )
+      `);
 
-        queryParams.push(
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-        );
-      }
+          queryParams.push(`%${word}%`, `%${word}%`);
+        }
 
-      if (searchFragments.length > 0) {
-        whereConditions.push(`(${searchFragments.join(" OR ")})`);
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
       }
     }
 

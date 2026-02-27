@@ -169,72 +169,87 @@ async function getSpecialDemandList(req, res) {
       OR sd.mo_demand_no IS NULL)
   `;
   let searchParams = [];
-  /* ---------------- SEARCH WHERE ---------------- */
+
   /* ---------------- SEARCH WHERE ---------------- */
   if (search) {
-    let searchFragments = [];
-    const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+    let searchConditions = [];
 
-    if (validCols.length > 0) {
-      for (const col of validCols) {
-        const dbCols = columnMap[col.trim()];
+    const validCols = rawCols.map((c) => c.trim()).filter((c) => columnMap[c]);
 
-        const sub = dbCols
-          .map((dbCol) => {
-            // Numeric fields exact match
-            if (["quantity", "modified_obs"].includes(col)) {
-              searchParams.push(Number(search));
-              return `${dbCol} = ?`;
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,\s]+/)
+      .map((word) => word.trim())
+      .filter(Boolean);
+
+    for (const word of searchWords) {
+      let wordFragments = [];
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            // Numeric fields
+            if (["quantity"].includes(col) && !isNaN(word)) {
+              searchParams.push(Number(word));
+              wordFragments.push(`${dbCol} = ?`);
             }
 
             // Date fields
-            if (
-              ["demanddate", "Reqdate", "modate", "created_at"].includes(col)
+            else if (
+              ["internal_demand_date", "requisition_date", "modate"].includes(
+                col,
+              )
             ) {
-              searchParams.push(search);
-              return `DATE(${dbCol}) = ?`;
+              searchParams.push(word);
+              wordFragments.push(`DATE(${dbCol}) = ?`);
             }
 
-            // Default LIKE search
-            searchParams.push(`%${search}%`);
-            return `${dbCol} LIKE ?`;
-          })
-          .join(" OR ");
+            // Default LIKE
+            else {
+              searchParams.push(`%${word}%`);
+              wordFragments.push(`${dbCol} LIKE ?`);
+            }
+          }
+        }
+      } else {
+        // Default global search
+        searchParams.push(
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+        );
 
-        searchFragments.push(`(${sub})`);
+        wordFragments.push(`
+        (
+          s.description LIKE ?
+          OR t.description LIKE ?
+          OR s.indian_pattern LIKE ?
+          OR t.indian_pattern LIKE ?
+          OR s.category LIKE ?
+          OR t.category LIKE ?
+          OR sd.internal_demand_no LIKE ?
+          OR sd.requisition_no LIKE ?
+          OR sd.mo_demand_no LIKE ?
+          OR sd.created_by_name LIKE ?
+        )
+      `);
       }
-    } else {
-      // Default global search if no column selected
-      searchFragments.push(`
-      (
-        s.description LIKE ?
-        OR t.description LIKE ?
-        OR s.indian_pattern LIKE ?
-        OR t.indian_pattern LIKE ?
-        OR s.category LIKE ?
-        OR t.category LIKE ?
-        OR sd.internal_demand_no LIKE ?
-        OR sd.requisition_no LIKE ?
-        OR sd.mo_demand_no LIKE ?
-        OR sd.created_by_name LIKE ?
-      )
-    `);
 
-      searchParams.push(
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-      );
+      // Each word must match somewhere
+      searchConditions.push(`(${wordFragments.join(" OR ")})`);
     }
 
-    whereClause += ` AND (${searchFragments.join(" OR ")})`;
+    // Combine words with AND
+    whereClause += ` AND (${searchConditions.join(" AND ")})`;
   }
   // const searchParams = search ? Array(10).fill(`%${search}%`) : [];
 
@@ -480,75 +495,86 @@ async function getLogsSpecialDemand(req, res) {
   /* ---------------- SEARCH WHERE ---------------- */
   let searchParams = [];
 
+  /* ---------------- SEARCH WHERE ---------------- */
   if (search) {
-    let searchFragments = [];
-    const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+    let searchConditions = [];
 
-    if (validCols.length > 0) {
-      for (const col of validCols) {
-        const dbCols = columnMap[col.trim()];
+    const validCols = rawCols.map((c) => c.trim()).filter((c) => columnMap[c]);
 
-        const sub = dbCols
-          .map((dbCol) => {
-            // Numeric fields → exact match
-            if (["quantity", "obs_authorised"].includes(col)) {
-              searchParams.push(Number(search));
-              return `${dbCol} = ?`;
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,\s]+/)
+      .map((word) => word.trim())
+      .filter(Boolean);
+
+    for (const word of searchWords) {
+      let wordFragments = [];
+
+      if (validCols.length > 0) {
+        for (const col of validCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            // Numeric fields
+            if (["quantity"].includes(col) && !isNaN(word)) {
+              searchParams.push(Number(word));
+              wordFragments.push(`${dbCol} = ?`);
             }
 
-            // Date fields → exact date match
-            if (
-              [
-                "internal_demand_date",
-                "requisition_date",
-                "modate",
-                "created_at",
-              ].includes(col)
+            // Date fields
+            else if (
+              ["internal_demand_date", "requisition_date", "modate"].includes(
+                col,
+              )
             ) {
-              searchParams.push(search);
-              return `DATE(${dbCol}) = ?`;
+              searchParams.push(word);
+              wordFragments.push(`DATE(${dbCol}) = ?`);
             }
 
             // Default LIKE
-            searchParams.push(`%${search}%`);
-            return `${dbCol} LIKE ?`;
-          })
-          .join(" OR ");
+            else {
+              searchParams.push(`%${word}%`);
+              wordFragments.push(`${dbCol} LIKE ?`);
+            }
+          }
+        }
+      } else {
+        // Default global search
+        searchParams.push(
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
+        );
 
-        searchFragments.push(`(${sub})`);
+        wordFragments.push(`
+        (
+          s.description LIKE ?
+          OR t.description LIKE ?
+          OR s.indian_pattern LIKE ?
+          OR t.indian_pattern LIKE ?
+          OR s.category LIKE ?
+          OR t.category LIKE ?
+          OR sd.internal_demand_no LIKE ?
+          OR sd.requisition_no LIKE ?
+          OR sd.mo_demand_no LIKE ?
+          OR sd.created_by_name LIKE ?
+        )
+      `);
       }
-    } else {
-      // Global fallback search
-      searchFragments.push(`
-      (
-        s.description LIKE ?
-        OR t.description LIKE ?
-        OR s.indian_pattern LIKE ?
-        OR t.indian_pattern LIKE ?
-        OR s.category LIKE ?
-        OR t.category LIKE ?
-        OR sd.internal_demand_no LIKE ?
-        OR sd.requisition_no LIKE ?
-        OR sd.mo_demand_no LIKE ?
-        OR sd.created_by_name LIKE ?
-      )
-    `);
 
-      searchParams.push(
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-      );
+      // Each word must match somewhere
+      searchConditions.push(`(${wordFragments.join(" OR ")})`);
     }
 
-    whereClause += ` AND (${searchFragments.join(" OR ")})`;
+    // Combine words with AND
+    whereClause += ` AND (${searchConditions.join(" AND ")})`;
   }
   try {
     /* ---------- TOTAL COUNT ---------- */
@@ -772,7 +798,7 @@ async function getD787List(req, res) {
     qty_held: ["sd.qty_held"],
 
     /* ===== DATE ===== */
-    created_at: ["sd.created_at"],
+    created_at: ["s.created_at"],
   };
 
   const connection = await pool.getConnection();
@@ -788,16 +814,28 @@ async function getD787List(req, res) {
     let queryParams = [];
 
     /* ---------------- SEARCH ---------------- */
+    /* ---------------- SEARCH ---------------- */
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((col) => columnMap[col.trim()]);
+      let searchConditions = [];
 
-      if (validCols.length > 0) {
-        for (const colName of validCols) {
-          const dbColumns = columnMap[colName.trim()];
+      const validCols = rawCols
+        .map((c) => c.trim())
+        .filter((col) => columnMap[col]);
 
-          const subQuery = dbColumns
-            .map((dbCol) => {
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
+
+      for (const word of searchWords) {
+        let wordFragments = [];
+
+        if (validCols.length > 0) {
+          for (const colName of validCols) {
+            const dbColumns = columnMap[colName];
+
+            for (const dbCol of dbColumns) {
               /* ---- Numeric exact match ---- */
               if (
                 [
@@ -807,54 +845,55 @@ async function getD787List(req, res) {
                   "obs_held",
                   "maintained_qty",
                   "qty_held",
-                ].includes(colName)
+                ].includes(colName) &&
+                !isNaN(word)
               ) {
-                queryParams.push(Number(search));
-                return `${dbCol} = ?`;
+                queryParams.push(Number(word));
+                wordFragments.push(`${dbCol} = ?`);
+              } else if (colName === "created_at") {
+                /* ---- Date exact match ---- */
+                queryParams.push(word);
+                wordFragments.push(`DATE(${dbCol}) = ?`);
+              } else {
+                /* ---- Default LIKE ---- */
+                queryParams.push(`%${word}%`);
+                wordFragments.push(`${dbCol} LIKE ?`);
               }
+            }
+          }
+        } else {
+          /* ---- Global fallback ---- */
+          queryParams.push(
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+          );
 
-              /* ---- Date exact match ---- */
-              if (colName === "created_at") {
-                queryParams.push(search);
-                return `DATE(${dbCol}) = ?`;
-              }
-
-              /* ---- Default LIKE ---- */
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-
-          searchFragments.push(`(${subQuery})`);
+          wordFragments.push(`
+        (
+          s.description LIKE ?
+          OR t.description LIKE ?
+          OR s.indian_pattern LIKE ?
+          OR t.indian_pattern LIKE ?
+          OR sd.internal_demand_no LIKE ?
+          OR sd.requisition_no LIKE ?
+          OR sd.mo_demand_no LIKE ?
+          OR sd.created_by_name LIKE ?
+        )
+      `);
         }
-      } else {
-        /* ---- Global fallback ---- */
-        searchFragments.push(`
-          (
-            s.description LIKE ?
-            OR t.description LIKE ?
-            OR s.indian_pattern LIKE ?
-            OR t.indian_pattern LIKE ?
-            OR sd.internal_demand_no LIKE ?
-            OR sd.requisition_no LIKE ?
-            OR sd.mo_demand_no LIKE ?
-            OR sd.created_by_name LIKE ?
-          )
-        `);
 
-        queryParams.push(
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-        );
+        // Each word must match somewhere
+        searchConditions.push(`(${wordFragments.join(" OR ")})`);
       }
 
-      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+      // Combine words using AND
+      whereConditions.push(`(${searchConditions.join(" AND ")})`);
     }
 
     const finalWhereClause =

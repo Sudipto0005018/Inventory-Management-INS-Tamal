@@ -39,28 +39,44 @@ async function getProcurementPending(req, res) {
 
     /* ================= SEARCH ================= */
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+      let searchConditions = [];
 
-      if (validCols.length > 0) {
-        for (const col of validCols) {
-          const dbCols = columnMap[col.trim()];
-          const sub = dbCols
-            .map((dbCol) => {
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-          searchFragments.push(`(${sub})`);
+      // Normalize selected columns
+      const rawColsNormalized = (req.query.cols || "")
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => columnMap[c]);
+
+      const selectedCols =
+        rawColsNormalized.length > 0
+          ? rawColsNormalized
+          : ["description", "nac_no"]; // fallback
+
+      // Split search into words (space separated)
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/) // split by comma or any whitespace
+        .map((word) => word.trim())
+        .filter(Boolean);
+
+      for (const word of searchWords) {
+        let wordConditions = [];
+
+        for (const col of selectedCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            wordConditions.push(`${dbCol} LIKE ?`);
+            queryParams.push(`%${word}%`);
+          }
         }
-      } else {
-        searchFragments.push(
-          `(sp.description LIKE ? OR t.description LIKE ? OR p.nac_no LIKE ?)`,
-        );
-        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+
+        // Each word must match in any selected column
+        searchConditions.push(`(${wordConditions.join(" OR ")})`);
       }
 
-      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+      // Combine words with AND
+      whereConditions.push(`(${searchConditions.join(" AND ")})`);
     }
 
     const finalWhere =
@@ -311,41 +327,58 @@ async function getStockUpdatePending(req, res) {
     let queryParams = [];
 
     /* ================= SEARCH ================= */
+    /* ================= SEARCH ================= */
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+      let searchConditions = [];
+
+      // Normalize selected columns
+      const validCols = rawCols
+        .map((c) => c.trim())
+        .filter((c) => columnMap[c]);
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
 
       if (validCols.length > 0) {
-        for (const col of validCols) {
-          const dbCols = columnMap[col.trim()];
-          const sub = dbCols
-            .map((dbCol) => {
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-          searchFragments.push(`(${sub})`);
+        // Multi-column selected search
+        for (const word of searchWords) {
+          let wordConditions = [];
+
+          for (const col of validCols) {
+            const dbCols = columnMap[col];
+
+            for (const dbCol of dbCols) {
+              wordConditions.push(`${dbCol} LIKE ?`);
+              queryParams.push(`%${word}%`);
+            }
+          }
+
+          // Each word must match in any selected column
+          searchConditions.push(`(${wordConditions.join(" OR ")})`);
         }
+
+        // Combine words with AND
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
       } else {
-        // default fallback search
-        searchFragments.push(`
-          (
-            sp.description LIKE ?
-            OR t.description LIKE ?
-            OR pi.mo_no LIKE ?
-            OR pi.demand_no LIKE ?
-          )
-        `);
+        // Default fallback search (multi-word support added)
+        for (const word of searchWords) {
+          searchConditions.push(`
+        (
+          sp.description LIKE ?
+          OR t.description LIKE ?
+          OR pi.mo_no LIKE ?
+          OR pi.demand_no LIKE ?
+        )
+      `);
 
-        queryParams.push(
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-          `%${search}%`,
-        );
+          queryParams.push(`%${word}%`, `%${word}%`, `%${word}%`, `%${word}%`);
+        }
+
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
       }
-
-      whereConditions.push(`(${searchFragments.join(" OR ")})`);
     }
 
     const finalWhere =
@@ -902,30 +935,41 @@ async function getLogsProcurement(req, res) {
     let queryParams = [];
 
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+      let searchConditions = [];
 
-      if (validCols.length > 0) {
-        for (const col of validCols) {
-          const dbCols = columnMap[col.trim()];
-          const sub = dbCols
-            .map((dbCol) => {
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-          searchFragments.push(`(${sub})`);
+      // Normalize selected columns
+      const rawColsNormalized = (req.query.cols || "")
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => columnMap[c]);
+
+      const selectedCols =
+        rawColsNormalized.length > 0
+          ? rawColsNormalized
+          : ["description", "nac_no"]; // fallback
+
+      // Split search into words (space separated)
+      const searchWords = search.split(" ").filter(Boolean);
+
+      for (const word of searchWords) {
+        let wordConditions = [];
+
+        for (const col of selectedCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            wordConditions.push(`${dbCol} LIKE ?`);
+            queryParams.push(`%${word}%`);
+          }
         }
-      } else {
-        searchFragments.push(
-          `(sp.description LIKE ? OR t.description LIKE ? OR p.nac_no LIKE ?)`,
-        );
-        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+
+        // Each word must match in any selected column
+        searchConditions.push(`(${wordConditions.join(" OR ")})`);
       }
 
-      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+      // Combine words with AND
+      whereConditions.push(`(${searchConditions.join(" AND ")})`);
     }
-
     const finalWhere =
       whereConditions.length > 0
         ? "WHERE " + whereConditions.join(" AND ")
@@ -1034,29 +1078,58 @@ async function getLogsStockUpdate(req, res) {
     let whereConditions = [`s.status = 'complete'`];
     let queryParams = [];
 
+    /* ================= SEARCH ================= */
     if (search) {
-      let searchFragments = [];
-      const validCols = rawCols.filter((c) => columnMap[c.trim()]);
+      let searchConditions = [];
+
+      // Normalize selected columns
+      const validCols = rawCols
+        .map((c) => c.trim())
+        .filter((c) => columnMap[c]);
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
 
       if (validCols.length > 0) {
-        for (const col of validCols) {
-          const dbCols = columnMap[col.trim()];
-          const sub = dbCols
-            .map((dbCol) => {
-              queryParams.push(`%${search}%`);
-              return `${dbCol} LIKE ?`;
-            })
-            .join(" OR ");
-          searchFragments.push(`(${sub})`);
-        }
-      } else {
-        searchFragments.push(
-          `(sp.description LIKE ? OR t.description LIKE ? OR s.mo_no LIKE ?)`,
-        );
-        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
-      }
+        // Multi-column selected search
+        for (const word of searchWords) {
+          let wordConditions = [];
 
-      whereConditions.push(`(${searchFragments.join(" OR ")})`);
+          for (const col of validCols) {
+            const dbCols = columnMap[col];
+
+            for (const dbCol of dbCols) {
+              wordConditions.push(`${dbCol} LIKE ?`);
+              queryParams.push(`%${word}%`);
+            }
+          }
+
+          // Each word must match in any selected column
+          searchConditions.push(`(${wordConditions.join(" OR ")})`);
+        }
+
+        // Combine words with AND
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
+      } else {
+        // Default fallback search (multi-word support added)
+        for (const word of searchWords) {
+          searchConditions.push(`
+        (
+          sp.description LIKE ?
+          OR t.description LIKE ?
+          OR pi.mo_no LIKE ?
+          OR pi.demand_no LIKE ?
+        )
+      `);
+
+          queryParams.push(`%${word}%`, `%${word}%`, `%${word}%`, `%${word}%`);
+        }
+
+        whereConditions.push(`(${searchConditions.join(" AND ")})`);
+      }
     }
 
     const finalWhere =

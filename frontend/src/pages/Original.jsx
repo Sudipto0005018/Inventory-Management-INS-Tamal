@@ -47,13 +47,10 @@ const Original = () => {
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
+    { value: "equipment_system", label: "Equipment System" },
     { value: "category", label: "Category" },
-    { value: "obs_increase_qty", label: "Increase Qty" },
     { value: "obs_authorised", label: "OBS Authorised" },
-    { value: "obs_maintained", label: "OBS Maintained" },
-    { value: "obs_held", label: "OBS Held" },
-    { value: "maintained_qty", label: "Maintained Qty" },
-    { value: "qty_held", label: "Qty Held" },
+    // { value: "created_at", label: "Created On" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

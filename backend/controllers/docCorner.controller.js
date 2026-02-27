@@ -134,15 +134,44 @@ async function getDocCorner(req, res) {
     let params = [department.id];
 
     if (search) {
-      whereClause += `
-        AND (
-          description LIKE ?
-          OR equipment_system LIKE ?
-          OR folder_no LIKE ?
-          OR item_code LIKE ?
-        )
-      `;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      const searchableFields = [
+        "description",
+        "equipment_system",
+        "folder_no",
+        "item_code",
+        "obs_authorised",
+        "obs_held",
+        "obs_maintained",
+      ];
+
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of searchableFields) {
+          // If later you add numeric fields, handle like this:
+          if (!isNaN(word) && ["days_untill_return"].includes(field)) {
+            params.push(Number(word));
+            fieldFragments.push(`${field} = ?`);
+          } else {
+            params.push(`%${word}%`);
+            fieldFragments.push(`${field} LIKE ?`);
+          }
+        }
+
+        // Each word must match at least one column
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
 
     const [totalCount] = await pool.query(
@@ -474,27 +503,6 @@ async function getDocIssue(req, res) {
            OR di.qty_received < di.qty_withdrawn)
   `;
 
-  /*  SEARCH FILTER  */
-  // if (search) {
-  //   whereClause += `
-  //     AND (
-  //       dc.description LIKE ?
-  //       OR dc.indian_pattern LIKE ?
-  //       OR dc.category LIKE ?
-  //       OR dc.folder_no LIKE ?
-  //       OR dc.box_no LIKE ?
-  //       OR dc.equipment_system LIKE ?
-  //       OR di.service_no LIKE ?
-  //       OR di.concurred_by LIKE ?
-  //       OR di.issue_to LIKE ?
-  //       OR u1.name LIKE ?
-  //       OR u2.name LIKE ?
-  //     )
-  //   `;
-  // }
-  // const searchParams = search ? Array(11).fill(`%${search}%`) : [];
-
-  /* ---------- SEARCH FILTER ---------- */
   let searchClause = "";
   let searchParams = [];
 
@@ -517,14 +525,28 @@ async function getDocIssue(req, res) {
         : Object.keys(searchableColumns);
 
     if (fieldsToSearch.length > 0) {
-      searchClause =
-        " AND (" +
-        fieldsToSearch
-          .map((field) => `${searchableColumns[field]} LIKE ?`)
-          .join(" OR ") +
-        ")";
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
 
-      searchParams = fieldsToSearch.map(() => `%${search}%`);
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of fieldsToSearch) {
+          fieldFragments.push(`${searchableColumns[field]} LIKE ?`);
+          searchParams.push(`%${word}%`);
+        }
+
+        // Each word must match at least one selected column
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match
+      searchClause = ` AND (${wordConditions.join(" AND ")})`;
     }
   }
 
@@ -1135,28 +1157,6 @@ async function getDocLogs(req, res) {
   let whereClause = `
     WHERE di.qty_received >= di.qty_withdrawn
   `;
-
-  /* ---------- SEARCH FILTER ---------- */
-  // if (search) {
-  //   whereClause += `
-  //     AND (
-  //       dc.description LIKE ?
-  //       OR dc.indian_pattern LIKE ?
-  //       OR dc.category LIKE ?
-  //       OR dc.folder_no LIKE ?
-  //       OR dc.box_no LIKE ?
-  //       OR dc.equipment_system LIKE ?
-  //       OR di.service_no LIKE ?
-  //       OR di.concurred_by LIKE ?
-  //       OR di.issue_to LIKE ?
-  //       OR u1.name LIKE ?
-  //       OR u2.name LIKE ?
-  //     )
-  //   `;
-  // }
-
-  // const searchParams = search ? Array(11).fill(`%${search}%`) : [];
-
   let searchClause = "";
   let searchParams = [];
 
@@ -1179,17 +1179,30 @@ async function getDocLogs(req, res) {
         : Object.keys(searchableColumns);
 
     if (fieldsToSearch.length > 0) {
-      searchClause =
-        " AND (" +
-        fieldsToSearch
-          .map((field) => `${searchableColumns[field]} LIKE ?`)
-          .join(" OR ") +
-        ")";
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
 
-      searchParams = fieldsToSearch.map(() => `%${search}%`);
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of fieldsToSearch) {
+          fieldFragments.push(`${searchableColumns[field]} LIKE ?`);
+          searchParams.push(`%${word}%`);
+        }
+
+        // Each word must match at least one selected column
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match
+      searchClause = ` AND (${wordConditions.join(" AND ")})`;
     }
   }
-
   try {
     /* ---------- TOTAL COUNT ---------- */
     const [countResult] = await pool.query(

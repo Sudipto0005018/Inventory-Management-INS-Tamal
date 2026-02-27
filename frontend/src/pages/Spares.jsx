@@ -55,6 +55,7 @@ const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "Equipment / System", value: "equipment_system" },
   { label: "Denos", value: "denos" },
+  { label: "Category", value: "category" },
   { label: "OBS Authorised", value: "obs_authorised" },
   { label: "OBS Maintained", value: "obs_maintained" },
   { label: "OBS Held", value: "obs_held" },
