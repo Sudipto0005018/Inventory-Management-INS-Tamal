@@ -1,6 +1,7 @@
 import { AiOutlineMinusCircle, AiOutlinePlusCircle } from "react-icons/ai";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import toaster from "../utils/toaster";
 import {
   Table,
   TableBody,
@@ -21,7 +22,7 @@ function BoxNoInputs({
   isLooseSpare = false,
   isBoxnumberDisable = false,
   isAddRow = true,
-  addToDropdown,
+  addToDropdown = () => {},
 }) {
   const { storageLocation, fetchStorageLocation } = useContext(Context);
   const handleInputChange = (index, fieldName, fieldValue) => {
@@ -161,14 +162,15 @@ function BoxNoInputs({
                       handleInputChange(index, "location", value?.name || "");
                     }}
                     onCustomAdd={async (value) => {
-                      await addToDropdown("location", value.name);
+                      await addToDropdown("location_of_storage", value.name);
                     }}
                     onDelete={async (value) => {
                       try {
                         await apiService.delete(`/config/${value.id}`);
                         await fetchStorageLocation();
                         toaster("success", "Deleted Successfully");
-                      } catch {
+                      } catch (error) {
+                        console.error(error);
                         toaster("error", "Failed to delete the item");
                       }
                     }}

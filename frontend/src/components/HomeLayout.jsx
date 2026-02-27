@@ -11,11 +11,11 @@ import apiService from "../utils/apiService";
 
 const HomeLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { fetchStorageLocations, fetchIssueTo, fetchConcurredBy } =
+  const { fetchStorageLocation, fetchIssueTo, fetchConcurredBy } =
     useContext(Context);
 
   useEffect(() => {
-    fetchStorageLocations();
+    fetchStorageLocation();
     fetchIssueTo();
     fetchConcurredBy();
   }, []);

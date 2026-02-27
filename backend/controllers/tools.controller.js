@@ -3,6 +3,113 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { unlinkFile } = require("../middlewares/file");
 
+const ALLOWED_TOOL_SEARCH_FIELDS = [
+  "description",
+  "equipment_system",
+  "category",
+  "boxNo",
+  "storage_location",
+  "item_distribution",
+  "indian_pattern",
+  "item_code",
+  "price_unit",
+  "sub_component",
+  "denos",
+  "obs_authorised",
+  "obs_maintained",
+  "obs_held",
+];
+
+async function getTools(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = (req.query?.search || "").trim();
+  let searchFieldsRaw = req.query?.searchFields || "";
+  let searchFields = [];
+
+  if (searchFieldsRaw) {
+    try {
+      if (searchFieldsRaw.startsWith("[")) {
+        searchFields = JSON.parse(searchFieldsRaw);
+      } else {
+        searchFields = searchFieldsRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    } catch (e) {
+      searchFields = [];
+    }
+  }
+
+  const validFields = searchFields.length
+    ? searchFields.filter((f) => ALLOWED_TOOL_SEARCH_FIELDS.includes(f))
+    : [
+        "description",
+        "equipment_system",
+        "denos",
+        "indian_pattern",
+        "item_code",
+      ];
+
+  const offset = (page - 1) * limit;
+  const department = req.department;
+
+  try {
+    let whereClause = "WHERE department = ?";
+    let params = [department.id];
+
+    if (search) {
+      const orClauses = validFields.map((f) => `${f} LIKE ?`).join(" OR ");
+      whereClause += ` AND (${orClauses})`;
+      validFields.forEach(() => params.push(`%${search}%`));
+    }
+
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM tools ${whereClause}`,
+      params,
+    );
+    const totalTools = totalCount[0].count;
+
+    if (totalTools === 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+            search ? "No matching tools found" : "No tools found",
+          ),
+        );
+    }
+
+    const query = `
+      SELECT * FROM tools ${whereClause}
+      ORDER BY description ASC
+      LIMIT ? OFFSET ?;
+    `;
+    const [rows] = await pool.query(query, [...params, limit, offset]);
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: totalTools,
+          totalPages: Math.ceil(totalTools / limit),
+          currentPage: page,
+        },
+        "Tools retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.log("Error while getting tools: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 const createTool = async (req, res) => {
   const {
     description,
@@ -90,64 +197,64 @@ const createTool = async (req, res) => {
   }
 };
 
-async function getTools(req, res) {
-  const page = parseInt(req.query?.page) || 1;
-  const limit = parseInt(req.query?.limit) || 10;
-  const search = req.query?.search || "";
-  const offset = (page - 1) * limit;
-  const department = req.department;
+// async function getTools(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const search = req.query?.search || "";
+//   const offset = (page - 1) * limit;
+//   const department = req.department;
 
-  try {
-    let whereClause = "WHERE department = ?";
-    let params = [department.id];
-    if (search) {
-      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
-    }
-    const [totalCount] = await pool.query(
-      `SELECT COUNT(*) as count FROM tools ${whereClause}`,
-      params,
-    );
-    const totalSpares = totalCount[0].count;
-    if (totalSpares === 0) {
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          {
-            items: [],
-            totalItems: 0,
-            totalPages: 1,
-            currentPage: page,
-          },
-          search ? "No matching tools found" : "No tools found",
-        ),
-      );
-    }
+//   try {
+//     let whereClause = "WHERE department = ?";
+//     let params = [department.id];
+//     if (search) {
+//       whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
+//       params.push(`%${search}%`, `%${search}%`);
+//     }
+//     const [totalCount] = await pool.query(
+//       `SELECT COUNT(*) as count FROM tools ${whereClause}`,
+//       params,
+//     );
+//     const totalSpares = totalCount[0].count;
+//     if (totalSpares === 0) {
+//       return res.status(200).json(
+//         new ApiResponse(
+//           200,
+//           {
+//             items: [],
+//             totalItems: 0,
+//             totalPages: 1,
+//             currentPage: page,
+//           },
+//           search ? "No matching tools found" : "No tools found",
+//         ),
+//       );
+//     }
 
-    const query = `
-            SELECT * FROM tools ${whereClause}
-            ORDER BY description ASC
-            LIMIT ? OFFSET ?;
-        `;
-    const [rows] = await pool.query(query, [...params, limit, offset]);
+//     const query = `
+//             SELECT * FROM tools ${whereClause}
+//             ORDER BY description ASC
+//             LIMIT ? OFFSET ?;
+//         `;
+//     const [rows] = await pool.query(query, [...params, limit, offset]);
 
-    res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          items: rows,
-          totalItems: totalSpares,
-          totalPages: Math.ceil(totalSpares / limit),
-          currentPage: page,
-        },
-        "Tools retrieved successfully",
-      ),
-    );
-  } catch (error) {
-    console.log("Error while getting tools: ", error);
-    res.status.json(new ApiErrorResponse(500, {}, "Internal server error"));
-  }
-}
+//     res.status(200).json(
+//       new ApiResponse(
+//         200,
+//         {
+//           items: rows,
+//           totalItems: totalSpares,
+//           totalPages: Math.ceil(totalSpares / limit),
+//           currentPage: page,
+//         },
+//         "Tools retrieved successfully",
+//       ),
+//     );
+//   } catch (error) {
+//     console.log("Error while getting tools: ", error);
+//     res.status.json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// }
 
 async function getCriticalTools(req, res) {
   const page = parseInt(req.query?.page) || 1;

@@ -295,7 +295,7 @@ const Spares = ({ type = "" }) => {
   const addToDropdown = async (type, value) => {
     try {
       const data = {
-        type: [type],
+        type,
         attr: [value],
       };
 
@@ -312,7 +312,7 @@ const Spares = ({ type = "" }) => {
           await fetchConcurredBy();
         }
 
-        if (type === "location") {
+        if (type === "location_of_storage") {
           await fetchStorageLocation();
         }
       }
@@ -497,17 +497,28 @@ const Spares = ({ type = "" }) => {
     fetchPersonnelOptions();
   }, []);
 
+  // const handleSearch = async (e) => {
+  //   const searchTerm = inputs.search.trim();
+  //   if (searchTerm === actualSearch) {
+  //     return;
+  //   } else {
+  //     setActualSearch(searchTerm);
+  //   }
+
+  //   setIsLoading((prev) => ({ ...prev, search: true }));
+  //   await fetchdata();
+  //   setIsLoading((prev) => ({ ...prev, search: false }));
+  // };
+
   const handleSearch = async (e) => {
     const searchTerm = inputs.search.trim();
-    if (searchTerm === actualSearch) {
-      return;
-    } else {
-      setActualSearch(searchTerm);
-    }
+    if (searchTerm === actualSearch) return;
+    setActualSearch(searchTerm);
 
     setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
+    await fetchdata(searchTerm, 1, selectedSearchFields);
     setIsLoading((prev) => ({ ...prev, search: false }));
+    setCurrentPage(1);
   };
 
   const handleChange = (e) => {
@@ -525,21 +536,48 @@ const Spares = ({ type = "" }) => {
       [name]: value.toUpperCase(),
     }));
   };
-  const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
+  // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
+  //   try {
+  //     const response = await apiService.get(
+  //       type == "critical"
+  //         ? "/spares/critical"
+  //         : type == "low-stock"
+  //           ? "/spares/low-stock"
+  //           : "/spares",
+  //       {
+  //         params: {
+  //           page,
+  //           search: searchValue,
+  //           limit: config.row_per_page,
+  //         },
+  //       },
+  //     );
+  //     setFetchedData(response.data);
+  //   } catch (error) {}
+  // };
+
+  const fetchdata = async (
+    searchValue = inputs.search,
+    page = currentPage,
+    fields = inputs.searchFields,
+  ) => {
     try {
+      const params = {
+        page,
+        search: searchValue,
+        limit: config.row_per_page,
+      };
+      if (fields && fields.length) {
+        // send as CSV
+        params.searchFields = fields.join(",");
+      }
       const response = await apiService.get(
-        type == "critical"
+        type === "critical"
           ? "/spares/critical"
-          : type == "low-stock"
+          : type === "low-stock"
             ? "/spares/low-stock"
             : "/spares",
-        {
-          params: {
-            page,
-            search: searchValue,
-            limit: config.row_per_page,
-          },
-        },
+        { params },
       );
       setFetchedData(response.data);
     } catch (error) {}
@@ -976,7 +1014,7 @@ const Spares = ({ type = "" }) => {
 
     setPanelProduct({ critical_spare: "no" });
 
-    fetchdata("", 1);
+    fetchdata("", 1, []);
   };
 
   useEffect(() => {
@@ -2259,6 +2297,7 @@ const Spares = ({ type = "" }) => {
                     }))
                   }
                   isLooseSpare={isLooseSpare}
+                  addToDropdown={addToDropdown}
                 />
               </div>
               <div className="w-full my-2 mt-6">

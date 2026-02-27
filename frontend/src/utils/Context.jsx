@@ -12,7 +12,7 @@ const ContextProvider = ({ children }) => {
   const [concurredBy, setConcurredBy] = useState([]);
   const [issueTo, setIssueTo] = useState([]);
 
-  async function fetchStorageLocations() {
+  async function fetchStorageLocation() {
     try {
       const response = await apiService.get("/config/location-storage");
       if (response.success) {
@@ -66,7 +66,7 @@ const ContextProvider = ({ children }) => {
         concurredBy,
         setConcurredBy,
         fetchIssueTo,
-        fetchStorageLocations,
+        fetchStorageLocation,
         fetchConcurredBy,
       }}
     >

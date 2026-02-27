@@ -3,6 +3,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
+import toaster from "../utils/toaster";
 import {
   Command,
   CommandEmpty,
@@ -95,16 +96,23 @@ const ComboBox = ({
   };
 
   const handleConfirmYes = async () => {
-    const customOption = { name: customInputValue };
-    if (onCustomAdd) {
-      setLoading((prev) => ({ ...prev, add: true }));
-      await onCustomAdd(customOption);
-      setLoading((prev) => ({ ...prev, add: true }));
+    try {
+      const customOption = { name: customInputValue };
+      if (onCustomAdd) {
+        setLoading((prev) => ({ ...prev, add: true }));
+        await onCustomAdd(customOption);
+        // setLoading((prev) => ({ ...prev, add: true }));
+      }
+      setValue(customInputValue);
+      if (onSelect) onSelect(customOption);
+      setDialogs((prev) => ({ ...prev, confirm: false }));
+      setCustomInputValue("");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      // ✅ ALWAYS STOP LOADING
+      setLoading((prev) => ({ ...prev, add: false }));
     }
-    setValue(customInputValue);
-    if (onSelect) onSelect(customOption);
-    setDialogs((prev) => ({ ...prev, confirm: false }));
-    setCustomInputValue("");
   };
 
   const handleConfirmNo = () => {

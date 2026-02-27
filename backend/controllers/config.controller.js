@@ -61,7 +61,7 @@ async function deleteConfig(req, res) {
 async function getLocationStorage(req, res) {
   try {
     const [rows] = await pool.query(
-      `SELECT attr_1 FROM config WHERE type = 'location_of_storage'`,
+      `SELECT id, attr_1 FROM config WHERE type = 'location_of_storage'`,
     );
     const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
     res.status(200).json(new ApiResponse(200, data, "All location of storage"));

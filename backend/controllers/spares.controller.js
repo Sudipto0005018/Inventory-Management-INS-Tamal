@@ -6,6 +6,119 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 
+const ALLOWED_SEARCH_FIELDS = [
+  "description",
+  "equipment_system",
+  "denos",
+  "obs_authorised",
+  "obs_maintained",
+  "obs_held",
+  "boxNo",
+  "storage_location",
+  "item_distribution",
+  "indian_pattern",
+  "item_code",
+  "price_unit",
+  "sub_component",
+];
+
+async function getSpares(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = (req.query?.search || "").trim();
+  // new: comma-separated or JSON array of fields
+  let searchFieldsRaw = req.query?.searchFields || "";
+  let searchFields = [];
+
+  if (searchFieldsRaw) {
+    try {
+      if (searchFieldsRaw.startsWith("[")) {
+        searchFields = JSON.parse(searchFieldsRaw);
+      } else {
+        searchFields = searchFieldsRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    } catch (e) {
+      searchFields = [];
+    }
+  }
+
+  // sanitize/validate fields, fallback to default fields when none provided
+  const validFields = searchFields.length
+    ? searchFields.filter((f) => ALLOWED_SEARCH_FIELDS.includes(f))
+    : [
+        "description",
+        "equipment_system",
+        "denos",
+        "indian_pattern",
+        "item_code",
+      ];
+
+  const offset = (page - 1) * limit;
+  const department = req.department;
+
+  try {
+    // base where
+    let whereClause = "WHERE department = ?";
+    let params = [department.id];
+
+    if (search) {
+      // build grouped OR clauses for the requested fields
+      const likeClauses = validFields.map(() => "?? LIKE ?").join(" OR ");
+      // note: use mysql2 placeholders properly; here we'll build fragments and params
+      // but many mysql clients don't support ?? with pool.query string arrays; instead map to column names directly after validation
+      const orClauses = validFields.map((f) => `${f} LIKE ?`).join(" OR ");
+      whereClause += ` AND (${orClauses})`;
+      validFields.forEach(() => params.push(`%${search}%`));
+    }
+
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM spares ${whereClause}`,
+      params,
+    );
+    const totalSpares = totalCount[0].count;
+
+    if (totalSpares === 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+            search ? "No matching spares found" : "No spare found",
+          ),
+        );
+    }
+
+    const query = `
+      SELECT *, 'spare' AS source FROM spares
+      ${whereClause}
+      ORDER BY description ASC
+      LIMIT ? OFFSET ?;
+    `;
+    const [rows] = await pool.query(query, [...params, limit, offset]);
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: totalSpares,
+          totalPages: Math.ceil(totalSpares / limit),
+          currentPage: page,
+        },
+        "Spares retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.log("Error while getting spares: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 const createSpare = async (req, res) => {
   const {
     description,
@@ -168,66 +281,67 @@ async function updateSpecialDemand(req, res) {
   }
 }
 
-async function getSpares(req, res) {
-  const page = parseInt(req.query?.page) || 1;
-  const limit = parseInt(req.query?.limit) || 10;
-  const search = req.query?.search || "";
-  const offset = (page - 1) * limit;
-  const department = req.department;
+// async function getSpares(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const search = req.query?.search || "";
+//   const offset = (page - 1) * limit;
+//   const department = req.department;
 
-  try {
-    let whereClause = "WHERE department = ?";
-    let params = [department.id];
-    if (search) {
-      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
-    }
-    const [totalCount] = await pool.query(
-      `SELECT COUNT(*) as count FROM spares ${whereClause}`,
-      params,
-    );
-    const totalSpares = totalCount[0].count;
-    if (totalSpares === 0) {
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          {
-            items: [],
-            totalItems: 0,
-            totalPages: 1,
-            currentPage: page,
-          },
-          search ? "No matching spares found" : "No spare found",
-        ),
-      );
-    }
+//   try {
+//     let whereClause = "WHERE department = ?";
+//     let params = [department.id];
+//     if (search) {
+//       whereClause +=
+//         " AND (description LIKE ? OR equipment_system LIKE ? OR obs_authorised LIKE ?)";
+//       params.push(`%${search}%`, `%${search}%`);
+//     }
+//     const [totalCount] = await pool.query(
+//       `SELECT COUNT(*) as count FROM spares ${whereClause}`,
+//       params,
+//     );
+//     const totalSpares = totalCount[0].count;
+//     if (totalSpares === 0) {
+//       return res.status(200).json(
+//         new ApiResponse(
+//           200,
+//           {
+//             items: [],
+//             totalItems: 0,
+//             totalPages: 1,
+//             currentPage: page,
+//           },
+//           search ? "No matching spares found" : "No spare found",
+//         ),
+//       );
+//     }
 
-    const query = `
-            SELECT *, 'spare' AS source FROM spares
-            ${whereClause}
-            ORDER BY description ASC
-            LIMIT ? OFFSET ?;
-        `;
-    const [rows] = await pool.query(query, [...params, limit, offset]);
-    res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          items: rows,
-          totalItems: totalSpares,
-          totalPages: Math.ceil(totalSpares / limit),
-          currentPage: page,
-        },
-        "Spares retrieved successfully",
-      ),
-    );
-  } catch (error) {
-    console.log("Error while getting spares: ", error);
-    res
-      .status(500)
-      .json(new ApiErrorResponse(500, {}, "Internal server error"));
-  }
-}
+//     const query = `
+//             SELECT *, 'spare' AS source FROM spares
+//             ${whereClause}
+//             ORDER BY description ASC
+//             LIMIT ? OFFSET ?;
+//         `;
+//     const [rows] = await pool.query(query, [...params, limit, offset]);
+//     res.status(200).json(
+//       new ApiResponse(
+//         200,
+//         {
+//           items: rows,
+//           totalItems: totalSpares,
+//           totalPages: Math.ceil(totalSpares / limit),
+//           currentPage: page,
+//         },
+//         "Spares retrieved successfully",
+//       ),
+//     );
+//   } catch (error) {
+//     console.log("Error while getting spares: ", error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// }
 
 async function getCriticalSpares(req, res) {
   const page = parseInt(req.query?.page) || 1;
