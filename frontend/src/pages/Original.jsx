@@ -25,6 +25,11 @@ const Original = () => {
         </span>
       ),
     },
+    {
+      key: "item_type",
+      header: "Type",
+      width: "min-w-[40px]",
+    },
     { key: "category", header: "Category" },
     {
       key: "equipment_system",
@@ -145,7 +150,7 @@ const Original = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-
+      item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
       quantity: row.obs_increase_qty || "--",
       modified_obs: row.obs_authorised || "--",
 

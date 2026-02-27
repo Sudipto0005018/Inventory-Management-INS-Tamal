@@ -31,7 +31,7 @@ const procurement = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "NAC Qty", key: "nac_qty", width: 10 },
   { header: "NAC No.", key: "nac_no", width: 20 },
   { header: "NAC Date", key: "nac_date", width: 20 },
@@ -55,7 +55,7 @@ const stock_update = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Stocked In Qty", key: "stocked_in_qty", width: 20 },
   { header: "MO Gate Pass No.", key: "mo_no", width: 20 },
   { header: "MO Date", key: "mo_date", width: 20 },
@@ -76,7 +76,7 @@ const survey = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Issued To", key: "issue_to", width: 15 },
   { header: "Survey Qty", key: "survey_quantity", width: 15 },
   { header: "Withdrawal Qty", key: "withdrawl_qty", width: 18 },
@@ -94,7 +94,7 @@ const demand = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Issued To", key: "issue_to", width: 15 },
   { header: "Surveyed Qty", key: "survey_qty", width: 15 },
   { header: "Survey Voucher No.", key: "survey_voucher_no", width: 22 },
@@ -108,7 +108,7 @@ const issue = [
   { header: "IN Pattern No.", key: "indian_pattern", width: 25 },
   { header: "Category", key: "category", width: 25 },
   { header: "Equipment /System", key: "equipment_system", width: 30 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Stocked In / NAC Qty", key: "stocked_nac_qty", width: 22 },
   { header: "Quote Authority", key: "quote_authority", width: 25 },
   { header: "Box No.", key: "box_no", width: 35 },
@@ -130,7 +130,7 @@ const special_demand = [
   { header: "Item Description", key: "description", width: 30 },
   { header: "IN Part No.", key: "indian_pattern", width: 25 },
   { header: "Category", key: "category", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Modified OBS Authorised", key: "obs_authorised", width: 30 },
   { header: "OBS Authorised Inc Qty", key: "obs_increase_qty", width: 30 },
   { header: "Quote Authority", key: "quote_authority", width: 25 },
@@ -150,7 +150,7 @@ const ty = [
   { header: "Item Description", key: "description", width: 30 },
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Qty Withdrawn", key: "qty_withdrawn", width: 15 },
   { header: "Qty Received", key: "qty_received", width: 15 },
   { header: "Service No.", key: "service_no", width: 22 },
@@ -172,7 +172,7 @@ const temp = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 30 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Qty Withdrawn", key: "qty_withdrawn", width: 15 },
   { header: "Qty Received", key: "qty_received", width: 15 },
   { header: "Service No.", key: "service_no", width: 22 },
@@ -231,7 +231,7 @@ const d787 = [
   { header: "IN Part No.", key: "indian_pattern", width: 25 },
   { header: "Category", key: "category", width: 25 },
   { header: "Equipment / System", key: "equipment_system", width: 30 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Modified OBS Authorised", key: "obs_authorised", width: 30 },
   { header: "Created By", key: "created_by_name", width: 20 },
   { header: "Created On", key: "created_at", width: 20 },
@@ -241,7 +241,7 @@ const d787_amendment = [
   { header: "Item Description", key: "description", width: 30 },
   { header: "IN Part No.", key: "indian_pattern", width: 25 },
   { header: "Category", key: "category", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "Modified OBS Authorised", key: "obs_authorised", width: 30 },
   { header: "OBS Authorised Inc Qty", key: "obs_increase_qty", width: 30 },
   { header: "Quote Authority", key: "quote_authority", width: 25 },
@@ -262,7 +262,7 @@ const nac = [
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
   { header: "Category", key: "category", width: 20 },
   { header: "Equipment /System", key: "equipment_system", width: 25 },
-
+  { header: "Type", key: "type", width: 12 },
   { header: "NAC Qty", key: "nac_qty", width: 10 },
   { header: "NAC No.", key: "nac_no", width: 20 },
   { header: "NAC Date", key: "nac_date", width: 20 },

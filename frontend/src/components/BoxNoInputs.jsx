@@ -11,14 +11,7 @@ import {
 } from "./ui/table";
 // import { CustomComboBox } from "./CustomCombobox";
 import ComboBox from "./ComboBox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "./ui/dialog";
 import { useContext, useState } from "react";
-import SpinnerButton from "./ui/spinner-button";
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 
@@ -28,7 +21,7 @@ function BoxNoInputs({
   isLooseSpare = false,
   isBoxnumberDisable = false,
   isAddRow = true,
-  // addToDropdown = async () => {},
+  addToDropdown,
 }) {
   const { storageLocation, fetchStorageLocation } = useContext(Context);
   const handleInputChange = (index, fieldName, fieldValue) => {
@@ -39,31 +32,6 @@ function BoxNoInputs({
     };
     onChange(newRows);
   };
-
-  const addToDropdown = async (type, value) => {
-    try {
-      const data = {
-        type: [type],
-        attr: [value],
-      };
-
-      const response = await apiService.post("/config/add", data);
-
-      if (response.success) {
-        toaster("success", "Data Added");
-
-        if (type === "location") {
-          await fetchStorageLocation();
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      toaster("error", "Failed to add");
-    }
-  };
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [newValue, setNewValue] = useState(null);
 
   const addRow = () => {
     onChange([
@@ -190,11 +158,10 @@ function BoxNoInputs({
                     placeholder="Select location"
                     value={row.location}
                     onSelect={(value) => {
-                      handleInputChange(index, "location", value.name);
+                      handleInputChange(index, "location", value?.name || "");
                     }}
-                    onCustomAdd={(value) => {
-                      setOpen(true);
-                      setNewValue(value.name);
+                    onCustomAdd={async (value) => {
+                      await addToDropdown("location", value.name);
                     }}
                     onDelete={async (value) => {
                       try {
@@ -239,42 +206,6 @@ function BoxNoInputs({
           Add new {isLooseSpare ? "rack" : "box"}
         </Button>
       )}
-      <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
-        <DialogContent
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
-          showCloseButton={false}
-        >
-          <DialogTitle>Confirmation</DialogTitle>
-          <DialogDescription>
-            Do you want to save it for later?
-          </DialogDescription>
-          <div className="flex gap-3 justify-end items-center">
-            <Button
-              className="cursor-pointer"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <SpinnerButton
-              className="cursor-pointer"
-              disabled={loading}
-              loading={loading}
-              loadingText="Adding..."
-              onClick={async () => {
-                setLoading(true);
-                await addToDropdown("location", newValue);
-                setOpen(false);
-                setLoading(false);
-              }}
-            >
-              Add
-            </SpinnerButton>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -68,8 +68,14 @@ const SEARCH_FIELDS = [
 ];
 
 const Spares = ({ type = "" }) => {
-  const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
-    useContext(Context);
+  const {
+    config,
+    fetchIssueTo,
+    fetchConcurredBy,
+    fetchStorageLocation,
+    issueTo,
+    concurredBy,
+  } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description", width: "max-w-[50px]" },
     {
@@ -207,6 +213,7 @@ const Spares = ({ type = "" }) => {
     oem: "",
     supplier: "",
     critical_spare: "no",
+    part_of: "no",
   });
 
   const [isOpen, setIsOpen] = useState({
@@ -303,6 +310,10 @@ const Spares = ({ type = "" }) => {
 
         if (type === "concurred_by") {
           await fetchConcurredBy();
+        }
+
+        if (type === "location") {
+          await fetchStorageLocation();
         }
       }
     } catch (error) {
@@ -685,19 +696,21 @@ const Spares = ({ type = "" }) => {
       // }
 
       // ✅ Call Special Demand API
-      const specialPayload = {
-        spare_id: createdSpareId,
-        obs_authorised: Number(inputs.obs_authorised) || 0,
-        obs_increase_qty: Number(inputs.obs_authorised) || 0,
-        obs_maintained: Number(inputs.obs_maintained) || 0,
-        obs_held: Number(inputs.obs_held) || 0,
-        maintained_qty: Number(inputs.obs_maintained) || 0,
-        qty_held: Number(inputs.obs_held) || 0,
-        box_no: boxNo,
-      };
+      if (inputs.part_of === "yes" && createdSpareId) {
+        const specialPayload = {
+          spare_id: createdSpareId,
+          obs_authorised: Number(inputs.obs_authorised) || 0,
+          obs_increase_qty: Number(inputs.obs_authorised) || 0,
+          obs_maintained: Number(inputs.obs_maintained) || 0,
+          obs_held: Number(inputs.obs_held) || 0,
+          maintained_qty: Number(inputs.obs_maintained) || 0,
+          qty_held: Number(inputs.obs_held) || 0,
+          box_no: boxNo,
+        };
 
-      console.log("specialPayload==>", specialPayload);
-      await apiService.post("/specialDemand/d787", specialPayload);
+        console.log("specialPayload==>", specialPayload);
+        await apiService.post("/specialDemand/d787", specialPayload);
+      }
       //d787 logic end
 
       if (response.success) {
@@ -721,6 +734,7 @@ const Spares = ({ type = "" }) => {
           indian_pattern: "",
           remarks: "",
           critical_spare: "",
+          part_of: "no",
           oem: "",
           supplier: "",
         });

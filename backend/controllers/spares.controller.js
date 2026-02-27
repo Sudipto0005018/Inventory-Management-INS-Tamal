@@ -868,6 +868,11 @@ async function generateExcel(req, res) {
       COALESCE(sp.category, t.category) AS category,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        CASE
+           WHEN p.spare_id IS NOT NULL THEN 'spare'
+           WHEN p.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
 
         'PROCUREMENT' AS source,
        CASE
@@ -906,7 +911,11 @@ async function generateExcel(req, res) {
         `
         SELECT s.stocked_in_qty, s.mo_no, s.mo_date, s.issue_date,
         s.box_no, s.qty_received, s.created_at, s.status,
-
+          CASE
+           WHEN s.spare_id IS NOT NULL THEN 'spare'
+           WHEN s.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
@@ -957,6 +966,11 @@ async function generateExcel(req, res) {
       s.box_no,
       s.created_at,
       s.status,
+        CASE
+           WHEN s.spare_id IS NOT NULL THEN 'spare'
+           WHEN s.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
@@ -989,7 +1003,11 @@ async function generateExcel(req, res) {
       d.survey_date,
       d.created_at,
       d.status, 
-
+          CASE
+           WHEN d.spare_id IS NOT NULL THEN 'spare'
+           WHEN d.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.category, t.category) AS category,
@@ -1029,6 +1047,11 @@ async function generateExcel(req, res) {
       pi.return_date,
       pi.created_at,
       pi.status,
+          CASE
+           WHEN pi.spare_id IS NOT NULL THEN 'spare'
+           WHEN pi.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
@@ -1096,6 +1119,12 @@ async function generateExcel(req, res) {
           sd.created_at,
 
           CASE
+           WHEN sd.spare_id IS NOT NULL THEN 'spare'
+           WHEN sd.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
+
+          CASE
             WHEN sd.spare_id IS NOT NULL THEN s.description
             WHEN sd.tool_id IS NOT NULL THEN t.description
             ELSE NULL
@@ -1153,6 +1182,12 @@ async function generateExcel(req, res) {
           WHEN ty.tool_id IS NOT NULL THEN 'tool'
           ELSE 'unknown'
         END AS source,
+
+        CASE
+           WHEN ty.spare_id IS NOT NULL THEN 'spare'
+           WHEN ty.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+        END AS type,
 
         CASE
           WHEN ty.spare_id IS NOT NULL THEN s.description
@@ -1223,6 +1258,12 @@ async function generateExcel(req, res) {
       WHEN til.tool_id IS NOT NULL THEN 'tool'
       ELSE 'unknown'
     END AS source,
+
+      CASE
+           WHEN til.spare_id IS NOT NULL THEN 'spare'
+           WHEN til.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+      END AS type,
 
     CASE
       WHEN til.spare_id IS NOT NULL THEN s.description
@@ -1349,6 +1390,12 @@ ORDER BY til.created_at DESC;
           sd.created_at,
 
           CASE
+           WHEN sd.spare_id IS NOT NULL THEN 'spare'
+           WHEN sd.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
+
+          CASE
             WHEN sd.spare_id IS NOT NULL THEN s.description
             WHEN sd.tool_id IS NOT NULL THEN t.description
             ELSE NULL
@@ -1403,6 +1450,12 @@ ORDER BY til.created_at DESC;
           sd.created_at,
 
           CASE
+           WHEN sd.spare_id IS NOT NULL THEN 'spare'
+           WHEN sd.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
+
+          CASE
             WHEN sd.spare_id IS NOT NULL THEN s.description
             WHEN sd.tool_id IS NOT NULL THEN t.description
             ELSE NULL
@@ -1447,6 +1500,12 @@ ORDER BY til.created_at DESC;
       COALESCE(sp.category, t.category) AS category,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+
+        CASE
+           WHEN p.spare_id IS NOT NULL THEN 'spare'
+           WHEN p.tool_id IS NOT NULL THEN 'tool'
+           ELSE NULL
+          END AS type,
 
         'PROCUREMENT' AS source,
         pi.demand_no,

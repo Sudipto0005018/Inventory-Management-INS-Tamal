@@ -2,14 +2,6 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
-// {
-//     type: "location_of_storage",
-//     attr:["Rack 1"]
-// }
-// {
-//   type: "service_no",
-//   attr: ["12345", "Ravi Kumar"],
-// };
 async function addConfig(req, res) {
   try {
     const { type, attr } = req.body;
