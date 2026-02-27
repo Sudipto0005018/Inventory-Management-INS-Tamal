@@ -162,7 +162,7 @@ async function getSurveys(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 
@@ -295,7 +295,7 @@ async function getLogSurveys(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 

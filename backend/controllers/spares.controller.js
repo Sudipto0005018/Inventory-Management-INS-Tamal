@@ -69,7 +69,7 @@ async function getSpares(req, res) {
     if (search) {
       // Split search by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 
@@ -390,7 +390,7 @@ async function getCriticalSpares(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 

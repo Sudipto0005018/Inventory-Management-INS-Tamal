@@ -55,7 +55,7 @@ async function getProcurementPending(req, res) {
       // Split search into words (space separated)
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/) // split by comma or any whitespace
+        .split(/[,;\s]+/) // split by comma or any whitespace
         .map((word) => word.trim())
         .filter(Boolean);
 
@@ -338,7 +338,7 @@ async function getStockUpdatePending(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 
@@ -1089,7 +1089,7 @@ async function getLogsStockUpdate(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 

@@ -113,7 +113,7 @@ async function getDemands(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 
@@ -535,7 +535,7 @@ async function getDemandLogs(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 

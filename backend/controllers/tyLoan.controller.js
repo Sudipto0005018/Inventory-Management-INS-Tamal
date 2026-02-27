@@ -215,7 +215,7 @@ async function getTyLoanList(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 
@@ -865,7 +865,7 @@ async function getLogsTy(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 

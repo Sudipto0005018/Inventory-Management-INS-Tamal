@@ -208,7 +208,7 @@ async function getTemporaryIssueList(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 
@@ -963,7 +963,7 @@ async function getLogsTemporary(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 

@@ -64,7 +64,7 @@ async function getTools(req, res) {
     if (search) {
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 
@@ -307,7 +307,7 @@ async function getCriticalTools(req, res) {
 
       // Split search by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 

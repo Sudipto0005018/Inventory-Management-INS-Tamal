@@ -146,7 +146,7 @@ async function getDocCorner(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 
@@ -527,7 +527,7 @@ async function getDocIssue(req, res) {
     if (fieldsToSearch.length > 0) {
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 
@@ -1181,7 +1181,7 @@ async function getDocLogs(req, res) {
     if (fieldsToSearch.length > 0) {
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((w) => w.trim())
         .filter(Boolean);
 

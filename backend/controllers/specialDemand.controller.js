@@ -178,7 +178,7 @@ async function getSpecialDemandList(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 
@@ -503,7 +503,7 @@ async function getLogsSpecialDemand(req, res) {
 
     // Split by comma OR space
     const searchWords = search
-      .split(/[,\s]+/)
+      .split(/[,;\s]+/)
       .map((word) => word.trim())
       .filter(Boolean);
 
@@ -824,7 +824,7 @@ async function getD787List(req, res) {
 
       // Split by comma OR space
       const searchWords = search
-        .split(/[,\s]+/)
+        .split(/[,;\s]+/)
         .map((word) => word.trim())
         .filter(Boolean);
 
