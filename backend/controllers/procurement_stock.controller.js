@@ -948,9 +948,10 @@ async function getLogsProcurement(req, res) {
           ? rawColsNormalized
           : ["description", "nac_no"]; // fallback
 
-      // Split search into words (space separated)
-      const searchWords = search.split(" ").filter(Boolean);
-
+      const searchWords = search
+        .split(/[,;\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
       for (const word of searchWords) {
         let wordConditions = [];
 
