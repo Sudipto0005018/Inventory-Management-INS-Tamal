@@ -80,7 +80,7 @@ const PendingTempLoan = ({ type = "" }) => {
 
     { value: "qty_withdrawn", label: "Issued Qty" },
     { value: "loan_duration", label: "Loan Duration" },
-    { value: "created_at", label: "Created On)" },
+    { value: "created_at", label: "Created On" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");

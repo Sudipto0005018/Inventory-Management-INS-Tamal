@@ -53,19 +53,19 @@ import { useLocation } from "react-router";
 //search fields
 const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
+  { label: "IN Part No.", value: "indian_pattern" },
   { label: "Equipment / System", value: "equipment_system" },
   { label: "Denos", value: "denos" },
   { label: "Category", value: "category" },
   { label: "OBS Authorised", value: "obs_authorised" },
   { label: "OBS Maintained", value: "obs_maintained" },
   { label: "OBS Held", value: "obs_held" },
-  { label: "Item Storage Distribution", value: "boxNo" },
-  { label: "Location of Storage", value: "storage_location" },
-  { label: "Item Distribution", value: "item_distribution" },
-  { label: "IN Part No.", value: "indian_pattern" },
+  // { label: "Item Distribution", value: "item_distribution" },
+  // { label: "Item Storage Distribution", value: "boxNo" },
   { label: "Item Code", value: "item_code" },
   { label: "Price/Unit", value: "price_unit" },
   { label: "Sub Component", value: "sub_component" },
+  { label: "Location of Storage", value: "storage_location" },
 ];
 
 const Tools = ({ type = "" }) => {

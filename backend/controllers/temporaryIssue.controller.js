@@ -934,15 +934,14 @@ async function getLogsTemporary(req, res) {
   const search = req.query?.search ? req.query.search.trim() : "";
   const cols = req.query?.cols ? req.query.cols.split(",") : [];
 
-  /* ---------- BASE WHERE ---------- */
+  /* BASE WHERE  */
   let whereClause = `
     WHERE til.status IN ('complete', 'utilised')
   `;
 
   let searchParams = [];
 
-  /* ---------- SEARCH FILTER ---------- */
-  /* ---------- SEARCH FILTER ---------- */
+  /* SEARCH FILTER */
   if (search) {
     const columnMap = {
       description: ["s.description", "t.description"],
@@ -1241,27 +1240,48 @@ async function getOverdueTempIssue(req, res) {
 `;
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search) {
-    whereClause += `
-      AND (
-        s.description LIKE ?
-        OR t.description LIKE ?
-        OR s.indian_pattern LIKE ?
-        OR t.indian_pattern LIKE ?
-        OR s.category LIKE ?
-        OR t.category LIKE ?
-        OR s.equipment_system LIKE ?
-        OR t.equipment_system LIKE ?
-        OR til.service_no LIKE ?
-        OR til.issue_to LIKE ?
-        OR u1.name LIKE ?
-        OR u2.name LIKE ?
-        OR til.box_no LIKE ?
-      )
-    `;
-  }
+  let searchParams = [];
 
-  const searchParams = search ? Array(13).fill(`%${search}%`) : [];
+  if (search) {
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,;\s]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+    const searchableColumns = [
+      "s.description",
+      "t.description",
+      "s.indian_pattern",
+      "t.indian_pattern",
+      "s.category",
+      "t.category",
+      "s.equipment_system",
+      "t.equipment_system",
+      "til.service_no",
+      "til.issue_to",
+      "u1.name",
+      "u2.name",
+      "til.box_no",
+    ];
+
+    let wordConditions = [];
+
+    for (const word of searchWords) {
+      let fieldConditions = [];
+
+      for (const column of searchableColumns) {
+        fieldConditions.push(`${column} LIKE ?`);
+        searchParams.push(`%${word}%`);
+      }
+
+      // Each word must match at least one column
+      wordConditions.push(`(${fieldConditions.join(" OR ")})`);
+    }
+
+    // All words must match
+    whereClause += ` AND (${wordConditions.join(" AND ")})`;
+  }
 
   try {
     /* ---------- TOTAL COUNT ---------- */

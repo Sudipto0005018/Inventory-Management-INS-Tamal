@@ -303,7 +303,17 @@ async function getCriticalTools(req, res) {
     let whereClause = "WHERE department = ? AND critical_tool = 1";
     let params = [department.id];
     if (search) {
-      const searchableFields = ["description", "equipment_system"];
+      const searchableFields = [
+        "description",
+        "equipment_system",
+        "category",
+        "indian_pattern",
+        "denos",
+        "obs_authorised",
+        "obs_maintained",
+        "obs_held",
+        "storage_location",
+      ];
 
       // Split search by comma OR space
       const searchWords = search
@@ -782,8 +792,40 @@ async function getLowStockTools(req, res) {
 `;
     let params = [];
     if (search) {
-      whereClause += " AND (description LIKE ? OR equipment_system LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+      const searchableFields = [
+        "description",
+        "equipment_system",
+        "category",
+        "indian_pattern",
+        "denos",
+        "obs_authorised",
+        "obs_maintained",
+        "obs_held",
+        "storage_location",
+      ];
+
+      // Remove semicolons
+      const searchWords = search
+        .split(/[,;\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of searchableFields) {
+          fieldFragments.push(`${field} LIKE ?`);
+          params.push(`%${word}%`);
+        }
+
+        // Each word must match at least one column
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
     const [totalCount] = await pool.query(
       `SELECT COUNT(*) as count FROM tools ${whereClause}`,

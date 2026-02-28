@@ -1378,25 +1378,46 @@ async function getDocOverdue(req, res) {
 `;
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search) {
-    whereClause += `
-      AND (
-        dc.description LIKE ?
-        OR dc.indian_pattern LIKE ?
-        OR dc.category LIKE ?
-        OR dc.folder_no LIKE ?
-        OR dc.box_no LIKE ?
-        OR dc.equipment_system LIKE ?
-        OR di.service_no LIKE ?
-        OR di.concurred_by LIKE ?
-        OR di.issue_to LIKE ?
-        OR u1.name LIKE ?
-        OR u2.name LIKE ?
-      )
-    `;
-  }
+  let searchParams = [];
 
-  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+  if (search) {
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,;\s]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+    const searchableColumns = [
+      "dc.description",
+      "dc.indian_pattern",
+      "dc.category",
+      "dc.folder_no",
+      "dc.box_no",
+      "dc.equipment_system",
+      "di.service_no",
+      "di.concurred_by",
+      "di.issue_to",
+      "u1.name",
+      "u2.name",
+    ];
+
+    let wordConditions = [];
+
+    for (const word of searchWords) {
+      let fieldConditions = [];
+
+      for (const column of searchableColumns) {
+        fieldConditions.push(`${column} LIKE ?`);
+        searchParams.push(`%${word}%`);
+      }
+
+      // Each word must match at least one column
+      wordConditions.push(`(${fieldConditions.join(" OR ")})`);
+    }
+
+    // All words must match
+    whereClause += ` AND (${wordConditions.join(" AND ")})`;
+  }
 
   try {
     /* ---------- TOTAL COUNT ---------- */
@@ -1502,6 +1523,7 @@ async function getDocOverdue(req, res) {
     });
   }
 }
+
 module.exports = {
   createDocCorner,
   getDocCorner,

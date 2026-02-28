@@ -1070,25 +1070,46 @@ async function getTyLoanOverdue(req, res) {
 `;
 
   /* ---------- SEARCH FILTER ---------- */
-  if (search) {
-    whereClause += `
-      AND (
-        s.description LIKE ?
-        OR t.description LIKE ?
-        OR s.indian_pattern LIKE ?
-        OR t.indian_pattern LIKE ?
-        OR s.category LIKE ?
-        OR t.category LIKE ?
-        OR ty.service_no LIKE ?
-        OR ty.concurred_by LIKE ?
-        OR ty.box_no LIKE ?
-        OR u1.name LIKE ?
-        OR u2.name LIKE ?
-      )
-    `;
-  }
+  let searchParams = [];
 
-  const searchParams = search ? Array(11).fill(`%${search}%`) : [];
+  if (search) {
+    // Split by comma OR space
+    const searchWords = search
+      .split(/[,;\s]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+    const searchableColumns = [
+      "s.description",
+      "t.description",
+      "s.indian_pattern",
+      "t.indian_pattern",
+      "s.category",
+      "t.category",
+      "ty.service_no",
+      "ty.concurred_by",
+      "ty.box_no",
+      "u1.name",
+      "u2.name",
+    ];
+
+    let wordConditions = [];
+
+    for (const word of searchWords) {
+      let fieldConditions = [];
+
+      for (const column of searchableColumns) {
+        fieldConditions.push(`${column} LIKE ?`);
+        searchParams.push(`%${word}%`);
+      }
+
+      // Each word must match at least one column
+      wordConditions.push(`(${fieldConditions.join(" OR ")})`);
+    }
+
+    // All words must match
+    whereClause += ` AND (${wordConditions.join(" AND ")})`;
+  }
 
   try {
     /* ---------- TOTAL COUNT ---------- */
