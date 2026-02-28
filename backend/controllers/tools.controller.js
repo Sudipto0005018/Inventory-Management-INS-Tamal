@@ -393,6 +393,7 @@ async function updateTool(req, res) {
     equipment_system,
     denos,
     obs_authorised,
+    obs_authorised_old,
     obs_maintained,
     obs_held,
     b_d_authorised,
@@ -446,7 +447,7 @@ async function updateTool(req, res) {
     }
 
     /* 2️⃣ If obs_authorised changed → approval required */
-    if (tool.obs_authorised != obs_authorised) {
+    if (obs_authorised_old != obs_authorised) {
       // Check pending approval
       const [[pending]] = await pool.query(
         `
@@ -473,7 +474,7 @@ async function updateTool(req, res) {
         VALUES
           (?, ?, 'obs_authorised', ?, ?, 'pending')
         `,
-        [id, req.user.id, tool.obs_authorised, obs_authorised],
+        [id, req.user.id, obs_authorised_old, obs_authorised],
       );
     }
 

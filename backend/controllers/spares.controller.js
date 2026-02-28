@@ -487,6 +487,7 @@ async function updateSpare(req, res) {
     equipment_system,
     denos,
     obs_authorised,
+    obs_authorised_old,
     obs_maintained,
     obs_held,
     b_d_authorised,
@@ -536,7 +537,7 @@ async function updateSpare(req, res) {
     }
 
     /* 2️⃣ If obs_authorised changed → approval required */
-    if (spare.obs_authorised != obs_authorised) {
+    if (obs_authorised_old != obs_authorised) {
       // Check pending approval
       const [[pending]] = await pool.query(
         `
@@ -563,7 +564,7 @@ async function updateSpare(req, res) {
         VALUES
           (?, ?, 'obs_authorised', ?, ?, 'pending')
         `,
-        [id, req.user.id, spare.obs_authorised, obs_authorised],
+        [id, req.user.id, obs_authorised_old, obs_authorised],
       );
     }
 

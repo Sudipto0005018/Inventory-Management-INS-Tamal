@@ -91,7 +91,17 @@ async function signIn(req, res) {
         .status(404)
         .json(new ApiErrorResponse(404, {}, "Invalid credentials"));
     }
-
+    if (rows[0].status == 0) {
+      return res
+        .status(404)
+        .json(
+          new ApiErrorResponse(
+            404,
+            {},
+            "Your account has been deactivated. Please contact admin",
+          ),
+        );
+    }
     const user = rows[0];
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -412,6 +422,110 @@ async function getDashboardData(req, res) {
   }
 }
 
+async function updateUser(req, res) {
+  const { id } = req.params;
+  const { name, username, department, role, password, status } = req.body;
+
+  // Required validation
+  if (!name || !department || !role || !status) {
+    return res
+      .status(400)
+      .json(
+        new ApiErrorResponse(
+          400,
+          {},
+          "Name, username, department, role and status are required",
+        ),
+      );
+  }
+
+  if (!validateUsername(username)) {
+    return res
+      .status(400)
+      .json(new ApiErrorResponse(400, {}, "Invalid username format"));
+  }
+
+  if (role && !["user", "admin", "superadmin"].includes(role)) {
+    return res.status(400).json(new ApiErrorResponse(400, {}, "Invalid role"));
+  }
+
+  try {
+    let query;
+    let values;
+
+    // ✅ Convert status once (for both cases)
+    const numericStatus =
+      status === "active" ? 1 : status === "inactive" ? 0 : (status ?? 1);
+
+    if (password && password.trim() !== "") {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      query = `
+      UPDATE users
+      SET name = ?, 
+          username = ?, 
+          department = ?, 
+          role = ?, 
+          status = ?, 
+          password = ?
+      WHERE id = ?;
+    `;
+
+      values = [
+        name,
+        username.toLowerCase(),
+        department,
+        role || "user",
+        numericStatus,
+        hashedPassword,
+        id,
+      ];
+    } else {
+      query = `
+      UPDATE users
+      SET name = ?, 
+          username = ?, 
+          department = ?, 
+          role = ?, 
+          status = ?
+      WHERE id = ?;
+    `;
+
+      values = [
+        name,
+        username.toLowerCase(),
+        department,
+        role || "user",
+        numericStatus, // ✅ FIXED HERE
+        id,
+      ];
+    }
+
+    const [result] = await pool.query(query, values);
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json(new ApiErrorResponse(404, {}, "User not found"));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "User updated successfully"));
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Username already taken"));
+    }
+
+    console.error("Error updating user:", error);
+    return res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   signup,
   signIn,
@@ -419,4 +533,5 @@ module.exports = {
   verifySession,
   getUsers,
   getDashboardData,
+  updateUser,
 };

@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { FaEye } from "react-icons/fa";
-import baseURL from "../utils/baseURL";
 import PaginationTable from "../components/PaginationTable";
+import apiService from "../utils/apiService";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
 
 const History = () => {
   const [items, setItems] = useState([]);
@@ -17,12 +23,11 @@ const History = () => {
   const fetchPendingApprovals = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${baseURL}/approval/history`, {
+      const res = await apiService.get(`/approval/history`, {
         params: { page, limit },
-        withCredentials: true,
       });
 
-      const data = res.data.data;
+      const data = res.data;
       setItems(data.items || []);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
@@ -140,77 +145,97 @@ const History = () => {
       )}
 
       {/* ================= DIALOG ================= */}
-      {selectedApproval && selectedApproval.type === type && (
-        <div
-          className="approval-backdrop"
-          onClick={() => setSelectedApproval(null)}
+      <Dialog
+        open={!!selectedApproval}
+        onOpenChange={(open) => {
+          if (!open) setSelectedApproval(null);
+        }}
+      >
+        <DialogContent
+          showCloseButton
+          onPointerDownOutside={(e) => e.preventDefault()}
+          className="max-w-md"
         >
-          <div className="approval-dialog" onClick={(e) => e.stopPropagation()}>
-            <span
-              className="approval-close"
-              onClick={() => setSelectedApproval(null)}
-            >
-              ×
-            </span>
+          <DialogTitle>
+            Approval History ({selectedApproval?.item?.source?.toUpperCase()})
+          </DialogTitle>
 
-            <h3>
-              Approval Details ({selectedApproval.item?.source?.toUpperCase()})
-            </h3>
+          {selectedApproval && (
+            <div className="space-y-3 text-sm mt-3">
+              <div>
+                <b>Item Name:</b>{" "}
+                {selectedApproval.item.spares_description ||
+                  selectedApproval.item.tools_description ||
+                  selectedApproval.item.description}
+              </div>
 
-            <p>
-              <b>Item Name:</b>{" "}
-              {selectedApproval.item.spares_description ||
-                selectedApproval.item.tools_description}
-            </p>
+              <div>
+                <b>Initial Quantity:</b> {selectedApproval.item.old_value}
+              </div>
 
-            <p>
-              <b>Initial Quantity:</b> {selectedApproval.item.old_value}
-            </p>
+              <div>
+                <b>Requested Quantity:</b> {selectedApproval.item.new_value}
+              </div>
 
-            <p>
-              <b>Requested Quantity:</b> {selectedApproval.item.new_value}
-            </p>
+              <div>
+                <b>
+                  Quantity{" "}
+                  {selectedApproval.item.new_value >
+                  parseInt(selectedApproval.item.old_value || 0)
+                    ? "Increased"
+                    : "Decreased"}
+                  :
+                </b>{" "}
+                {Math.abs(
+                  selectedApproval.item.new_value -
+                    parseInt(selectedApproval.item.old_value || 0),
+                )}
+              </div>
 
-            <p>
-              <b>
-                Quantity{" "}
-                {selectedApproval.item.new_value >
-                parseInt(selectedApproval.item.old_value)
-                  ? "Increased"
-                  : "Decreased"}
-                :
-              </b>{" "}
-              {Math.abs(
-                selectedApproval.item.new_value -
-                  parseInt(selectedApproval.item.old_value),
-              )}
-            </p>
+              <div>
+                <b>Requested On:</b>{" "}
+                {formatToIST(selectedApproval.item.created_at)}
+              </div>
 
-            <p>
-              <b>Requested On:</b>{" "}
-              {formatToIST(selectedApproval.item.created_at)}
-            </p>
+              <div>
+                <b>Approved On:</b>{" "}
+                {formatToIST(selectedApproval.item.action_at || "---")}
+              </div>
 
-            <p>
-              <b>Approved On:</b>{" "}
-              {formatToIST(selectedApproval.item.action_at || "---")}
-            </p>
+              <div>
+                <b>Requested By:</b> {selectedApproval.item.requested_by}
+              </div>
 
-            <p>
-              <b>Requested By:</b> {selectedApproval.item.requested_by}
-            </p>
+              <div>
+                <b>Approved By:</b>{" "}
+                {selectedApproval.item.action_by_name || "---"}
+              </div>
 
-            <p>
-              <b>Approved By:</b>{" "}
-              {selectedApproval.item.action_by_name || "---"}
-            </p>
+              <div>
+                <b>Status:</b>{" "}
+                <span
+                // className={`px-2 py-1 rounded text-xs font-medium ${
+                //   selectedApproval.item.status === "approved"
+                //     ? "bg-green-100 text-green-700"
+                //     : "bg-red-100 text-red-700"
+                // }`}
+                >
+                  {selectedApproval.item.status}
+                </span>
+              </div>
 
-            <p>
-              <b>Status:</b> {selectedApproval.item.status}
-            </p>
-          </div>
-        </div>
-      )}
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="destructive"
+                  onClick={() => setSelectedApproval(null)}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

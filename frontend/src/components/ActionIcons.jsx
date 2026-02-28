@@ -64,7 +64,7 @@ const ActionIcons = ({ row, onEdit, onWithdraw, onShowQR, disabled = {} }) => {
       };
       setLoading(true);
 
-      await apiService.downloadFile("/spares/genarate-qr", payload);
+      await apiService.openPdfForPrint("/spares/genarate-qr", payload);
     } catch (error) {
       console.log(error);
       toaster("error", "QR generation failed");

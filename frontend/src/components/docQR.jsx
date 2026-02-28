@@ -72,7 +72,7 @@ const GenerateQRDialog = ({ open, setOpen, row, boxesData, updateDetails }) => {
       };
 
       setLoading(true);
-      await apiService.downloadFile("/document/genarate-qr", payload);
+      await apiService.openPdfForPrint("/document/genarate-qr", payload);
       await updateDetails();
     } catch {
       toaster("error", "QR generation failed");

@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { FaEye } from "react-icons/fa";
 import PaginationTable from "../components/PaginationTable";
-
+import apiService from "../utils/apiService";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
 const Approvals = () => {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -12,17 +18,15 @@ const Approvals = () => {
   const [selectedApproval, setSelectedApproval] = useState(null);
 
   const limit = 10;
-  const BASE_URL = "http://localhost:7777/api/v1";
 
   const fetchPendingApprovals = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/approval/obs-pendings`, {
+      const res = await apiService.get(`/approval/obs-pendings`, {
         params: { page, limit },
-        withCredentials: true,
       });
 
-      const data = res.data.data;
+      const data = res.data;
       setItems(data.items || []);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
@@ -42,9 +46,7 @@ const Approvals = () => {
 
   const handleApprove = async (id) => {
     try {
-      await axios.get(`${BASE_URL}/approval/approve/${id}`, {
-        withCredentials: true,
-      });
+      await apiService.get(`/approval/approve/${id}`);
       setSelectedApproval(null);
       fetchPendingApprovals();
     } catch (error) {
@@ -57,9 +59,7 @@ const Approvals = () => {
       return;
 
     try {
-      await axios.get(`${BASE_URL}/approval/reject/${id}`, {
-        withCredentials: true,
-      });
+      await apiService.get(`approval/reject/${id}`);
       setSelectedApproval(null);
       fetchPendingApprovals();
     } catch (error) {
@@ -133,64 +133,81 @@ const Approvals = () => {
       )}
 
       {/* ================= DIALOG ================= */}
-      {selectedApproval && selectedApproval.type === type && (
-        <div
-          className="approval-backdrop"
-          onClick={() => setSelectedApproval(null)}
+      <Dialog
+        open={!!selectedApproval}
+        onOpenChange={(open) => {
+          if (!open) setSelectedApproval(null);
+        }}
+      >
+        <DialogContent
+          showCloseButton
+          onPointerDownOutside={(e) => e.preventDefault()}
+          className="max-w-md"
         >
-          <div className="approval-dialog" onClick={(e) => e.stopPropagation()}>
-            <span
-              className="approval-close"
-              onClick={() => setSelectedApproval(null)}
-            >
-              ×
-            </span>
+          <DialogTitle>
+            Approval Details ({selectedApproval?.item?.source?.toUpperCase()})
+          </DialogTitle>
 
-            <h3>
-              Approval Details ({selectedApproval.item?.source?.toUpperCase()})
-            </h3>
+          {selectedApproval && (
+            <div className="space-y-3 text-sm mt-3">
+              <div>
+                <b>Item Name:</b>{" "}
+                {selectedApproval.item.spares_description ||
+                  selectedApproval.item.tools_description ||
+                  selectedApproval.item.description}
+              </div>
 
-            <p>
-              <b>Item Name:</b>{" "}
-              {selectedApproval.item.spares_description ||
-                selectedApproval.item.tools_description}
-            </p>
+              <div>
+                <b>Initial Quantity:</b> {selectedApproval.item.old_value}
+              </div>
 
-            <p>
-              <b>Initial Quantity:</b> {selectedApproval.item.old_value}
-            </p>
+              <div>
+                <b>Requested Quantity:</b> {selectedApproval.item.new_value}
+              </div>
 
-            <p>
-              <b>Requested Quantity:</b> {selectedApproval.item.new_value}
-            </p>
+              <div>
+                <b>Qty Changed:</b>{" "}
+                {Math.abs(
+                  selectedApproval.item.new_value -
+                    parseInt(selectedApproval.item.old_value || 0),
+                )}
+              </div>
 
-            <p>
-              <b>Requested On:</b>{" "}
-              {formatToIST(selectedApproval.item.created_at)}
-            </p>
+              <div>
+                <b>Requested On:</b>{" "}
+                {formatToIST(selectedApproval.item.created_at)}
+              </div>
 
-            <p>
-              <b>Requested By:</b> {selectedApproval.item.requested_by}
-            </p>
+              <div>
+                <b>Requested By:</b> {selectedApproval.item.requested_by}
+              </div>
 
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => handleApprove(selectedApproval.item.id)}
-                style={approveBtn}
-              >
-                Approve
-              </button>
+              <DialogFooter className="pt-4">
+                {/* <Button
+                  variant="outline"
+                  onClick={() => setSelectedApproval(null)}
+                >
+                  Cancel
+                </Button> */}
 
-              <button
-                onClick={() => handleReject(selectedApproval.item.id)}
-                style={rejectBtn}
-              >
-                Reject
-              </button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => handleApprove(selectedApproval.item.id)}
+                >
+                  Approve
+                </Button>
+
+                <Button
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => handleReject(selectedApproval.item.id)}
+                >
+                  Reject
+                </Button>
+              </DialogFooter>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -956,6 +956,7 @@ const Spares = ({ type = "" }) => {
       formData.append("description", selectedRow.description || "");
       formData.append("equipment_system", selectedRow.equipment_system || "");
       formData.append("denos", selectedRow.denos || "");
+      formData.append("obs_authorised_old", selectedRow.obs_authorised_old);
       formData.append("obs_authorised", selectedRow.obs_authorised || "");
       formData.append("obs_maintained", selectedRow.obs_maintained || "");
       formData.append("obs_held", selectedRow.obs_held || "");
@@ -1171,6 +1172,7 @@ const Spares = ({ type = "" }) => {
                 previewEdit: imageBaseURL + row.image,
               }));
             }
+            row.obs_authorised_old = row.obs_authorised;
             setSelectedRow(row);
             setSavedRow(JSON.parse(JSON.stringify(row)));
             setSavedHeld(Number(row.obs_held || 0));

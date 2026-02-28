@@ -8,6 +8,7 @@ const {
   verifySession,
   getUsers,
   getDashboardData,
+  updateUser,
 } = require("../controllers/users.controller");
 const { authMiddleware, isSuperAdmin } = require("../middlewares/auth");
 
@@ -17,5 +18,6 @@ router.get("/signout", signOut);
 router.get("/verify", verifySession);
 router.get("/", authMiddleware, isSuperAdmin, getUsers);
 router.get("/dashboard", getDashboardData);
+router.post("/update/:id", updateUser);
 
 module.exports = router;
