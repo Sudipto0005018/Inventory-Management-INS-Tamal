@@ -1214,6 +1214,125 @@ async function getLogsStockUpdate(req, res) {
   }
 }
 
+async function generateQRCode(req, res) {
+  const { tool_id, spare_id, boxes } = req.body;
+  console.log("req.body", req.body);
+
+  const PDFDocument = require("pdfkit");
+  const qr = require("qrcode");
+
+  try {
+    if (!boxes || !Array.isArray(boxes) || boxes.length === 0) {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Boxes data required"));
+    }
+
+    const doc = new PDFDocument({
+      size: [50 * 2.83465, 25 * 2.83465], // 50mm x 25mm
+      margins: { top: 0, left: 0, right: 0, bottom: 0 },
+      autoFirstPage: false, // 🔥 Prevent automatic blank page
+    });
+
+    const buffers = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => {
+      const pdfData = Buffer.concat(buffers);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="qrcodes_${Date.now()}.pdf"`,
+      );
+      res.send(pdfData);
+    });
+
+    let data;
+
+    if (tool_id) {
+      const [rows] = await pool.query(
+        "SELECT description, indian_pattern, uid, equipment_system FROM tools WHERE id = ?",
+        [tool_id],
+      );
+
+      if (!rows.length) {
+        return res
+          .status(404)
+          .json(
+            new ApiErrorResponse(404, {}, "Tool not found for QR generation"),
+          );
+      }
+
+      data = rows[0];
+    } else if (spare_id) {
+      const [rows] = await pool.query(
+        "SELECT description, indian_pattern, uid, equipment_system FROM spares WHERE id = ?",
+        [spare_id],
+      );
+
+      if (!rows.length) {
+        return res
+          .status(404)
+          .json(
+            new ApiErrorResponse(404, {}, "Spare not found for QR generation"),
+          );
+      }
+
+      data = rows[0];
+    } else {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Invalid QR generation request"));
+    }
+
+    let hasPrinted = false;
+
+    for (const box of boxes) {
+      const box_no = box.box_no;
+      const copy_count = Number(box.copy_count);
+
+      // ✅ Skip invalid boxes
+      if (!box_no || copy_count <= 0) continue;
+
+      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+
+      const qrURL = await qr.toDataURL(qrText, {
+        margin: 0,
+        width: 120,
+      });
+
+      for (let i = 0; i < copy_count; i++) {
+        // ✅ Add page only when printing
+        doc.addPage();
+        hasPrinted = true;
+
+        doc.image(qrURL, 5, 5, { width: 50, height: 50 });
+
+        doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
+        doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
+        doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
+        doc.fontSize(8).text(data.equipment_system, 60, 35, {
+          width: 100,
+        });
+        doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+      }
+    }
+
+    // ✅ If nothing printed → prevent blank PDF
+    if (!hasPrinted) {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "No valid QR to generate"));
+    }
+
+    doc.end();
+  } catch (error) {
+    console.log("Error while generating QR code:", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   getProcurementPending,
   getStockUpdatePending,
@@ -1221,4 +1340,5 @@ module.exports = {
   updateProcurement,
   getLogsProcurement,
   getLogsStockUpdate,
+  generateQRCode,
 };

@@ -692,6 +692,9 @@ const PendingTempLoan = ({ type = "" }) => {
         <DialogContent
           unbounded
           className="w-[55vw] p-6"
+          onInteractOutside={(e) => {
+            e.preventDefault(); // 🚫 Prevent outside click close
+          }}
           onPointerDownOutside={(e) => {
             // e.preventDefault();
           }}
@@ -701,8 +704,29 @@ const PendingTempLoan = ({ type = "" }) => {
             }));
           }}
         >
-          <DialogTitle className="capitalize">Return of Document</DialogTitle>
+          <div
+            className="sticky top-0 z-10 bg-background 
+                grid grid-cols-2 items-center 
+               py-2 border-b"
+          >
+            <DialogTitle className="capitalize">Return of Document</DialogTitle>
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => ({ ...prev, receive: false }))}
+              className="justify-self-end rounded-md p-1 transition"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex items-start gap-2 mb-3">
+            <span className="font-semibold text-gray-700">
+              Item Description :
+            </span>
 
+            <span className="text-gray-900 font-medium ml-1">
+              {selectedRow?.description || "-"}
+            </span>
+          </div>
           <>
             <div className="grid grid-cols-3 gap-4"></div>
             <DialogDescription className="hidden" />

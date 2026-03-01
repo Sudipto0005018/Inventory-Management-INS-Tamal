@@ -903,13 +903,45 @@ async function generateQRCode(req, res) {
         .json(new ApiErrorResponse(400, {}, "Invalid QR generation request"));
     }
 
+    // for (let i = 0; i < boxes.length; i++) {
+    //   const box_no = boxes[i].box_no;
+    //   const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+    //   const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
+    //   const copy_count = Number(boxes[i].copy_count);
+    //   for (let j = 0; j < Number(copy_count); j++) {
+    //     if (i + j > 0) doc.addPage();
+    //     doc.image(qrURL, 5, 5, { width: 50, height: 50 });
+    //     doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
+    //     doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
+    //     doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
+    //     doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
+    //     doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+    //   }
+    // }
+
+    let isFirstPage = true;
+
     for (let i = 0; i < boxes.length; i++) {
       const box_no = boxes[i].box_no;
+      const return_qty = Number(boxes[i].return_qty);
+      const copy_count = Number(boxes[i].copy_count);
+
+      // ✅ Skip if return_qty <= 0 OR copy_count <= 0
+      if (return_qty <= 0 || copy_count <= 0) {
+        continue;
+      }
+
       const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
       const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
-      const copy_count = Number(boxes[i].copy_count);
-      for (let j = 0; j < Number(copy_count); j++) {
-        if (i + j > 0) doc.addPage();
+
+      for (let j = 0; j < copy_count; j++) {
+        // ✅ Add new page only after first printed page
+        if (!isFirstPage) {
+          doc.addPage();
+        }
+
+        isFirstPage = false;
+
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
         doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
         doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });

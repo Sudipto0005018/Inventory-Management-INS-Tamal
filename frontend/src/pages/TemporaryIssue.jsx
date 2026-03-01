@@ -638,7 +638,7 @@ const PendingTempLoan = ({ type = "" }) => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+                py-2 border-b"
           >
             <DialogTitle className="capitalize">
               Temporary Issue Local Details

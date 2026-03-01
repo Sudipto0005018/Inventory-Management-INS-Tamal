@@ -73,7 +73,7 @@ const GenerateStockQR = ({ open, setOpen, row, boxesData, updateDetails }) => {
       };
 
       setLoading(true);
-      await apiService.openPdfForPrint("/stock/genarate-qr", payload);
+      await apiService.openPdfForPrint("/stocks/genarate-qr", payload);
       await updateDetails();
     } catch {
       toaster("error", "QR generation failed");
