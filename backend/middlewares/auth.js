@@ -21,8 +21,8 @@ const authMiddleware = async (req, res, next) => {
           400,
           {},
           "Not authorized or token expires, Please login again",
-          true
-        )
+          true,
+        ),
       );
   }
   try {
@@ -37,8 +37,8 @@ const authMiddleware = async (req, res, next) => {
             400,
             {},
             "Invalid token, Please login again",
-            true
-          )
+            true,
+          ),
         );
     }
     const [rows] = await db.query("SELECT * FROM users WHERE username = ?", [
@@ -48,11 +48,23 @@ const authMiddleware = async (req, res, next) => {
     if (rows.length > 0) {
       const user = { ...rows[0] };
       delete user.password;
+
+      console.log("USER OBJECT:", user);
+      console.log("USER.DEPARTMENT VALUE:", user.department);
+      console.log("USER.DEPARTMENT_ID VALUE:", user.department_id);
       req.user = user;
+
       const [department] = await db.query(
-        "SELECT id,name FROM departments WHERE id = ?",
-        [user.department]
+        "SELECT id, name FROM departments WHERE name = ?",
+        [user.department],
       );
+
+      if (!department.length) {
+        return res
+          .status(401)
+          .json(new ApiErrorResponse(401, {}, "Department not found"));
+      }
+
       req.department = department[0];
       next();
     } else {
@@ -64,8 +76,8 @@ const authMiddleware = async (req, res, next) => {
             401,
             undefined,
             "User not found, Please login again",
-            true
-          )
+            true,
+          ),
         );
     }
   } catch (error) {
@@ -73,7 +85,12 @@ const authMiddleware = async (req, res, next) => {
       .status(401)
       .clearCookie("token", cookieOptions)
       .json(
-        new ApiErrorResponse(401, {}, "Invalid token, Please login again", true)
+        new ApiErrorResponse(
+          401,
+          {},
+          "Invalid token, Please login again",
+          true,
+        ),
       );
   }
 };
@@ -83,7 +100,7 @@ const isSuperAdmin = async (req, res, next) => {
     return res
       .status(401)
       .json(
-        new ApiErrorResponse(401, {}, "Not authorized, Please login again")
+        new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
       );
   }
   const { role } = req.user;
@@ -100,7 +117,7 @@ const isAdmin = async (req, res, next) => {
     return res
       .status(401)
       .json(
-        new ApiErrorResponse(401, {}, "Not authorized, Please login again")
+        new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
       );
   }
   console.log(req.user);
@@ -119,7 +136,7 @@ const isUser = async (req, res, next) => {
     return res
       .status(401)
       .json(
-        new ApiErrorResponse(401, {}, "Not authorized, Please login again")
+        new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
       );
   }
   const { role } = req.user;

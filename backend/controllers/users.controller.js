@@ -98,7 +98,7 @@ async function signIn(req, res) {
           new ApiErrorResponse(
             404,
             {},
-            "Your account has been deactivated. Please contact admin",
+            "Your account has been deactivated. Please contact Admin",
           ),
         );
     }
