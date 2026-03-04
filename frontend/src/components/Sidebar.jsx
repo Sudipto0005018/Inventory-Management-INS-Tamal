@@ -13,7 +13,7 @@ import { IoDocumentSharp } from "react-icons/io5";
 import { SiPhpmyadmin } from "react-icons/si";
 
 import logo1 from "../assets/logo1.png";
-import { LuLogs } from "react-icons/lu";
+import { GoLog } from "react-icons/go";
 
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -120,7 +120,7 @@ const menuItems = [
   {
     name: "Permanent Issue Logs",
     path: "/logs/pending-survey",
-    icon: <LuLogs />,
+    icon: <GoLog />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Survey Logs", path: "/logs/pending-survey" },
