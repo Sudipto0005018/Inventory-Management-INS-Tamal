@@ -40,7 +40,7 @@ const { getSQLTimestamp } = require("../utils/helperFunctions");
 //         "Please provide all required fields",
 //       ).send(res);
 //     }
-//     let transactionId = "PI" + Date.now();
+//     let transactionId = "PI-" + Date.now();
 //     const [[row]] = await connection.query(
 //       `SELECT category,box_no,obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
 //       [spare_id || tool_id],

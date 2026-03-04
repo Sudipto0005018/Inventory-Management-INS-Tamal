@@ -34,31 +34,37 @@ import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
 const PendingTempLoan = ({ type = "" }) => {
-  const { config, user } = useContext(Context);
-  const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
-    {
-      key: "indian_pattern",
-      header: (
-        <span>
-          <i>IN</i> Part No.
-        </span>
-      ),
-    },
-    { key: "category", header: "Category" },
-    { key: "qty_withdrawn", header: "Issued Qty" },
-    { key: "service_no", header: "Service No." },
-    { key: "concurred_by", header: "Concurred By" },
-    { key: "issue_date_formated", header: "Issued Date" },
-    { key: "loan_duration", header: "Loan Duration (days)" },
-    { key: "submission_date", header: "Expected Return Date" },
-    { key: "days_until_return", header: "Days Until Return" },
-    { key: "qty_received", header: "Returned Qty" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
-    { key: "status", header: "Status" },
-    ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
-    // { key: "receive", header: "Proceed" },
-  ]);
+  const { config, user, officer } = useContext(Context);
+  const columns = useMemo(
+    () =>
+      [
+        { key: "description", header: "Item Description" },
+        {
+          key: "indian_pattern",
+          header: (
+            <span>
+              <i>IN</i> Part No.
+            </span>
+          ),
+        },
+        { key: "category", header: "Category" },
+        { key: "qty_withdrawn", header: "Issued Qty" },
+        { key: "service_no", header: "Service No." },
+        { key: "concurred_by", header: "Concurred By" },
+        { key: "issue_date_formated", header: "Issued Date" },
+        { key: "loan_duration", header: "Loan Duration (days)" },
+        { key: "submission_date", header: "Expected Return Date" },
+        { key: "days_until_return", header: "Days Until Return" },
+        { key: "qty_received", header: "Returned Qty" },
+        { key: "created_at", header: "Created On", width: "min-w-[40px]" },
+        { key: "status", header: "Status" },
+        ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
+        ...(user.role === "officer"
+          ? [{ key: "rollback", header: "Rollback" }]
+          : []),
+        // { key: "receive", header: "Proceed" },
+      ],[user.role]
+  );
 
   const options = [
     { value: "description", label: "Item Description" },
@@ -111,6 +117,29 @@ const PendingTempLoan = ({ type = "" }) => {
     table: false,
     receive: false,
   });
+  const handleRollback = async (loanId) => {
+    if (!window.confirm("Are you sure you want to rollback this TY Loan?")) {
+      return;
+    }
+
+    try {
+      const response = await apiService.post("/tyLoan/reverse", {
+        loanId,
+      });
+
+      if (response.success) {
+        toaster("success", "TY Loan rolled back successfully");
+        fetchdata(); // refresh table
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      toaster(
+        "error",
+        error.response?.data?.message || error.message || "Rollback failed",
+      );
+    }
+  };
   const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
@@ -213,7 +242,19 @@ const PendingTempLoan = ({ type = "" }) => {
         ...row,
 
         quantity: issuedQty,
-
+        rollback:
+          user.role === "officer" &&
+          row.loan_status !== "complete" &&
+          row.loan_status !== "reversed" ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => handleRollback(row.id)}
+            >
+              Rollback
+            </Button>
+          ) : null,
         concurred_by: row.concurred_by?.toUpperCase() || "-",
         created_at: getTimeDate(row.created_at),
         loan_duration: row.loan_duration ?? "-",

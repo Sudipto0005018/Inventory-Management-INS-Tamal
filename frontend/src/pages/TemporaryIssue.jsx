@@ -33,7 +33,7 @@ import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
 const PendingTempLoan = ({ type = "" }) => {
-  const { config, user } = useContext(Context);
+  const { config, user, officer} = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -57,6 +57,9 @@ const PendingTempLoan = ({ type = "" }) => {
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
     ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
+    ...(user.role === "officer"
+      ? [{ key: "rollback", header: "Rollback" }]
+      : []),
     // { key: "receive", header: "Proceed" },
   ]);
 
@@ -114,6 +117,29 @@ const PendingTempLoan = ({ type = "" }) => {
     table: false,
     receive: false,
   });
+
+  const handleRollback = async (issueId) => {
+    const confirm = window.confirm(
+      "Are you sure you want to rollback this Temporary Issue?",
+    );
+
+    if (!confirm) return;
+
+    try {
+      const response = await apiService.post("/temporaryIssue/reverse", {
+        issueId,
+      });
+
+      if (response.success) {
+        toaster("success", "Temporary Issue rolled back successfully");
+        fetchdata();
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      toaster("error", error.response?.data?.message || error.message);
+    }
+  };
   const fetchdata = async (page = currentPage) => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
@@ -213,7 +239,19 @@ const PendingTempLoan = ({ type = "" }) => {
       ...row,
       created_at: getTimeDate(row.created_at),
       issued_to: row.issue_to?.toUpperCase() || "-",
-
+      rollback:
+        user.role === "officer" &&
+        row.status !== "reversed" &&
+        row.loan_status !== "Completed" ? (
+          <Button
+            size="sm"
+            variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700"
+            onClick={() => handleRollback(row.id)}
+          >
+            Rollback
+          </Button>
+        ) : null,
       loan_duration: row.loan_duration ?? "-",
 
       loan_status:
@@ -396,7 +434,19 @@ const PendingTempLoan = ({ type = "" }) => {
 
       return {
         ...row,
-
+        rollback:
+          user.role === "officer" &&
+          row.status !== "reversed" &&
+          row.loan_status !== "Completed" ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => handleRollback(row.id)}
+            >
+              Rollback
+            </Button>
+          ) : null,
         quantity: issuedQty,
         created_at: getTimeDate(row.created_at),
         issue_to: row.issue_to?.toUpperCase() || "-",

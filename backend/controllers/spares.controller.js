@@ -1221,8 +1221,6 @@ async function generateExcel(req, res) {
       pi.mo_no,
       pi.mo_date,
       pi.demand_quantity,
-      pi.qty_received,
-      pi.return_date,
       pi.created_at,
       pi.status,
           CASE

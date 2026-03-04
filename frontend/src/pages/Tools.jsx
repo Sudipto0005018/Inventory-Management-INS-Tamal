@@ -2408,6 +2408,7 @@ const Tools = ({ type = "" }) => {
                     />
                   </div>
                 </div>
+
                 {selectedRow.old_supplier && (
                   <div className=" mt-4 w-full ml-[50%]">
                     <p className="text-sm ms-2 mb-2">
@@ -2416,17 +2417,16 @@ const Tools = ({ type = "" }) => {
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
                       {selectedRow.old_supplier &&
-                        selectedRow.old_supplier.map((data, _) => {
-                          let supplier_id = supplierList.filter(
-                            (s) => s.name == data,
+                        selectedRow.old_supplier.map((data, index) => {
+                          const supplier = supplierList.find(
+                            (s) => s.name === data,
                           );
-                          if (supplier_id) {
-                            supplier_id = supplier_id[0].id;
-                          }
+
+                          if (!supplier) return null;
 
                           return (
                             <HoverCard
-                              key={Math.random().toString()}
+                              key={index}
                               openDelay={10}
                               closeDelay={100}
                             >
@@ -2440,7 +2440,7 @@ const Tools = ({ type = "" }) => {
                                   details={{}}
                                   isFromOldSuppliers={true}
                                   fetchSupplier={async () => {
-                                    return fetchSupplierDetails(supplier_id);
+                                    return fetchSupplierDetails(supplier.id);
                                   }}
                                   onEdit={() => {}}
                                   onDelete={() => {}}

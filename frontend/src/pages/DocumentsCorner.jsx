@@ -256,6 +256,10 @@ const DocumentsCorner = ({ type = "" }) => {
         if (type === "concurred_by") {
           await fetchConcurredBy();
         }
+
+        if (type === "location_of_storage") {
+          await fetchStorageLocation();
+        }
       }
     } catch (error) {
       console.error(error);
@@ -1632,6 +1636,7 @@ const DocumentsCorner = ({ type = "" }) => {
                     }))
                   }
                   isLooseSpare={isLooseSpare}
+                  addToDropdown={addToDropdown}
                 />
               </div>
               <div className="w-full my-2 mt-6">

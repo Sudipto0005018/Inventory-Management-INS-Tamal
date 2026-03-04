@@ -858,11 +858,11 @@ async function updateDocIssue(req, res) {
       try {
         box_no = JSON.parse(box_no);
       } catch {
-        box_no = []; 
+        box_no = [];
       }
     }
     if (!Array.isArray(box_no)) {
-      box_no = []; 
+      box_no = [];
     }
     const [[issue]] = await pool.query(
       `
@@ -1537,6 +1537,118 @@ async function getDocOverdue(req, res) {
   }
 }
 
+async function reverseDocIssue(req, res) {
+  const { id: userId } = req.user;
+  const { issueId } = req.body;
+
+  try {
+    /** 1️⃣ Fetch doc issue */
+    const [[issue]] = await pool.query(`SELECT * FROM doc_issue WHERE id = ?`, [
+      issueId,
+    ]);
+
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: "Document Issue not found",
+      });
+    }
+
+    if (issue.status === "reversed") {
+      return res.status(400).json({
+        success: false,
+        message: "Already reversed",
+      });
+    }
+
+    const withdrawnQty = parseInt(issue.qty_withdrawn || 0);
+    const receivedQty = parseInt(issue.qty_received || 0);
+    const remainingQty = withdrawnQty - receivedQty;
+
+    if (remainingQty <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to restore",
+      });
+    }
+
+    /** 2️⃣ Fetch inventory */
+    const [[inventory]] = await pool.query(
+      `SELECT box_no, obs_held FROM doc_corner WHERE id = ?`,
+      [issue.doc_id],
+    );
+
+    if (!inventory) {
+      return res.status(404).json({
+        success: false,
+        message: "Inventory not found",
+      });
+    }
+
+    let boxes = [];
+
+    try {
+      boxes =
+        typeof inventory.box_no === "string"
+          ? JSON.parse(inventory.box_no)
+          : inventory.box_no;
+
+      if (!Array.isArray(boxes)) boxes = [];
+    } catch {
+      boxes = [];
+    }
+
+    let qtyToRestore = remainingQty;
+
+    /** 3️⃣ Restore qty (deposit back) */
+    const updatedBoxes = boxes.map((box) => {
+      if (qtyToRestore <= 0) return box;
+
+      const currentQty = parseInt(box.qtyHeld || 0);
+
+      const deposit = qtyToRestore;
+      qtyToRestore = 0;
+
+      return {
+        ...box,
+        qtyHeld: (currentQty + deposit).toString(),
+      };
+    });
+
+    const previousOBS = parseInt(inventory.obs_held || 0);
+    const newOBS = previousOBS + remainingQty;
+
+    /** 4️⃣ Update inventory */
+    await pool.query(
+      `UPDATE doc_corner
+       SET box_no = ?, obs_held = ?
+       WHERE id = ?`,
+      [JSON.stringify(updatedBoxes), newOBS, issue.doc_id],
+    );
+
+    /** 5️⃣ Mark issue reversed */
+    await pool.query(
+      `UPDATE doc_issue
+       SET status = 'reversed',
+           approved_by = ?,
+           approved_at = NOW()
+       WHERE id = ?`,
+      [userId, issueId],
+    );
+
+    res.json({
+      success: true,
+      message: "Document Issue successfully reversed",
+    });
+  } catch (err) {
+    console.error("REVERSE DOC ISSUE ERROR =>", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
 module.exports = {
   createDocCorner,
   getDocCorner,
@@ -1548,4 +1660,5 @@ module.exports = {
   getDocLogs,
   getLowStockDocuments,
   getDocOverdue,
+  reverseDocIssue,
 };

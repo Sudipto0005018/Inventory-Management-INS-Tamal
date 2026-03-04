@@ -1252,6 +1252,100 @@ async function getTyLoanOverdue(req, res) {
   }
 }
 
+async function reverseTyLoanIssue(req, res) {
+  const { id: userId } = req.user;
+  const { loanId } = req.body;
+
+  try {
+    /** 1️⃣ Fetch loan */
+    const [[loan]] = await pool.query(`SELECT * FROM ty_loan WHERE id = ?`, [
+      loanId,
+    ]);
+
+    if (!loan)
+      return res
+        .status(404)
+        .json({ success: false, message: "Loan not found" });
+
+    if (loan.status === "reversed")
+      return res
+        .status(400)
+        .json({ success: false, message: "Already reversed" });
+
+    const isSpare = !!loan.spare_id;
+    const inventoryTable = isSpare ? "spares" : "tools";
+    const inventoryId = loan.spare_id || loan.tool_id;
+
+    /** 🔹 Calculate remaining qty to restore */
+    const withdrawnQty = parseInt(loan.qty_withdrawn);
+    const returnedQty = parseInt(loan.qty_received || 0);
+    const remainingQty = withdrawnQty - returnedQty;
+
+    if (remainingQty <= 0)
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to restore",
+      });
+
+    /** 2️⃣ Fetch inventory */
+    const [[inventory]] = await pool.query(
+      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ?`,
+      [inventoryId],
+    );
+
+    let boxes =
+      typeof inventory.box_no === "string"
+        ? JSON.parse(inventory.box_no || "[]")
+        : inventory.box_no || [];
+
+    let qtyToRestore = remainingQty;
+
+    /** 3️⃣ Restore qty across boxes (simple distribution) */
+    const updatedBoxes = boxes.map((box) => {
+      if (qtyToRestore <= 0) return box;
+
+      const currentQty = parseInt(box.qtyHeld);
+
+      // Deposit everything into first available boxes
+      const deposit = qtyToRestore;
+      qtyToRestore = 0;
+
+      return {
+        ...box,
+        qtyHeld: (currentQty + deposit).toString(),
+      };
+    });
+
+    const newOBS = parseInt(inventory.obs_held) + remainingQty;
+
+    /** 4️⃣ Update inventory */
+    await pool.query(
+      `UPDATE ${inventoryTable}
+       SET box_no = ?, obs_held = ?
+       WHERE id = ?`,
+      [JSON.stringify(updatedBoxes), newOBS, inventoryId],
+    );
+
+    /** 5️⃣ Mark loan reversed */
+    await pool.query(
+      `UPDATE ty_loan
+       SET status = 'reversed',
+           approved_by = ?,
+           approved_at = NOW()
+       WHERE id = ?`,
+      [userId, loanId],
+    );
+
+    res.json({
+      success: true,
+      message: "TY Loan successfully reversed",
+    });
+  } catch (err) {
+    console.error("REVERSE ISSUE ERROR =>", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 module.exports = {
   getTyLoanList,
   createTyLoan,
@@ -1259,4 +1353,5 @@ module.exports = {
   generateQRCode,
   getLogsTy,
   getTyLoanOverdue,
+  reverseTyLoanIssue,
 };

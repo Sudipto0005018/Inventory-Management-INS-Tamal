@@ -688,7 +688,7 @@ async function updateTemporaryIssue(req, res) {
         .status(404)
         .json({ success: false, message: "Issue not found" });
     }
-  const originalTransactionId = issue.transaction_id;
+    const originalTransactionId = issue.transaction_id;
     // const { transaction_id } = issue;
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
@@ -1451,6 +1451,105 @@ async function getOverdueTempIssue(req, res) {
   }
 }
 
+async function reverseTemporaryIssue(req, res) {
+  const { id: userId } = req.user;
+  const { issueId } = req.body;
+
+  try {
+    /** 1️⃣ Fetch temporary issue */
+    const [[issue]] = await pool.query(
+      `SELECT * FROM temporary_issue_local WHERE id = ?`,
+      [issueId],
+    );
+
+    if (!issue)
+      return res.status(404).json({
+        success: false,
+        message: "Temporary Issue not found",
+      });
+
+    if (issue.status === "reversed")
+      return res.status(400).json({
+        success: false,
+        message: "Already reversed",
+      });
+
+    const isSpare = !!issue.spare_id;
+    const inventoryTable = isSpare ? "spares" : "tools";
+    const inventoryId = issue.spare_id || issue.tool_id;
+
+    /** 🔹 Calculate remaining qty to restore */
+    const withdrawnQty = parseInt(issue.qty_withdrawn);
+    const returnedQty = parseInt(issue.qty_received || 0);
+    const remainingQty = withdrawnQty - returnedQty;
+
+    if (remainingQty <= 0)
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to restore",
+      });
+
+    /** 2️⃣ Fetch inventory */
+    const [[inventory]] = await pool.query(
+      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ?`,
+      [inventoryId],
+    );
+
+    let boxes =
+      typeof inventory.box_no === "string"
+        ? JSON.parse(inventory.box_no || "[]")
+        : inventory.box_no || [];
+
+    let qtyToRestore = remainingQty;
+
+    /** 3️⃣ Restore quantity (deposit back) */
+    const updatedBoxes = boxes.map((box) => {
+      if (qtyToRestore <= 0) return box;
+
+      const currentQty = parseInt(box.qtyHeld);
+
+      const deposit = qtyToRestore; // deposit remaining qty
+      qtyToRestore = 0;
+
+      return {
+        ...box,
+        qtyHeld: (currentQty + deposit).toString(),
+      };
+    });
+
+    const newOBS = parseInt(inventory.obs_held) + remainingQty;
+
+    /** 4️⃣ Update inventory */
+    await pool.query(
+      `UPDATE ${inventoryTable}
+       SET box_no = ?, obs_held = ?
+       WHERE id = ?`,
+      [JSON.stringify(updatedBoxes), newOBS, inventoryId],
+    );
+
+    /** 5️⃣ Mark temporary issue reversed */
+    await pool.query(
+      `UPDATE temporary_issue_local
+       SET status = 'reversed',
+           approved_by = ?,
+           approved_at = NOW()
+       WHERE id = ?`,
+      [userId, issueId],
+    );
+
+    res.json({
+      success: true,
+      message: "Temporary Issue successfully reversed",
+    });
+  } catch (err) {
+    console.error("REVERSE TEMP ISSUE ERROR =>", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
 module.exports = {
   createTemporaryIssue,
   getTemporaryIssueList,
@@ -1460,4 +1559,5 @@ module.exports = {
   generateQRCode,
   getLogsTemporary,
   getOverdueTempIssue,
+  reverseTemporaryIssue,
 };

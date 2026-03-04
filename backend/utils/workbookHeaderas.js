@@ -120,8 +120,6 @@ const issue = [
   { header: "MO No.", key: "mo_no", width: 20 },
   { header: "MO Date", key: "mo_date", width: 20 },
   { header: "Demanded Qty", key: "demand_quantity", width: 18 },
-  { header: "Returned Qty", key: "qty_received", width: 18 },
-  { header: "Returned Date", key: "return_date", width: 20 },
   { header: "Created On", key: "created_at", width: 20 },
   { header: "Status", key: "status", width: 20 },
 ];

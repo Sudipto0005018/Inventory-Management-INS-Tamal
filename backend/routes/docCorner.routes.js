@@ -14,6 +14,7 @@ const {
   getDocLogs,
   getLowStockDocuments,
   getDocOverdue,
+  reverseDocIssue,
 } = require("../controllers/docCorner.controller");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateDocCorner);
@@ -26,5 +27,6 @@ router.put("/doc-list", authMiddleware, updateDocIssue);
 router.post("/genarate-qr", generateQRCode);
 router.get("/low-stock", getLowStockDocuments);
 router.get("/overdue", getDocOverdue);
+router.post("/reverse", authMiddleware, reverseDocIssue);
 
 module.exports = router;
