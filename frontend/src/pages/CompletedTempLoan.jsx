@@ -34,7 +34,7 @@ import toaster from "../utils/toaster";
 import SpinnerButton from "../components/ui/spinner-button";
 
 const PendingTempLoan = ({ type = "" }) => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -56,7 +56,8 @@ const PendingTempLoan = ({ type = "" }) => {
     { key: "qty_received", header: "Returned Qty" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
-    { key: "receive", header: "Proceed" },
+    ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
+    // { key: "receive", header: "Proceed" },
   ]);
 
   const options = [

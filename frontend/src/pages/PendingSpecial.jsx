@@ -27,7 +27,7 @@ import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
 
 const PendingSpecial = () => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -51,7 +51,10 @@ const PendingSpecial = () => {
     { key: "modate", header: "MO Demand Date" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
-    { key: "processed", header: "Proceed" },
+    ...(user.role != "user"
+      ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+      : []),
+    // { key: "processed", header: "Proceed" },
   ]);
 
   const options = [

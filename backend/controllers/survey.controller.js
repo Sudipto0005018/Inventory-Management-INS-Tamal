@@ -3,6 +3,131 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { getSQLTimestamp } = require("../utils/helperFunctions");
 
+// async function createSurvey(req, res) {
+//   const {
+//     spare_id,
+//     tool_id,
+//     withdrawl_qty,
+//     withdrawl_date,
+//     box_no,
+//     service_no,
+//     name,
+//     issue_to,
+//   } = req.body;
+
+//   const connection = await pool.getConnection();
+//   try {
+//     await connection.beginTransaction();
+//     const { id: created_by } = req.user;
+//     if (!spare_id && !tool_id) {
+//       return new ApiErrorResponse(
+//         400,
+//         {},
+//         "Please provide either spare_id or tool_id",
+//       ).send(res);
+//     }
+//     if (
+//       !withdrawl_qty ||
+//       !withdrawl_date ||
+//       !box_no ||
+//       !service_no ||
+//       !name ||
+//       !issue_to
+//     ) {
+//       return new ApiErrorResponse(
+//         400,
+//         {},
+//         "Please provide all required fields",
+//       ).send(res);
+//     }
+//     let transactionId = "PI" + Date.now();
+//     const [[row]] = await connection.query(
+//       `SELECT category,box_no,obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+//       [spare_id || tool_id],
+//     );
+//     if (
+//       row.category?.toLowerCase() == "c" ||
+//       row.category?.toLowerCase() == "lp"
+//     ) {
+//       await connection.query(
+//         `INSERT INTO demand (spare_id,tool_id,issue_to,transaction_id,survey_qty,survey_voucher_no,survey_date,created_at,created_by,status)
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           spare_id || null,
+//           tool_id || null,
+//           issue_to,
+//           transactionId,
+//           withdrawl_qty,
+//           service_no,
+//           withdrawl_date,
+//           getSQLTimestamp(),
+//           created_by,
+//           "pending",
+//         ],
+//       );
+//     } else {
+//       if (!box_no) {
+//         return new ApiErrorResponse(
+//           400,
+//           {},
+//           "box_no is required for this category",
+//         ).send(res);
+//       }
+//       const itemBoxNo = JSON.parse(row.box_no);
+
+//       const updated = itemBoxNo.map((spare) => {
+//         const match = box_no.find((item) => item.no == spare.no);
+//         if (match) {
+//           return {
+//             ...spare,
+//             qtyHeld: (
+//               parseInt(spare.qtyHeld || "0") - parseInt(match.withdraw || "0")
+//             ).toString(),
+//           };
+//         }
+//       });
+//       await connection.query(
+//         `INSERT INTO survey (spare_id, tool_id, withdrawl_qty, withdrawl_date, box_no, service_no, name, issue_to, created_by, transaction_id,created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           spare_id || null,
+//           tool_id || null,
+//           withdrawl_qty,
+//           withdrawl_date,
+//           JSON.stringify(updated),
+//           service_no,
+//           name,
+//           issue_to,
+//           created_by,
+//           transactionId,
+//           getSQLTimestamp(),
+//         ],
+//       );
+//       if (row.obs_held - withdrawl_qty < 0) {
+//         return new ApiErrorResponse(400, {}, "Invalid withdrawl quantity").send(
+//           res,
+//         );
+//       }
+//       await connection.query(
+//         `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ?,obs_held = ? WHERE id = ?`,
+//         [
+//           JSON.stringify(updated),
+//           row.obs_held - withdrawl_qty,
+//           spare_id || tool_id,
+//         ],
+//       );
+//     }
+
+//     await connection.commit();
+//     new ApiResponse(201, {}, "Survey created successfully").send(res);
+//   } catch (error) {
+//     await connection.rollback();
+//     console.log("Error while creating survey: ", error);
+//     new ApiErrorResponse(500, {}, "Internal server error").send(res);
+//   } finally {
+//     connection.release();
+//   }
+// }
+
 async function createSurvey(req, res) {
   const {
     spare_id,
@@ -16,9 +141,11 @@ async function createSurvey(req, res) {
   } = req.body;
 
   const connection = await pool.getConnection();
+
   try {
     await connection.beginTransaction();
     const { id: created_by } = req.user;
+
     if (!spare_id && !tool_id) {
       return new ApiErrorResponse(
         400,
@@ -26,10 +153,10 @@ async function createSurvey(req, res) {
         "Please provide either spare_id or tool_id",
       ).send(res);
     }
+
     if (
       !withdrawl_qty ||
       !withdrawl_date ||
-      !box_no ||
       !service_no ||
       !name ||
       !issue_to
@@ -40,18 +167,33 @@ async function createSurvey(req, res) {
         "Please provide all required fields",
       ).send(res);
     }
-    let transactionId = "PI" + Date.now();
+
+    const transactionId = "PI-" + Date.now();
+
     const [[row]] = await connection.query(
-      `SELECT category,box_no,obs_held FROM ${spare_id ? "spares" : "tools"} WHERE id = ?`,
+      `SELECT category, box_no, obs_held
+       FROM ${spare_id ? "spares" : "tools"}
+       WHERE id = ?`,
       [spare_id || tool_id],
     );
+
+    if (!row) {
+      return new ApiErrorResponse(404, {}, "Item not found").send(res);
+    }
+
+    /* =========================================================
+       CATEGORY C / LP → ONLY DEMAND (NO STOCK MOVEMENT)
+    ========================================================== */
     if (
-      row.category?.toLowerCase() == "c" ||
-      row.category?.toLowerCase() == "lp"
+      row.category?.toLowerCase() === "c" ||
+      row.category?.toLowerCase() === "lp"
     ) {
       await connection.query(
-        `INSERT INTO demand (spare_id,tool_id,issue_to,transaction_id,survey_qty,survey_voucher_no,survey_date,created_at,created_by,status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO demand (
+          spare_id, tool_id, issue_to, transaction_id,
+          survey_qty, survey_voucher_no, survey_date,
+          created_at, created_by, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           spare_id || null,
           tool_id || null,
@@ -66,34 +208,46 @@ async function createSurvey(req, res) {
         ],
       );
     } else {
-      if (!box_no) {
-        return new ApiErrorResponse(
-          400,
-          {},
-          "box_no is required for this category",
-        ).send(res);
+      /* =========================================================
+       NORMAL CATEGORY → STOCK WITHDRAW
+    ========================================================== */
+      if (!box_no || !Array.isArray(box_no)) {
+        return new ApiErrorResponse(400, {}, "box_no is required").send(res);
       }
-      const itemBoxNo = JSON.parse(row.box_no);
 
-      const updated = itemBoxNo.map((spare) => {
-        const match = box_no.find((item) => item.no == spare.no);
-        if (match) {
-          return {
-            ...spare,
-            qtyHeld: (
-              parseInt(spare.qtyHeld || "0") - parseInt(match.withdraw || "0")
-            ).toString(),
-          };
-        }
+      const itemBoxNo = JSON.parse(row.box_no || "[]");
+
+      if (Number(row.obs_held) - Number(withdrawl_qty) < 0) {
+        return new ApiErrorResponse(400, {}, "Invalid withdrawl quantity").send(
+          res,
+        );
+      }
+
+      const updatedBoxes = itemBoxNo.map((box) => {
+        const match = box_no.find((b) => b.no == box.no);
+        if (!match) return box;
+
+        return {
+          ...box,
+          qtyHeld: (
+            Number(box.qtyHeld || 0) - Number(match.withdraw || 0)
+          ).toString(),
+        };
       });
+
+      /* ---------- INSERT SURVEY ---------- */
       await connection.query(
-        `INSERT INTO survey (spare_id, tool_id, withdrawl_qty, withdrawl_date, box_no, service_no, name, issue_to, created_by, transaction_id,created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO survey (
+          spare_id, tool_id, withdrawl_qty, withdrawl_date,
+          box_no, service_no, name, issue_to,
+          created_by, transaction_id, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           spare_id || null,
           tool_id || null,
           withdrawl_qty,
           withdrawl_date,
-          JSON.stringify(updated),
+          JSON.stringify(updatedBoxes),
           service_no,
           name,
           issue_to,
@@ -102,27 +256,81 @@ async function createSurvey(req, res) {
           getSQLTimestamp(),
         ],
       );
-      if (row.obs_held - withdrawl_qty < 0) {
-        return new ApiErrorResponse(400, {}, "Invalid withdrawl quantity").send(
-          res,
+
+      /* ---------- UPDATE INVENTORY ---------- */
+      await connection.query(
+        `UPDATE ${spare_id ? "spares" : "tools"}
+         SET box_no = ?, obs_held = ?
+         WHERE id = ?`,
+        [
+          JSON.stringify(updatedBoxes),
+          Number(row.obs_held) - Number(withdrawl_qty),
+          spare_id || tool_id,
+        ],
+      );
+
+      /* ---------- BOX TRANSACTION ---------- */
+      const boxTransactions = [];
+      const now = new Date();
+
+      box_no.forEach((box) => {
+        const originalBox = itemBoxNo.find((b) => b.no === box.no);
+        if (!originalBox) return;
+
+        boxTransactions.push([
+          transactionId,
+          null,
+          spare_id || null,
+          tool_id || null,
+          box.no,
+          Number(originalBox.qtyHeld || 0),
+          -Number(box.withdraw || 0),
+          now,
+        ]);
+      });
+
+      if (boxTransactions.length) {
+        await connection.query(
+          `
+          INSERT INTO box_transaction (
+            transaction_id,
+            demand_transaction,
+            spare_id,
+            tool_id,
+            box_no,
+            prev_qty,
+            withdrawl_qty,
+            transaction_date
+          ) VALUES ?
+          `,
+          [boxTransactions],
         );
       }
+
+      /* ---------- OBS AUDIT ---------- */
       await connection.query(
-        `UPDATE ${spare_id ? "spares" : "tools"} SET box_no = ?,obs_held = ? WHERE id = ?`,
+        `
+        INSERT INTO obs_audit (
+          transaction_id,
+          previous_obs,
+          new_obs
+        ) VALUES (?, ?, ?)
+        `,
         [
-          JSON.stringify(updated),
-          row.obs_held - withdrawl_qty,
-          spare_id || tool_id,
+          transactionId,
+          Number(row.obs_held),
+          Number(row.obs_held) - Number(withdrawl_qty),
         ],
       );
     }
 
     await connection.commit();
-    new ApiResponse(201, {}, "Survey created successfully").send(res);
+
+    return new ApiResponse(201, {}, "Survey created successfully").send(res);
   } catch (error) {
     await connection.rollback();
-    console.log("Error while creating survey: ", error);
-    new ApiErrorResponse(500, {}, "Internal server error").send(res);
+    console.log("Error while creating survey:", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
   } finally {
     connection.release();
   }

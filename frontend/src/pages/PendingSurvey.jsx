@@ -36,7 +36,7 @@ import Chip from "../components/Chip";
 // oem/vendor details (non men)
 // local terminology (non men)
 const PendingSurvey = () => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -63,7 +63,8 @@ const PendingSurvey = () => {
       width: "max-w-[40px]",
     },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
-    { key: "processed", header: "Proceed", width: "min-w-[40px]" },
+    ...(user.role != "user" ? [{ key: "processed", header: "Proceed" }] : []),
+    // { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
     { value: "description", label: "Item Description" },

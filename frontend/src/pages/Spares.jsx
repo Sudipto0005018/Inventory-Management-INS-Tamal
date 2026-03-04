@@ -76,6 +76,8 @@ const Spares = ({ type = "" }) => {
     fetchStorageLocation,
     issueTo,
     concurredBy,
+    user,
+    admin,
   } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description", width: "max-w-[50px]" },
@@ -172,7 +174,6 @@ const Spares = ({ type = "" }) => {
   const [users, setUsers] = useState([
     { service_no: "", name: "", isNewUser: false },
   ]);
-  const [user, setUser] = useState();
 
   const [date, setDate] = useState(new Date());
   const [editableFields, setEditableFields] = useState({
@@ -1367,15 +1368,17 @@ const Spares = ({ type = "" }) => {
               <span className="text-md font-bold text-green-700">Reset</span>
             </Button>
 
-            <Button
-              onClick={() => {
-                setIsOpen({ ...isOpen, addSpare: true });
-                setBoxNo([{}]);
-              }}
-              className="cursor-pointer hover:bg-primary/85"
-            >
-              <FaPlus /> Add Spare
-            </Button>
+            {user.role != "user" && (
+              <Button
+                onClick={() => {
+                  setIsOpen({ ...isOpen, addSpare: true });
+                  setBoxNo([{}]);
+                }}
+                className="cursor-pointer hover:bg-primary/85"
+              >
+                <FaPlus /> Add Spare
+              </Button>
+            )}
           </div>
 
           <div className="min-w-0 overflow-x-auto">
@@ -1940,543 +1943,993 @@ const Spares = ({ type = "" }) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Dialog
-          open={isOpen.editSpare}
-          onOpenChange={(set) =>
-            setIsOpen((prev) => ({ ...prev, editSpare: set }))
-          }
-        >
-          <DialogContent
-            className=" w-[95%] h-[90%] overflow-y-auto"
-            unbounded={true}
-            // onPointerDownOutside={() => {}}
-            onPointerDownOutside={(e) => e.preventDefault()}
+        {(user.role === "officer" || user.role === "admin") && (
+          <Dialog
+            open={isOpen.editSpare}
+            onOpenChange={(set) =>
+              setIsOpen((prev) => ({ ...prev, editSpare: set }))
+            }
           >
-            <button
-              type="button"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, editSpare: false }))
-              }
-              className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            <DialogContent
+              className=" w-[95%] h-[90%] overflow-y-auto overflow-x-hidden"
+              unbounded={true}
+              // onPointerDownOutside={() => {}}
+              onPointerDownOutside={(e) => e.preventDefault()}
             >
-              ✕
-            </button>
-            <DialogTitle className="relative text-base -mt-10">
-              Update Spare
-            </DialogTitle>
-            <DialogDescription className="hidden" />
-            <div className="-mt-6">
-              <div className="grid grid-cols-4 gap-4 mt-3">
-                <div>
-                  <Label>
-                    Item Description<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="description"
-                    value={selectedRow.description}
-                    onChange={handleEditChange}
-                    editable={editableFields.description}
-                    onEdit={() => enableEdit("description")}
-                    onBlur={() => disableEdit("description")}
-                  />
+              <button
+                type="button"
+                onClick={() =>
+                  setIsOpen((prev) => ({ ...prev, editSpare: false }))
+                }
+                className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+              >
+                ✕
+              </button>
+              <DialogTitle className="relative text-base -mt-10">
+                Update Spare
+              </DialogTitle>
+              <DialogDescription className="hidden" />
+              <div className="-mt-6">
+                <div className="grid grid-cols-4 gap-4 mt-3">
+                  <div>
+                    <Label>
+                      Item Description<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="description"
+                      value={selectedRow.description}
+                      onChange={handleEditChange}
+                      editable={editableFields.description}
+                      onEdit={() => enableEdit("description")}
+                      onBlur={() => disableEdit("description")}
+                    />
+                    {/* <p>{selectedRow.description}</p> */}
+                  </div>
+
+                  <div>
+                    <Label>
+                      Equipment / System
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="equipment_system"
+                      value={selectedRow.equipment_system}
+                      onChange={handleEditChange}
+                      editable={editableFields.equipment_system}
+                      onEdit={() => enableEdit("equipment_system")}
+                      onBlur={() => disableEdit("equipment_system")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      Denos<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="denos"
+                      value={selectedRow.denos}
+                      onChange={handleEditChange}
+                      editable={editableFields.denos}
+                      onEdit={() => enableEdit("denos")}
+                      onBlur={() => disableEdit("denos")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      OBS Authorised<span className="text-red-500">*</span>
+                    </Label>
+
+                    <InputWithPencil
+                      name="obs_authorised"
+                      value={selectedRow.obs_authorised}
+                      readOnly
+                      editable={false}
+                      onEdit={() => {
+                        setObsDialog({
+                          open: true,
+                          action: "increase",
+                          quantity: "",
+                        });
+
+                        setOriginalObsAuthorised(selectedRow.obs_authorised);
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      OBS Maintained<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="obs_maintained"
+                      value={selectedRow.obs_maintained}
+                      onChange={handleEditChange}
+                      editable={editableFields.obs_maintained}
+                      onEdit={() => enableEdit("obs_maintained")}
+                      onBlur={() => disableEdit("obs_maintained")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      OBS Held<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="obs_held"
+                      value={selectedRow.obs_held}
+                      onChange={handleEditChange}
+                      editable={editableFields.obs_held}
+                      onEdit={() => enableEdit("obs_held")}
+                      onBlur={() => disableEdit("obs_held")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      B & D Authorised<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="b_d_authorised"
+                      value={selectedRow.b_d_authorised}
+                      onChange={handleEditChange}
+                      editable={editableFields.b_d_authorised}
+                      onEdit={() => enableEdit("b_d_authorised")}
+                      onBlur={() => disableEdit("b_d_authorised")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2">
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      name="category"
+                      value={selectedRow.category || ""}
+                      onChange={handleEditChange}
+                      editable={editableFields.category}
+                      onEdit={() => enableEdit("category")}
+                      onBlur={() => disableEdit("category")}
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="P">P</option>
+                      <option value="R">R</option>
+                      <option value="C">C</option>
+                      <option value="LP">LP</option>
+                      <option value="NA">NA</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>
+                      Item Code<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="item_code"
+                      value={selectedRow.item_code}
+                      onChange={handleEditChange}
+                      editable={editableFields.item_code}
+                      onEdit={() => enableEdit("item_code")}
+                      onBlur={() => disableEdit("item_code")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      <i>IN</i> Part No.
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      name="indian_pattern"
+                      value={selectedRow.indian_pattern}
+                      onChange={handleEditChange}
+                      editable={editableFields.indian_pattern}
+                      onEdit={() => enableEdit("indian_pattern")}
+                      onBlur={() => disableEdit("indian_pattern")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      Substitute <i>IN</i> Part No.
+                      <span className="text-red-500">*</span>
+                    </Label>
+
+                    {/* VIEW MODE */}
+                    {!editableFields.substitute_name ? (
+                      <InputWithPencil
+                        name="substitute_name"
+                        value={normalizeToArray(
+                          selectedRow.substitute_name,
+                        ).join(", ")}
+                        editable={false}
+                        onEdit={() => enableEdit("substitute_name")}
+                      />
+                    ) : (
+                      /* EDIT MODE */
+                      <div
+                        onBlur={() => disableEdit("substitute_name")}
+                        tabIndex={0} // IMPORTANT for onBlur to work
+                        className="outline-none"
+                      >
+                        <DynamicInputList
+                          data={normalizeToArray(selectedRow.substitute_name)}
+                          placeholder="Substitute name"
+                          onChange={(values) =>
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              substitute_name: values,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>
+                      Local Terminology<span className="text-red-500">*</span>
+                    </Label>
+                    {!editableFields.local_terminology ? (
+                      <InputWithPencil
+                        name="local_terminology"
+                        value={normalizeToArray(
+                          selectedRow.local_terminology,
+                        ).join(", ")}
+                        editable={false}
+                        onEdit={() => enableEdit("local_terminology")}
+                      />
+                    ) : (
+                      <div
+                        onBlur={() => disableEdit("local_terminology")}
+                        tabIndex={0}
+                        className="outline-none"
+                      >
+                        <DynamicInputList
+                          data={normalizeToArray(selectedRow.local_terminology)}
+                          placeholder="Local terminology"
+                          onChange={(values) =>
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              local_terminology: values,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Critical Spare<span className="text-red-500">*</span>
+                    </Label>
+
+                    <RadioGroup
+                      value={selectedRow.critical_spare == 1 ? "yes" : "no"}
+                      onValueChange={(value) =>
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          critical_spare: value == "yes" ? 1 : 0,
+                        }))
+                      }
+                      className="mt-2"
+                    >
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="critical_yes" />
+                          <Label
+                            htmlFor="critical_yes"
+                            className="cursor-pointer"
+                          >
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="critical_no" />
+                          <Label
+                            htmlFor="critical_no"
+                            className="cursor-pointer"
+                          >
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Sub Component<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      type="text"
+                      name="sub_component"
+                      value={selectedRow.sub_component}
+                      onChange={handleEditChange}
+                      editable={editableFields.sub_component}
+                      onEdit={() => enableEdit("sub_component")}
+                      onBlur={() => disableEdit("sub_component")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Price/Unit Cost<span className="text-red-500">*</span>
+                    </Label>
+                    <InputWithPencil
+                      type="number"
+                      inputMode="numeric"
+                      name="price_unit"
+                      value={selectedRow.price_unit}
+                      onChange={handleEditChange}
+                      editable={editableFields.price_unit}
+                      onEdit={() => enableEdit("price_unit")}
+                      onBlur={() => disableEdit("price_unit")}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <Label>
-                    Equipment / System<span className="text-red-500">*</span>
+                <div className="flex flex-col mt-3">
+                  <div className="mt-4">
+                    <Label className="ms-2 mb-1">Loose Spare</Label>
+                    <RadioGroup
+                      value={isLooseSpare ? "yes" : "no"}
+                      onValueChange={(val) => setIsLooseSpare(val === "yes")}
+                    >
+                      <div className="flex gap-6 mt-2">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="loose-yes" />
+                          <Label htmlFor="loose-yes" className="cursor-pointer">
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="loose-no" />
+                          <Label htmlFor="loose-no" className="cursor-pointer">
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
+                    Item Storage Distribution
                   </Label>
-                  <InputWithPencil
-                    name="equipment_system"
-                    value={selectedRow.equipment_system}
-                    onChange={handleEditChange}
-                    editable={editableFields.equipment_system}
-                    onEdit={() => enableEdit("equipment_system")}
-                    onBlur={() => disableEdit("equipment_system")}
+
+                  <BoxNoInputs
+                    value={
+                      selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
+                    }
+                    onChange={(value) =>
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        box_no: JSON.stringify(value),
+                      }))
+                    }
+                    isLooseSpare={isLooseSpare}
+                    addToDropdown={addToDropdown}
                   />
                 </div>
-
-                <div>
-                  <Label>
-                    Denos<span className="text-red-500">*</span>
+                <div className="w-full my-2 mt-6">
+                  <Label className="ms-2 mb-2 mt-3" htmlFor="image">
+                    Image
                   </Label>
-                  <InputWithPencil
-                    name="denos"
-                    value={selectedRow.denos}
-                    onChange={handleEditChange}
-                    editable={editableFields.denos}
-                    onEdit={() => enableEdit("denos")}
-                    onBlur={() => disableEdit("denos")}
-                  />
-                </div>
-
-                <div>
-                  <Label>
-                    OBS Authorised<span className="text-red-500">*</span>
-                  </Label>
-
-                  <InputWithPencil
-                    name="obs_authorised"
-                    value={selectedRow.obs_authorised}
-                    readOnly
-                    editable={false}
-                    onEdit={() => {
-                      setObsDialog({
-                        open: true,
-                        action: "increase",
-                        quantity: "",
-                      });
-
-                      setOriginalObsAuthorised(selectedRow.obs_authorised);
+                  <div className="relative">
+                    <MultiImageSelect
+                      initialImages={selectedRow.images || []}
+                      onImagesUpdate={setImagePayload}
+                    />
+                  </div>
+                  <Input
+                    type="file"
+                    id="image"
+                    accept="image/jpeg, image/png, image/webp"
+                    name="image"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setImage((prev) => ({
+                            ...prev,
+                            file: file,
+                            preview: reader.result,
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
                     }}
                   />
                 </div>
 
-                <div>
-                  <Label>
-                    OBS Maintained<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="obs_maintained"
-                    value={selectedRow.obs_maintained}
+                <div className="w-full mt-6 grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="ms-2 mb-1">OEM Details</Label>
+                    <AsyncSelectBox
+                      label="OEM"
+                      value={
+                        selectedRow.oem
+                          ? {
+                              id: oemList.find(
+                                (item) => item.name === selectedRow.oem,
+                              )?.id,
+                              name: selectedRow.oem,
+                            }
+                          : null
+                      }
+                      onChange={(val) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          oem: val.name,
+                        }));
+                      }}
+                      fetchOptions={fetchOemOptions}
+                      fetchDetails={async (id) => {
+                        if (!id) return null;
+                        try {
+                          const res = await apiService.get(`/oem/${id}`);
+                          return res.data;
+                        } catch (error) {
+                          console.error("Failed to fetch OEM details", error);
+                          return null;
+                        }
+                      }}
+                      AddNewModal={OEMFirm}
+                      onDelete={onDeleteOem}
+                    />
+                  </div>
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Vendor / Third Party Supplier
+                    </Label>
+                    <AsyncSelectBox
+                      label="Vendor/ Third Party Supplier"
+                      value={
+                        selectedRow.supplier
+                          ? {
+                              id: supplierList.find(
+                                (item) => item.name === selectedRow.supplier,
+                              )?.id,
+                              name: selectedRow.supplier,
+                            }
+                          : null
+                      }
+                      onChange={(val) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          supplier: val.name,
+                        }));
+                      }}
+                      fetchOptions={fetchSupplierOptions}
+                      fetchDetails={fetchSupplierDetails}
+                      AddNewModal={SupplierFirm}
+                      onDelete={onDeleteSupplier}
+                    />
+                  </div>
+                </div>
+                {selectedRow.old_supplier && (
+                  <div className=" mt-4 w-full ml-[50%]">
+                    <p className="text-sm ms-2 mb-2">
+                      Previous Vendors / Third Party Suppliers
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedRow.old_supplier &&
+                        selectedRow.old_supplier.map((data, _) => {
+                          let supplier_id = supplierList.filter(
+                            (s) => s.name == data,
+                          );
+                          if (supplier_id) {
+                            supplier_id = supplier_id[0].id;
+                          }
+
+                          return (
+                            <HoverCard
+                              key={Math.random().toString()}
+                              openDelay={10}
+                              closeDelay={100}
+                            >
+                              <HoverCardTrigger asChild>
+                                <div className="bg-white px-2 py-1 rounded-full shadow border">
+                                  {data}
+                                </div>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                                <DefaultRenderDetail
+                                  details={{}}
+                                  isFromOldSuppliers={true}
+                                  fetchSupplier={async () => {
+                                    return fetchSupplierDetails(supplier_id);
+                                  }}
+                                  onEdit={() => {}}
+                                  onDelete={() => {}}
+                                />
+                              </HoverCardContent>
+                            </HoverCard>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="w-full mt-6">
+                  <Label className="ms-1 mb-1">Remarks</Label>
+                  <Textarea
+                    placeholder="Remarks"
+                    name="remarks"
+                    className="h-1 resize-none"
+                    value={selectedRow.remarks}
                     onChange={handleEditChange}
-                    editable={editableFields.obs_maintained}
-                    onEdit={() => enableEdit("obs_maintained")}
-                    onBlur={() => disableEdit("obs_maintained")}
                   />
                 </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    setIsOpen((prev) => ({ ...prev, editSpare: false }));
+                    resetImageState(); // clear image payload
+                    setSelectedRow({});
+                  }}
+                  variant="outline"
+                  className="cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="text-white hover:bg-primary/85 cursor-pointer"
+                  onClick={handleEditSpare}
+                >
+                  Submit
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        {/*///// For user role /////*/}
+        {user.role == "user" && (
+          <Dialog
+            open={isOpen.editSpare}
+            onOpenChange={(set) =>
+              setIsOpen((prev) => ({ ...prev, editSpare: set }))
+            }
+          >
+            <DialogContent
+              className=" w-[95%] h-[90%] overflow-y-auto overflow-x-hidden"
+              unbounded={true}
+              // onPointerDownOutside={() => {}}
+              onPointerDownOutside={(e) => e.preventDefault()}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setIsOpen((prev) => ({ ...prev, editSpare: false }))
+                }
+                className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+              >
+                ✕
+              </button>
+              <DialogTitle className="relative text-base -mt-10">
+                View Spare
+              </DialogTitle>
+              <DialogDescription className="hidden" />
+              <div className="-mt-6">
+                <div className="grid grid-cols-4 gap-4 mt-3">
+                  <div>
+                    <Label>
+                      Item Description<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="description"
+                      value={selectedRow.description || ""}
+                      readOnly
+                    />
+                  </div>
 
-                <div>
-                  <Label>
-                    OBS Held<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="obs_held"
-                    value={selectedRow.obs_held}
-                    onChange={handleEditChange}
-                    editable={editableFields.obs_held}
-                    onEdit={() => enableEdit("obs_held")}
-                    onBlur={() => disableEdit("obs_held")}
-                  />
-                </div>
+                  <div>
+                    <Label>
+                      Equipment / System<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="equipment_system"
+                      value={selectedRow.equipment_system}
+                      readOnly
+                    />
+                  </div>
 
-                <div>
-                  <Label>
-                    B & D Authorised<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="b_d_authorised"
-                    value={selectedRow.b_d_authorised}
-                    onChange={handleEditChange}
-                    editable={editableFields.b_d_authorised}
-                    onEdit={() => enableEdit("b_d_authorised")}
-                    onBlur={() => disableEdit("b_d_authorised")}
-                  />
-                </div>
+                  <div>
+                    <Label>
+                      Denos<span className="text-red-500">*</span>
+                    </Label>
+                    <Input name="denos" value={selectedRow.denos} readOnly />
+                  </div>
 
-                <div>
-                  <Label className="mb-2">
-                    Category <span className="text-red-500">*</span>
-                  </Label>
-                  <select
-                    name="category"
-                    value={selectedRow.category || ""}
-                    onChange={handleEditChange}
-                    editable={editableFields.category}
-                    onEdit={() => enableEdit("category")}
-                    onBlur={() => disableEdit("category")}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="P">P</option>
-                    <option value="R">R</option>
-                    <option value="C">C</option>
-                    <option value="LP">LP</option>
-                    <option value="NA">NA</option>
-                  </select>
-                </div>
+                  <div>
+                    <Label>
+                      OBS Authorised<span className="text-red-500">*</span>
+                    </Label>
 
-                <div>
-                  <Label>
-                    Item Code<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="item_code"
-                    value={selectedRow.item_code}
-                    onChange={handleEditChange}
-                    editable={editableFields.item_code}
-                    onEdit={() => enableEdit("item_code")}
-                    onBlur={() => disableEdit("item_code")}
-                  />
-                </div>
+                    <Input
+                      name="obs_authorised"
+                      value={selectedRow.obs_authorised}
+                      readOnly
+                    />
+                  </div>
 
-                <div>
-                  <Label>
-                    <i>IN</i> Part No.<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    name="indian_pattern"
-                    value={selectedRow.indian_pattern}
-                    onChange={handleEditChange}
-                    editable={editableFields.indian_pattern}
-                    onEdit={() => enableEdit("indian_pattern")}
-                    onBlur={() => disableEdit("indian_pattern")}
-                  />
-                </div>
+                  <div>
+                    <Label>
+                      OBS Maintained<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="obs_maintained"
+                      value={selectedRow.obs_maintained}
+                      readOnly
+                    />
+                  </div>
 
-                <div>
-                  <Label>
-                    Substitute <i>IN</i> Part No.
-                    <span className="text-red-500">*</span>
-                  </Label>
+                  <div>
+                    <Label>
+                      OBS Held<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="obs_held"
+                      value={selectedRow.obs_held}
+                      readOnly
+                    />
+                  </div>
 
-                  {/* VIEW MODE */}
-                  {!editableFields.substitute_name ? (
-                    <InputWithPencil
-                      name="substitute_name"
+                  <div>
+                    <Label>
+                      B & D Authorised<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="b_d_authorised"
+                      value={selectedRow.b_d_authorised}
+                      readOnly
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2">
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      name="category"
+                      value={selectedRow.category || ""}
+                      disabled
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="P">P</option>
+                      <option value="R">R</option>
+                      <option value="C">C</option>
+                      <option value="LP">LP</option>
+                      <option value="NA">NA</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>
+                      Item Code<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="item_code"
+                      value={selectedRow.item_code}
+                      readOnly
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      <i>IN</i> Part No.<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="indian_pattern"
+                      value={selectedRow.indian_pattern}
+                      readOnly
+                    />
+                  </div>
+
+                  <div>
+                    <Label>
+                      Substitute <i>IN</i> Part No.
+                      <span className="text-red-500">*</span>
+                    </Label>
+
+                    <Input
                       value={normalizeToArray(selectedRow.substitute_name).join(
                         ", ",
                       )}
-                      editable={false}
-                      onEdit={() => enableEdit("substitute_name")}
+                      readOnly
                     />
-                  ) : (
-                    /* EDIT MODE */
-                    <div
-                      onBlur={() => disableEdit("substitute_name")}
-                      tabIndex={0} // IMPORTANT for onBlur to work
-                      className="outline-none"
-                    >
-                      <DynamicInputList
-                        data={normalizeToArray(selectedRow.substitute_name)}
-                        placeholder="Substitute name"
-                        onChange={(values) =>
-                          setSelectedRow((prev) => ({
-                            ...prev,
-                            substitute_name: values,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
+                  </div>
 
-                <div>
-                  <Label>
-                    Local Terminology<span className="text-red-500">*</span>
-                  </Label>
-                  {!editableFields.local_terminology ? (
-                    <InputWithPencil
-                      name="local_terminology"
+                  <div>
+                    <Label>
+                      Local Terminology<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
                       value={normalizeToArray(
                         selectedRow.local_terminology,
                       ).join(", ")}
-                      editable={false}
-                      onEdit={() => enableEdit("local_terminology")}
+                      readOnly
                     />
-                  ) : (
-                    <div
-                      onBlur={() => disableEdit("local_terminology")}
-                      tabIndex={0}
-                      className="outline-none"
-                    >
-                      <DynamicInputList
-                        data={normalizeToArray(selectedRow.local_terminology)}
-                        placeholder="Local terminology"
-                        onChange={(values) =>
-                          setSelectedRow((prev) => ({
-                            ...prev,
-                            local_terminology: values,
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
+                  </div>
 
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Critical Spare<span className="text-red-500">*</span>
-                  </Label>
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Critical Spare<span className="text-red-500">*</span>
+                    </Label>
 
-                  <RadioGroup
-                    value={selectedRow.critical_spare == 1 ? "yes" : "no"}
-                    onValueChange={(value) =>
-                      setSelectedRow((prev) => ({
-                        ...prev,
-                        critical_spare: value == "yes" ? 1 : 0,
-                      }))
-                    }
-                    className="mt-2"
-                  >
-                    <div className="flex gap-6">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="yes" id="critical_yes" />
-                        <Label
-                          htmlFor="critical_yes"
-                          className="cursor-pointer"
-                        >
-                          Yes
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="no" id="critical_no" />
-                        <Label htmlFor="critical_no" className="cursor-pointer">
-                          No
-                        </Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Sub Component<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    type="text"
-                    name="sub_component"
-                    value={selectedRow.sub_component}
-                    onChange={handleEditChange}
-                    editable={editableFields.sub_component}
-                    onEdit={() => enableEdit("sub_component")}
-                    onBlur={() => disableEdit("sub_component")}
-                  />
-                </div>
-
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Price/Unit Cost<span className="text-red-500">*</span>
-                  </Label>
-                  <InputWithPencil
-                    type="number"
-                    inputMode="numeric"
-                    name="price_unit"
-                    value={selectedRow.price_unit}
-                    onChange={handleEditChange}
-                    editable={editableFields.price_unit}
-                    onEdit={() => enableEdit("price_unit")}
-                    onBlur={() => disableEdit("price_unit")}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col mt-3">
-                <div className="mt-4">
-                  <Label className="ms-2 mb-1">Loose Spare</Label>
-                  <RadioGroup
-                    value={isLooseSpare ? "yes" : "no"}
-                    onValueChange={(val) => setIsLooseSpare(val === "yes")}
-                  >
-                    <div className="flex gap-6 mt-2">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="yes" id="loose-yes" />
-                        <Label htmlFor="loose-yes" className="cursor-pointer">
-                          Yes
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="no" id="loose-no" />
-                        <Label htmlFor="loose-no" className="cursor-pointer">
-                          No
-                        </Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
-                  Item Storage Distribution
-                </Label>
-
-                <BoxNoInputs
-                  value={
-                    selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
-                  }
-                  onChange={(value) =>
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      box_no: JSON.stringify(value),
-                    }))
-                  }
-                  isLooseSpare={isLooseSpare}
-                  addToDropdown={addToDropdown}
-                />
-              </div>
-              <div className="w-full my-2 mt-6">
-                <Label className="ms-2 mb-2 mt-3" htmlFor="image">
-                  Image
-                </Label>
-                <div className="relative">
-                  <MultiImageSelect
-                    initialImages={selectedRow.images || []}
-                    onImagesUpdate={setImagePayload}
-                  />
-                </div>
-                <Input
-                  type="file"
-                  id="image"
-                  accept="image/jpeg, image/png, image/webp"
-                  name="image"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setImage((prev) => ({
+                    <RadioGroup
+                      value={selectedRow.critical_spare == 1 ? "yes" : "no"}
+                      onValueChange={(value) =>
+                        setSelectedRow((prev) => ({
                           ...prev,
-                          file: file,
-                          preview: reader.result,
-                        }));
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="w-full mt-6 grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="ms-2 mb-1">OEM Details</Label>
-                  <AsyncSelectBox
-                    label="OEM"
-                    value={
-                      selectedRow.oem
-                        ? {
-                            id: oemList.find(
-                              (item) => item.name === selectedRow.oem,
-                            )?.id,
-                            name: selectedRow.oem,
-                          }
-                        : null
-                    }
-                    onChange={(val) => {
-                      setSelectedRow((prev) => ({
-                        ...prev,
-                        oem: val.name,
-                      }));
-                    }}
-                    fetchOptions={fetchOemOptions}
-                    fetchDetails={async (id) => {
-                      if (!id) return null;
-                      try {
-                        const res = await apiService.get(`/oem/${id}`);
-                        return res.data;
-                      } catch (error) {
-                        console.error("Failed to fetch OEM details", error);
-                        return null;
+                          critical_spare: value == "yes" ? 1 : 0,
+                        }))
                       }
-                    }}
-                    AddNewModal={OEMFirm}
-                    onDelete={onDeleteOem}
-                  />
-                </div>
-                <div>
-                  <Label className="ms-2 mb-1">
-                    Vendor / Third Party Supplier
-                  </Label>
-                  <AsyncSelectBox
-                    label="Vendor/ Third Party Supplier"
-                    value={
-                      selectedRow.supplier
-                        ? {
-                            id: supplierList.find(
-                              (item) => item.name === selectedRow.supplier,
-                            )?.id,
-                            name: selectedRow.supplier,
-                          }
-                        : null
-                    }
-                    onChange={(val) => {
-                      setSelectedRow((prev) => ({
-                        ...prev,
-                        supplier: val.name,
-                      }));
-                    }}
-                    fetchOptions={fetchSupplierOptions}
-                    fetchDetails={fetchSupplierDetails}
-                    AddNewModal={SupplierFirm}
-                    onDelete={onDeleteSupplier}
-                  />
-                </div>
-              </div>
-              {selectedRow.old_supplier && (
-                <div className=" mt-4 w-full ml-[50%]">
-                  <p className="text-sm ms-2 mb-2">
-                    Previous Vendors / Third Party Suppliers
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedRow.old_supplier &&
-                      selectedRow.old_supplier.map((data, _) => {
-                        let supplier_id = supplierList.filter(
-                          (s) => s.name == data,
-                        );
-                        if (supplier_id) {
-                          supplier_id = supplier_id[0].id;
-                        }
-
-                        return (
-                          <HoverCard
-                            key={Math.random().toString()}
-                            openDelay={10}
-                            closeDelay={100}
+                      className="mt-2"
+                    >
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="critical_yes" />
+                          <Label
+                            htmlFor="critical_yes"
+                            className="cursor-pointer"
                           >
-                            <HoverCardTrigger asChild>
-                              <div className="bg-white px-2 py-1 rounded-full shadow border">
-                                {data}
-                              </div>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                              <DefaultRenderDetail
-                                details={{}}
-                                isFromOldSuppliers={true}
-                                fetchSupplier={async () => {
-                                  return fetchSupplierDetails(supplier_id);
-                                }}
-                                onEdit={() => {}}
-                                onDelete={() => {}}
-                              />
-                            </HoverCardContent>
-                          </HoverCard>
-                        );
-                      })}
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="critical_no" />
+                          <Label
+                            htmlFor="critical_no"
+                            className="cursor-pointer"
+                          >
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Sub Component<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="text"
+                      name="sub_component"
+                      value={selectedRow.sub_component}
+                      readOnly
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Price/Unit Cost<span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      name="price_unit"
+                      value={selectedRow.price_unit}
+                      readOnly
+                    />
                   </div>
                 </div>
-              )}
 
-              <div className="w-full mt-6">
-                <Label className="ms-1 mb-1">Remarks</Label>
-                <Textarea
-                  placeholder="Remarks"
-                  name="remarks"
-                  className="h-1 resize-none"
-                  value={selectedRow.remarks}
-                  onChange={handleEditChange}
-                />
+                <div className="flex flex-col mt-3">
+                  <div className="mt-4">
+                    <Label className="ms-2 mb-1">Loose Spare</Label>
+                    <RadioGroup
+                      value={isLooseSpare ? "yes" : "no"}
+                      onValueChange={(val) => setIsLooseSpare(val === "yes")}
+                    >
+                      <div className="flex gap-6 mt-2">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="loose-yes" />
+                          <Label htmlFor="loose-yes" className="cursor-pointer">
+                            Yes
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="loose-no" />
+                          <Label htmlFor="loose-no" className="cursor-pointer">
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
+                    Item Storage Distribution
+                  </Label>
+
+                  <BoxNoInputs
+                    value={
+                      selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
+                    }
+                    isLooseSpare={isLooseSpare}
+                    readOnly
+                  />
+                </div>
+                <div className="w-full my-2 mt-6">
+                  <Label className="ms-2 mb-2 mt-3" htmlFor="image">
+                    Image
+                  </Label>
+                  <div className="relative">
+                    <MultiImageSelect
+                      initialImages={selectedRow.images || []}
+                      onImagesUpdate={setImagePayload}
+                      readOnly
+                    />
+                  </div>
+                  {/* <Input
+                    type="file"
+                    id="image"
+                    accept="image/jpeg, image/png, image/webp"
+                    name="image"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setImage((prev) => ({
+                            ...prev,
+                            file: file,
+                            preview: reader.result,
+                          }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  /> */}
+                </div>
+
+                <div className="w-full mt-6 grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="ms-2 mb-1">OEM Details</Label>
+                    <AsyncSelectBox
+                      label="OEM"
+                      value={
+                        selectedRow.oem
+                          ? {
+                              id: oemList.find(
+                                (item) => item.name === selectedRow.oem,
+                              )?.id,
+                              name: selectedRow.oem,
+                            }
+                          : null
+                      }
+                      // onChange={(val) => {
+                      //   setSelectedRow((prev) => ({
+                      //     ...prev,
+                      //     oem: val.name,
+                      //   }));
+                      // }}
+                      fetchOptions={fetchOemOptions}
+                      fetchDetails={async (id) => {
+                        if (!id) return null;
+                        try {
+                          const res = await apiService.get(`/oem/${id}`);
+                          return res.data;
+                        } catch (error) {
+                          console.error("Failed to fetch OEM details", error);
+                          return null;
+                        }
+                      }}
+                      // AddNewModal={OEMFirm}
+                      onDelete={onDeleteOem}
+                    />
+                  </div>
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Vendor / Third Party Supplier
+                    </Label>
+                    <AsyncSelectBox
+                      label="Vendor/ Third Party Supplier"
+                      value={
+                        selectedRow.supplier
+                          ? {
+                              id: supplierList.find(
+                                (item) => item.name === selectedRow.supplier,
+                              )?.id,
+                              name: selectedRow.supplier,
+                            }
+                          : null
+                      }
+                      // onChange={(val) => {
+                      //   setSelectedRow((prev) => ({
+                      //     ...prev,
+                      //     supplier: val.name,
+                      //   }));
+                      // }}
+                      fetchOptions={fetchSupplierOptions}
+                      fetchDetails={fetchSupplierDetails}
+                      // AddNewModal={SupplierFirm}
+                      onDelete={onDeleteSupplier}
+                    />
+                  </div>
+                </div>
+                {selectedRow.old_supplier && (
+                  <div className=" mt-4 w-full ml-[50%]">
+                    <p className="text-sm ms-2 mb-2">
+                      Previous Vendors / Third Party Suppliers
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedRow.old_supplier &&
+                        selectedRow.old_supplier.map((data, _) => {
+                          let supplier_id = supplierList.filter(
+                            (s) => s.name == data,
+                          );
+                          if (supplier_id) {
+                            supplier_id = supplier_id[0].id;
+                          }
+
+                          return (
+                            <HoverCard
+                              key={Math.random().toString()}
+                              openDelay={10}
+                              closeDelay={100}
+                            >
+                              <HoverCardTrigger asChild>
+                                <div className="bg-white px-2 py-1 rounded-full shadow border">
+                                  {data}
+                                </div>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                                <DefaultRenderDetail
+                                  details={{}}
+                                  isFromOldSuppliers={true}
+                                  fetchSupplier={async () => {
+                                    return fetchSupplierDetails(supplier_id);
+                                  }}
+                                  onEdit={() => {}}
+                                  onDelete={() => {}}
+                                />
+                              </HoverCardContent>
+                            </HoverCard>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="w-full mt-6">
+                  <Label className="ms-1 mb-1">Remarks</Label>
+                  <Textarea
+                    placeholder="Remarks"
+                    name="remarks"
+                    className="h-1 resize-none"
+                    value={selectedRow.remarks}
+                    readOnly
+                  />
+                </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={() => {
-                  setIsOpen((prev) => ({ ...prev, editSpare: false }));
-                  resetImageState(); // clear image payload
-                  setSelectedRow({});
-                }}
-                variant="outline"
-                className="cursor-pointer"
-              >
-                Cancel
-              </Button>
-              <Button
-                className="text-white hover:bg-primary/85 cursor-pointer"
-                onClick={handleEditSpare}
-              >
-                Submit
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    setIsOpen((prev) => ({ ...prev, editSpare: false }));
+                    setSelectedRow({});
+                  }}
+                  variant="destructive"
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/*//// End of user role //// */}
+
         <Dialog
           open={isOpen.withdrawSpare}
           onOpenChange={(open) =>

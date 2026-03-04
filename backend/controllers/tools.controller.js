@@ -58,8 +58,8 @@ async function getTools(req, res) {
   const department = req.department;
 
   try {
-    let whereClause = "WHERE department = ?";
-    let params = [department.id];
+    let whereClause = "WHERE 1=1";
+    let params = [];
 
     if (search) {
       // Split by comma OR space
@@ -300,8 +300,8 @@ async function getCriticalTools(req, res) {
   console.log("called");
 
   try {
-    let whereClause = "WHERE department = ? AND critical_tool = 1";
-    let params = [department.id];
+    let whereClause = "WHERE 1=1 AND critical_tool = 1";
+    let params = [];
     if (search) {
       const searchableFields = [
         "description",

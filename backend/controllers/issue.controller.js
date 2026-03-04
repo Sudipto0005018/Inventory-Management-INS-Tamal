@@ -65,9 +65,9 @@ async function updatePendingIssue(req, res) {
           nac_no, nac_date, validity, rate_unit, issue_date,
           qty_received,
           created_by, approved_by, approved_at,
-          status, issue_id
+          status, issue_id, transaction_id
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending',?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending',?,?)
         `,
         [
           issue.spare_id,
@@ -84,6 +84,7 @@ async function updatePendingIssue(req, res) {
           issue.approved_by,
           issue.approved_at,
           id,
+          issue.transaction_id 
         ],
       );
     }
@@ -99,9 +100,9 @@ async function updatePendingIssue(req, res) {
           mo_no, mo_date, issue_date,
           qty_received,
           created_by, approved_by, approved_at,
-          status, issued_id
+          status, issued_id, transaction_id
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?, 'pending',?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?, 'pending',?, ?)
         `,
         [
           issue.spare_id,
@@ -116,6 +117,7 @@ async function updatePendingIssue(req, res) {
           issue.approved_by,
           issue.approved_at,
           id,
+          issue.transaction_id,
         ],
       );
     }

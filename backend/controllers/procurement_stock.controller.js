@@ -468,6 +468,7 @@ async function getStockUpdatePending(req, res) {
 async function updateStock(req, res) {
   const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  const transactionId = "ST-RET-" + Date.now();
 
   const connection = await pool.getConnection();
 
@@ -488,6 +489,8 @@ async function updateStock(req, res) {
         .status(404)
         .json({ success: false, message: "Stock not found" });
     }
+
+    const demandTransactionId = row.transaction_id; // old PI
 
     const issuedQty = Number(row.stocked_in_qty || 0);
     const alreadyReceived = Number(row.qty_received || 0);
@@ -559,14 +562,25 @@ async function updateStock(req, res) {
 
       totalDepositedQty += depositQty;
 
+      // boxTransactions.push([
+      //   row.id,
+      //   null,
+      //   isSpare ? row.spare_id : null,
+      //   !isSpare ? row.tool_id : null,
+      //   box.no,
+      //   prevQty,
+      //   depositQty,
+      //   now,
+      // ]);
+
       boxTransactions.push([
-        row.id,
-        null,
+        transactionId, // NEW ST-RET ID
+        demandTransactionId, // OLD PI ID
         isSpare ? row.spare_id : null,
         !isSpare ? row.tool_id : null,
         box.no,
         prevQty,
-        depositQty,
+        depositQty, // positive for return
         now,
       ]);
 
@@ -639,7 +653,7 @@ async function updateStock(req, res) {
         transaction_id, previous_obs, new_obs
       ) VALUES (?, ?, ?)
       `,
-      [row.id, previousOBS, newOBS],
+      [transactionId, previousOBS, newOBS],
     );
 
     await connection.commit();
@@ -674,6 +688,8 @@ async function updateProcurement(req, res) {
     supplier,
   } = req.body;
 
+  const transactionId = "PR-RET-" + Date.now();
+
   const connection = await pool.getConnection();
 
   try {
@@ -700,6 +716,8 @@ async function updateProcurement(req, res) {
         .status(404)
         .json({ success: false, message: "Procurement not found" });
     }
+    // console.log("OLD PI ID =>", row2.transaction_id);
+    const demandTransactionId = row2.transaction_id; // old PI
 
     if (row2.supplier != supplier) {
       let old_supplier = row2.old_supplier || [];
@@ -797,9 +815,20 @@ async function updateProcurement(req, res) {
 
       totalDepositedQty += depositQty;
 
+      // boxTransactions.push([
+      //   row2.id,
+      //   null,
+      //   isSpare ? row2.spare_id : null,
+      //   !isSpare ? row2.tool_id : null,
+      //   box.no,
+      //   prevQty,
+      //   depositQty,
+      //   now,
+      // ]);
+
       boxTransactions.push([
-        row2.id,
-        null,
+        transactionId, // NEW PR-RET ID
+        demandTransactionId, // OLD PI
         isSpare ? row2.spare_id : null,
         !isSpare ? row2.tool_id : null,
         box.no,
@@ -877,7 +906,7 @@ async function updateProcurement(req, res) {
         transaction_id, previous_obs, new_obs
       ) VALUES (?, ?, ?)
       `,
-      [row2.id, previousOBS, newOBS],
+      [transactionId, previousOBS, newOBS],
     );
 
     await connection.commit();

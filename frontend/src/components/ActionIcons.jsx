@@ -2,7 +2,7 @@ import { FaRegEye } from "react-icons/fa";
 import { PiHandWithdrawLight } from "react-icons/pi";
 import { IoQrCodeSharp } from "react-icons/io5";
 import { Button } from "../components/ui/button";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,13 +24,14 @@ import { Input } from "./ui/input";
 import toaster from "../utils/toaster";
 import apiService from "../utils/apiService";
 import SpinnerButton from "./ui/spinner-button";
+import { Context } from "../utils/Context";
 
 const ActionIcons = ({ row, onEdit, onWithdraw, onShowQR, disabled = {} }) => {
   const [open, setOpen] = useState(false);
   const [boxes, setBoxes] = useState([]);
   const [inputs, setInputs] = useState({});
   const [loading, setLoading] = useState(false);
-
+  const { user } = useContext(Context);
   useEffect(() => {
     let boxNo;
     if (row.box_no) {
@@ -91,19 +92,21 @@ const ActionIcons = ({ row, onEdit, onWithdraw, onShowQR, disabled = {} }) => {
       </Button>
 
       {/* Withdraw */}
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Withdraw"
-        disabled={disabled.withdraw}
-        className="text-red-600 hover:text-red-700 hover:bg-red-100"
-        onClick={(e) => {
-          e.stopPropagation();
-          onWithdraw?.(row);
-        }}
-      >
-        <PiHandWithdrawLight className="size-5" />
-      </Button>
+      {user.role != "user" && (
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Withdraw"
+          disabled={disabled.withdraw}
+          className="text-red-600 hover:text-red-700 hover:bg-red-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            onWithdraw?.(row);
+          }}
+        >
+          <PiHandWithdrawLight className="size-5" />
+        </Button>
+      )}
 
       {/* 📦 QR Code */}
       <Button

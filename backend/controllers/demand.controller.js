@@ -222,10 +222,10 @@ async function createPendingIssue(req, res) {
     demand_date,
 
     // NAC fields
-    nac_no,
-    nac_date,
-    validity,
-    rate_unit,
+    // nac_no,
+    // nac_date,
+    // validity,
+    // rate_unit,
 
     // Stocking fields
     mo_no,
@@ -260,16 +260,12 @@ async function createPendingIssue(req, res) {
         created_by,
         demand_quantity,
 
-        nac_no,
-        nac_date,
-        validity,
-        rate_unit,
         mo_no,
         mo_date,
         status,
          source_type
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         demand_no,
@@ -281,10 +277,6 @@ async function createPendingIssue(req, res) {
         req.user.id,
         demand.survey_qty,
 
-        nac_no || null,
-        nac_date || null,
-        validity || null,
-        rate_unit || null,
         mo_no || null,
         mo_date || null,
         "pending",
@@ -420,9 +412,11 @@ async function getPendingIssue(req, res) {
 async function updatePendingIssue(req, res) {
   const { id } = req.params;
 
-  const { nac_no, nac_date, validity, rate_unit, mo_no, mo_date, status } =
-    req.body;
+  // const { nac_no, nac_date, validity, rate_unit, mo_no, mo_date, status } =
+  //   req.body;
 
+   const { mo_no, mo_date, status } =
+     req.body;
   const connection = await pool.getConnection();
 
   try {
@@ -441,25 +435,25 @@ async function updatePendingIssue(req, res) {
     const updateFields = [];
     const updateValues = [];
 
-    if (nac_no !== undefined) {
-      updateFields.push("nac_no = ?");
-      updateValues.push(nac_no);
-    }
+    // if (nac_no !== undefined) {
+    //   updateFields.push("nac_no = ?");
+    //   updateValues.push(nac_no);
+    // }
 
-    if (nac_date !== undefined) {
-      updateFields.push("nac_date = ?");
-      updateValues.push(nac_date);
-    }
+    // if (nac_date !== undefined) {
+    //   updateFields.push("nac_date = ?");
+    //   updateValues.push(nac_date);
+    // }
 
-    if (validity !== undefined) {
-      updateFields.push("validity = ?");
-      updateValues.push(validity);
-    }
+    // if (validity !== undefined) {
+    //   updateFields.push("validity = ?");
+    //   updateValues.push(validity);
+    // }
 
-    if (rate_unit !== undefined) {
-      updateFields.push("rate_unit = ?");
-      updateValues.push(parseFloat(rate_unit).toFixed(2));
-    }
+    // if (rate_unit !== undefined) {
+    //   updateFields.push("rate_unit = ?");
+    //   updateValues.push(parseFloat(rate_unit).toFixed(2));
+    // }
 
     if (mo_no !== undefined) {
       updateFields.push("mo_no = ?");

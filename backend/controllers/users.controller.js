@@ -445,7 +445,7 @@ async function updateUser(req, res) {
       .json(new ApiErrorResponse(400, {}, "Invalid username format"));
   }
 
-  if (role && !["user", "admin", "superadmin"].includes(role)) {
+  if (role && !["user", "admin", "officer", "superadmin"].includes(role)) {
     return res.status(400).json(new ApiErrorResponse(400, {}, "Invalid role"));
   }
 

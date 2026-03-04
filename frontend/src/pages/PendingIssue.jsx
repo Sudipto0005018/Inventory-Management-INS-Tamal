@@ -30,7 +30,7 @@ import {
 import GenerateQRDialog from "../components/GenerateQRDialog";
 
 const PermanentPendings = () => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
 
   const options = [
     {
@@ -128,7 +128,10 @@ const PermanentPendings = () => {
       { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
       { key: "created_at", header: "Created On", width: "min-w-[40px]" },
       { key: "status_badge", header: "Status" },
-      { key: "processed", header: "Proceed" },
+      ...(user.role != "user"
+        ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+        : []),
+      // { key: "processed", header: "Proceed" },
     ],
     [],
   );

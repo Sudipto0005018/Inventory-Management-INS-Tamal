@@ -434,6 +434,7 @@ async function createTyLoan(req, res) {
 
     const transactionId = "TY-" + Date.now();
     const now = new Date();
+    console.log(transactionId);
 
     /** 1. Fetch inventory */
     const [[row]] = await pool.query(
@@ -460,8 +461,8 @@ async function createTyLoan(req, res) {
       boxTransactions.push([
         transactionId,
         null,
-        a === "spare" ? spare_id : null,
-        a === "tool" ? tool_id : null,
+        spare_id ?? null,
+        tool_id ?? null,
         spare.no,
         prevQty,
         -withdrawQty,
@@ -512,7 +513,7 @@ async function createTyLoan(req, res) {
 
     /** 5. Insert box transactions */
     if (boxTransactions.length) {
-      await pool.query(
+      const [record] = await pool.query(
         `
         INSERT INTO box_transaction (
           transaction_id, demand_transaction, spare_id, tool_id,
@@ -539,7 +540,7 @@ async function createTyLoan(req, res) {
       message: "TY Loan created successfully",
     });
   } catch (err) {
-    console.error("CREATE TY Loan ERROR =>", err);
+    console.error("CREATE TY Loan ERROR =>", err.sqlMessage);
     res.status(500).json({ success: false, message: err.message });
   }
 }
@@ -547,11 +548,13 @@ async function createTyLoan(req, res) {
 async function updateTyLoan(req, res) {
   const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  const returnTransactionId = "TY-RET-" + Date.now();
+  console.log(returnTransactionId);
 
   try {
     /** 1. Fetch loan issue */
     const [[issue]] = await pool.query(
-      `SELECT spare_id, tool_id, transaction_id,
+      `SELECT  transaction_id, spare_id, tool_id,
        qty_withdrawn, qty_received, issue_date, loan_duration
        FROM ty_loan
        WHERE id = ?`,
@@ -563,8 +566,8 @@ async function updateTyLoan(req, res) {
         .status(404)
         .json({ success: false, message: "Issue not found" });
     }
-
-    const { transaction_id } = issue;
+    const originalTransactionId = issue.transaction_id;
+    // const { transaction_id } = issue;
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = issue.spare_id || issue.tool_id;
@@ -637,15 +640,27 @@ async function updateTyLoan(req, res) {
 
       totalDepositedQty += depositQty;
 
+      // boxTransactions.push([
+      //   returnTransactionId, // ✅ NEW return transaction id
+      //   originalTransactionId, // optional: link to original issue
+      //   null,
+      //   isSpare ? issue.spare_id : null,
+      //   !isSpare ? issue.tool_id : null,
+      //   box.no,
+      //   prevQty,
+      //   depositQty,
+      //   now,
+      // ]);
+
       boxTransactions.push([
-        transaction_id,
-        null,
-        isSpare ? issue.spare_id : null,
-        !isSpare ? issue.tool_id : null,
-        box.no,
-        prevQty,
-        depositQty,
-        now,
+        returnTransactionId, // transaction_id
+        originalTransactionId, // demand_transaction
+        isSpare ? issue.spare_id : null, // spare_id
+        !isSpare ? issue.tool_id : null, // tool_id
+        box.no, // box_no
+        prevQty, // prev_qty
+        depositQty, // withdrawl_qty (positive = return)
+        now, // transaction_date
       ]);
 
       return {
@@ -706,12 +721,12 @@ async function updateTyLoan(req, res) {
         transaction_id, previous_obs, new_obs
       ) VALUES (?, ?, ?)
       `,
-      [transaction_id, previousOBS, newOBS],
+      [returnTransactionId, previousOBS, newOBS],
     );
 
     res.json({
       success: true,
-      transactionId: transaction_id,
+      transactionId: returnTransactionId,
       status,
       message:
         status === "complete"

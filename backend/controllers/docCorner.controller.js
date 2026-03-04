@@ -130,8 +130,8 @@ async function getDocCorner(req, res) {
   const department = req.department;
 
   try {
-    let whereClause = "WHERE department = ?";
-    let params = [department.id];
+    let whereClause = "WHERE 1=1";
+    let params = [];
 
     if (search) {
       const searchableFields = [
@@ -850,6 +850,7 @@ async function createDocIssue(req, res) {
 async function updateDocIssue(req, res) {
   const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  const returnTransactionId = "DOC-RET-" + Date.now();
 
   try {
     /** Fetch issue */
@@ -857,15 +858,15 @@ async function updateDocIssue(req, res) {
       try {
         box_no = JSON.parse(box_no);
       } catch {
-        box_no = []; // Default to empty array on parsing error
+        box_no = []; 
       }
     }
     if (!Array.isArray(box_no)) {
-      box_no = []; // Ensure box_no is always an array
+      box_no = []; 
     }
     const [[issue]] = await pool.query(
       `
-      SELECT doc_id, qty_withdrawn, qty_received
+     SELECT transaction_id, doc_id, qty_withdrawn, qty_received
       FROM doc_issue
       WHERE id = ?
       `,
@@ -878,6 +879,7 @@ async function updateDocIssue(req, res) {
         .json({ success: false, message: "Issue not found" });
     }
 
+    const originalTransactionId = issue.transaction_id;
     const prevReturned = parseInt(issue.qty_received || 0);
     const currentReturn = parseInt(qty_received || 0);
     const totalReturned = prevReturned + currentReturn;
@@ -928,14 +930,24 @@ async function updateDocIssue(req, res) {
 
       totalDepositedQty += depositQty;
 
+      // boxTransactions.push([
+      //   "DOC-RET-" + Date.now(),
+      //   null,
+      //   issue.doc_id,
+      //   box.no,
+      //   prevQty,
+      //   depositQty,
+      //   now,
+      // ]);
+
       boxTransactions.push([
-        "RET-" + Date.now(),
-        null,
-        issue.doc_id,
-        box.no,
-        prevQty,
-        depositQty,
-        now,
+        returnTransactionId, // NEW return transaction
+        originalTransactionId, // LINK to original DOC issue
+        issue.doc_id, // doc_id
+        box.no, // box_no
+        prevQty, // prev_qty
+        depositQty, // withdrawl_qty (+ means return)
+        now, // transaction_date
       ]);
 
       return {
@@ -996,7 +1008,8 @@ async function updateDocIssue(req, res) {
         new_obs
       ) VALUES (?, ?, ?)
       `,
-      ["RET-" + Date.now(), previousOBS, newOBS],
+      // ["RET-" + Date.now(), previousOBS, newOBS],
+      [returnTransactionId, previousOBS, newOBS],
     );
 
     res.json({

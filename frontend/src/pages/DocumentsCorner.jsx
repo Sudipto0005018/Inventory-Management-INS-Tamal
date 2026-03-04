@@ -52,8 +52,16 @@ const SEARCH_FIELDS = [
   { label: "Item Distribution", value: "item_distribution" },
 ];
 const DocumentsCorner = ({ type = "" }) => {
-  const { config, fetchIssueTo, fetchConcurredBy, issueTo, concurredBy } =
-    useContext(Context);
+  const {
+    config,
+    fetchIssueTo,
+    fetchConcurredBy,
+    fetchStorageLocation,
+    issueTo,
+    concurredBy,
+    user,
+    admin,
+  } = useContext(Context);
   const columns = useMemo(
     () => [
       {
@@ -115,7 +123,6 @@ const DocumentsCorner = ({ type = "" }) => {
   const [users, setUsers] = useState([
     { service_no: "", name: "", isNewUser: false },
   ]);
-  const [user, setUser] = useState();
 
   const [date, setDate] = useState(new Date());
   const [editableFields, setEditableFields] = useState({
@@ -1123,15 +1130,17 @@ const DocumentsCorner = ({ type = "" }) => {
             <span className="text-md font-bold text-green-700">Reset</span>
           </Button>
 
-          <Button
-            onClick={() => {
-              setIsOpen({ ...isOpen, addDocument: true });
-              setBoxNo([{}]);
-            }}
-            className="cursor-pointer hover:bg-primary/85"
-          >
-            <FaPlus /> Add Document
-          </Button>
+          {user.role != "user" && (
+            <Button
+              onClick={() => {
+                setIsOpen({ ...isOpen, addDocument: true });
+                setBoxNo([{}]);
+              }}
+              className="cursor-pointer hover:bg-primary/85"
+            >
+              <FaPlus /> Add Document
+            </Button>
+          )}
         </div>
 
         <div className="min-w-0 overflow-x-auto">
@@ -1465,175 +1474,440 @@ const DocumentsCorner = ({ type = "" }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={isOpen.editDocument}
-        onOpenChange={(set) =>
-          setIsOpen((prev) => ({ ...prev, editDocument: set }))
-        }
-      >
-        <DialogContent
-          className=" w-[95%] h-[90%] overflow-y-auto"
-          unbounded={true}
-          // onPointerDownOutside={() => {}}
-          onPointerDownOutside={(e) => e.preventDefault()}
+
+      {(user.role === "officer" || user.role === "admin") && (
+        <Dialog
+          open={isOpen.editDocument}
+          onOpenChange={(set) =>
+            setIsOpen((prev) => ({ ...prev, editDocument: set }))
+          }
         >
-          <button
-            type="button"
-            onClick={() =>
-              setIsOpen((prev) => ({ ...prev, editDocument: false }))
-            }
-            className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+          <DialogContent
+            className=" w-[95%] h-[90%] overflow-y-auto"
+            unbounded={true}
+            // onPointerDownOutside={() => {}}
+            onPointerDownOutside={(e) => e.preventDefault()}
           >
-            ✕
-          </button>
-          <DialogTitle className="relative text-base -mt-10">
-            Update Document
-          </DialogTitle>
-          <DialogDescription className="hidden" />
-          <div className="-mt-6">
-            <div className="grid grid-cols-4 gap-4 mt-3">
-              <div>
-                <Label>
-                  Document Description<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="description"
-                  value={selectedRow.description}
-                  onChange={handleEditChange}
-                  editable={editableFields.description}
-                  onEdit={() => enableEdit("description")}
-                  onBlur={() => disableEdit("description")}
-                />
+            <button
+              type="button"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, editDocument: false }))
+              }
+              className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              ✕
+            </button>
+            <DialogTitle className="relative text-base -mt-10">
+              Update Document
+            </DialogTitle>
+            <DialogDescription className="hidden" />
+            <div className="-mt-6">
+              <div className="grid grid-cols-4 gap-4 mt-3">
+                <div>
+                  <Label>
+                    Document Description<span className="text-red-500">*</span>
+                  </Label>
+                  <InputWithPencil
+                    name="description"
+                    value={selectedRow.description}
+                    onChange={handleEditChange}
+                    editable={editableFields.description}
+                    onEdit={() => enableEdit("description")}
+                    onBlur={() => disableEdit("description")}
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Folder No.<span className="text-red-500">*</span>
+                  </Label>
+                  <InputWithPencil
+                    name="folder_no"
+                    value={selectedRow.folder_no}
+                    onChange={handleEditChange}
+                    editable={editableFields.folder_no}
+                    onEdit={() => enableEdit("folder_no")}
+                    onBlur={() => disableEdit("folder_no")}
+                  />
+                </div>
+                <div>
+                  <Label>
+                    Equipment / System<span className="text-red-500">*</span>
+                  </Label>
+                  <InputWithPencil
+                    name="equipment_system"
+                    value={selectedRow.equipment_system}
+                    onChange={handleEditChange}
+                    editable={editableFields.equipment_system}
+                    onEdit={() => enableEdit("equipment_system")}
+                    onBlur={() => disableEdit("equipment_system")}
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Book Authorised<span className="text-red-500">*</span>
+                  </Label>
+
+                  <InputWithPencil
+                    name="obs_authorised"
+                    value={selectedRow.obs_authorised}
+                    readOnly
+                    editable={false}
+                    onEdit={() => {
+                      setObsDialog({
+                        open: true,
+                        action: "increase",
+                        quantity: "",
+                      });
+
+                      setOriginalObsAuthorised(selectedRow.obs_authorised);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Book Held<span className="text-red-500">*</span>
+                  </Label>
+                  <InputWithPencil
+                    name="obs_held"
+                    value={selectedRow.obs_held}
+                    onChange={handleEditChange}
+                    editable={editableFields.obs_held}
+                    onEdit={() => enableEdit("obs_held")}
+                    onBlur={() => disableEdit("obs_held")}
+                  />
+                </div>
+                <div>
+                  <Label>
+                    Book Maintained<span className="text-red-500">*</span>
+                  </Label>
+                  <InputWithPencil
+                    name="obs_maintained"
+                    value={selectedRow.obs_maintained}
+                    onChange={handleEditChange}
+                    editable={editableFields.obs_maintained}
+                    onEdit={() => enableEdit("obs_maintained")}
+                    onBlur={() => disableEdit("obs_maintained")}
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label>
-                  Folder No.<span className="text-red-500">*</span>
+              <div className="flex flex-col mt-3">
+                <div className="mt-4">
+                  <Label className="ms-2 mb-1">Loose Document</Label>
+                  <RadioGroup
+                    value={isLooseSpare ? "yes" : "no"}
+                    onValueChange={(val) => setIsLooseSpare(val === "yes")}
+                  >
+                    <div className="flex gap-6 mt-2">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="yes" id="loose-yes" />
+                        <Label htmlFor="loose-yes" className="cursor-pointer">
+                          Yes
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="no" id="loose-no" />
+                        <Label htmlFor="loose-no" className="cursor-pointer">
+                          No
+                        </Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
+                  Item Storage Distribution
                 </Label>
-                <InputWithPencil
-                  name="folder_no"
-                  value={selectedRow.folder_no}
-                  onChange={handleEditChange}
-                  editable={editableFields.folder_no}
-                  onEdit={() => enableEdit("folder_no")}
-                  onBlur={() => disableEdit("folder_no")}
+
+                <BoxNoInputs
+                  value={boxNo}
+                  onChange={(value) =>
+                    setSelectedRow((prev) => ({
+                      ...prev,
+                      box_no: JSON.stringify(value),
+                    }))
+                  }
+                  isLooseSpare={isLooseSpare}
                 />
               </div>
-              <div>
-                <Label>
-                  Equipment / System<span className="text-red-500">*</span>
+              <div className="w-full my-2 mt-6">
+                <Label className="ms-2 mb-2 mt-3" htmlFor="image">
+                  Image
                 </Label>
-                <InputWithPencil
-                  name="equipment_system"
-                  value={selectedRow.equipment_system}
-                  onChange={handleEditChange}
-                  editable={editableFields.equipment_system}
-                  onEdit={() => enableEdit("equipment_system")}
-                  onBlur={() => disableEdit("equipment_system")}
-                />
-              </div>
-
-              <div>
-                <Label>
-                  Book Authorised<span className="text-red-500">*</span>
-                </Label>
-
-                <InputWithPencil
-                  name="obs_authorised"
-                  value={selectedRow.obs_authorised}
-                  readOnly
-                  editable={false}
-                  onEdit={() => {
-                    setObsDialog({
-                      open: true,
-                      action: "increase",
-                      quantity: "",
-                    });
-
-                    setOriginalObsAuthorised(selectedRow.obs_authorised);
+                <div className="relative">
+                  <MultiImageSelect
+                    initialImages={selectedRow.images || []}
+                    onImagesUpdate={setImagePayload}
+                  />
+                </div>
+                <Input
+                  type="file"
+                  id="image"
+                  accept="image/jpeg, image/png, image/webp"
+                  name="image"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setImage((prev) => ({
+                          ...prev,
+                          file: file,
+                          preview: reader.result,
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
                   }}
                 />
               </div>
 
-              <div>
-                <Label>
-                  Book Held<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="obs_held"
-                  value={selectedRow.obs_held}
-                  onChange={handleEditChange}
-                  editable={editableFields.obs_held}
-                  onEdit={() => enableEdit("obs_held")}
-                  onBlur={() => disableEdit("obs_held")}
-                />
+              <div className="w-full mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="ms-2 mb-1">OEM Details</Label>
+                  <AsyncSelectBox
+                    label="OEM"
+                    value={
+                      selectedRow.uidoem
+                        ? {
+                            id: oemList.find(
+                              (item) => item.name === selectedRow.uidoem,
+                            )?.id,
+                            name: selectedRow.uidoem,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        uidoem: val.name,
+                      }));
+                    }}
+                    fetchOptions={fetchOemOptions}
+                    fetchDetails={async (id) => {
+                      if (!id) return null;
+                      try {
+                        const res = await apiService.get(`/oem/${id}`);
+                        return res.data;
+                      } catch (error) {
+                        console.error("Failed to fetch OEM details", error);
+                        return null;
+                      }
+                    }}
+                    AddNewModal={OEMFirm}
+                    onDelete={onDeleteOem}
+                  />
+                </div>
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Vendor / Third Party Supplier
+                  </Label>
+                  <AsyncSelectBox
+                    label="Vendor/ Third Party Supplier"
+                    value={
+                      selectedRow.supplier
+                        ? {
+                            id: supplierList.find(
+                              (item) => item.name === selectedRow.supplier,
+                            )?.id,
+                            name: selectedRow.supplier,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        supplier: val.name,
+                      }));
+                    }}
+                    fetchOptions={fetchSupplierOptions}
+                    fetchDetails={fetchSupplierDetails}
+                    AddNewModal={SupplierFirm}
+                    onDelete={onDeleteSupplier}
+                  />
+                </div>
               </div>
-              <div>
-                <Label>
-                  Book Maintained<span className="text-red-500">*</span>
-                </Label>
-                <InputWithPencil
-                  name="obs_maintained"
-                  value={selectedRow.obs_maintained}
+
+              <div className="w-full mt-6">
+                <Label className="ms-1 mb-1">Remarks</Label>
+                <Textarea
+                  placeholder="Remarks"
+                  name="remarks"
+                  className="h-1 resize-none"
+                  value={selectedRow.remarks}
                   onChange={handleEditChange}
-                  editable={editableFields.obs_maintained}
-                  onEdit={() => enableEdit("obs_maintained")}
-                  onBlur={() => disableEdit("obs_maintained")}
                 />
               </div>
             </div>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setIsOpen((prev) => ({ ...prev, editDocument: false }));
+                  resetImageState(); // clear image payload
+                  setSelectedRow({});
+                }}
+                variant="outline"
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="text-white hover:bg-primary/85 cursor-pointer"
+                onClick={handleEditDocument}
+              >
+                Submit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      {/*///// For user role //////*/}
+      {user.role == "user" && (
+        <Dialog
+          open={isOpen.editDocument}
+          onOpenChange={(set) =>
+            setIsOpen((prev) => ({ ...prev, editDocument: set }))
+          }
+        >
+          <DialogContent
+            className=" w-[95%] h-[90%] overflow-y-auto"
+            unbounded={true}
+            // onPointerDownOutside={() => {}}
+            onPointerDownOutside={(e) => e.preventDefault()}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, editDocument: false }))
+              }
+              className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              ✕
+            </button>
+            <DialogTitle className="relative text-base -mt-10">
+              View Document
+            </DialogTitle>
+            <DialogDescription className="hidden" />
+            <div className="-mt-6">
+              <div className="grid grid-cols-4 gap-4 mt-3">
+                <div>
+                  <Label>
+                    Document Description<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="description"
+                    value={selectedRow.description}
+                    readOnly
+                  />
+                </div>
 
-            <div className="flex flex-col mt-3">
-              <div className="mt-4">
-                <Label className="ms-2 mb-1">Loose Document</Label>
-                <RadioGroup
-                  value={isLooseSpare ? "yes" : "no"}
-                  onValueChange={(val) => setIsLooseSpare(val === "yes")}
-                >
-                  <div className="flex gap-6 mt-2">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="loose-yes" />
-                      <Label htmlFor="loose-yes" className="cursor-pointer">
-                        Yes
-                      </Label>
-                    </div>
+                <div>
+                  <Label>
+                    Folder No.<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="folder_no"
+                    value={selectedRow.folder_no}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label>
+                    Equipment / System<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="equipment_system"
+                    value={selectedRow.equipment_system}
+                    readOnly
+                  />
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="loose-no" />
-                      <Label htmlFor="loose-no" className="cursor-pointer">
-                        No
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
+                <div>
+                  <Label>
+                    Book Authorised<span className="text-red-500">*</span>
+                  </Label>
+
+                  <Input
+                    name="obs_authorised"
+                    value={selectedRow.obs_authorised}
+                    readOnly
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Book Held<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="obs_held"
+                    value={selectedRow.obs_held}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label>
+                    Book Maintained<span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    name="obs_maintained"
+                    value={selectedRow.obs_maintained}
+                    readOnly
+                  />
+                </div>
               </div>
 
-              <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
-                Item Storage Distribution
-              </Label>
+              <div className="flex flex-col mt-3">
+                <div className="mt-4">
+                  <Label className="ms-2 mb-1">Loose Document</Label>
+                  <RadioGroup
+                    value={isLooseSpare ? "yes" : "no"}
+                    onValueChange={(val) => setIsLooseSpare(val === "yes")}
+                  >
+                    <div className="flex gap-6 mt-2">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="yes" id="loose-yes" />
+                        <Label htmlFor="loose-yes" className="cursor-pointer">
+                          Yes
+                        </Label>
+                      </div>
 
-              <BoxNoInputs
-                value={boxNo}
-                onChange={(value) =>
-                  setSelectedRow((prev) => ({
-                    ...prev,
-                    box_no: JSON.stringify(value),
-                  }))
-                }
-                isLooseSpare={isLooseSpare}
-              />
-            </div>
-            <div className="w-full my-2 mt-6">
-              <Label className="ms-2 mb-2 mt-3" htmlFor="image">
-                Image
-              </Label>
-              <div className="relative">
-                <MultiImageSelect
-                  initialImages={selectedRow.images || []}
-                  onImagesUpdate={setImagePayload}
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="no" id="loose-no" />
+                        <Label htmlFor="loose-no" className="cursor-pointer">
+                          No
+                        </Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
+                  Item Storage Distribution
+                </Label>
+
+                <BoxNoInputs
+                  value={boxNo}
+                  readOnly
+                  isLooseSpare={isLooseSpare}
                 />
               </div>
-              <Input
+              <div className="w-full my-2 mt-6">
+                <Label className="ms-2 mb-2 mt-3" htmlFor="image">
+                  Image
+                </Label>
+                <div className="relative">
+                  <MultiImageSelect
+                    initialImages={selectedRow.images || []}
+                    onImagesUpdate={setImagePayload}
+                    readOnly
+                  />
+                </div>
+                {/* <Input
                 type="file"
                 id="image"
                 accept="image/jpeg, image/png, image/webp"
@@ -1653,107 +1927,104 @@ const DocumentsCorner = ({ type = "" }) => {
                     reader.readAsDataURL(file);
                   }
                 }}
-              />
-            </div>
+              /> */}
+              </div>
 
-            <div className="w-full mt-6 grid grid-cols-2 gap-4">
-              <div>
-                <Label className="ms-2 mb-1">OEM Details</Label>
-                <AsyncSelectBox
-                  label="OEM"
-                  value={
-                    selectedRow.uidoem
-                      ? {
-                          id: oemList.find(
-                            (item) => item.name === selectedRow.uidoem,
-                          )?.id,
-                          name: selectedRow.uidoem,
-                        }
-                      : null
-                  }
-                  onChange={(val) => {
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      uidoem: val.name,
-                    }));
-                  }}
-                  fetchOptions={fetchOemOptions}
-                  fetchDetails={async (id) => {
-                    if (!id) return null;
-                    try {
-                      const res = await apiService.get(`/oem/${id}`);
-                      return res.data;
-                    } catch (error) {
-                      console.error("Failed to fetch OEM details", error);
-                      return null;
+              <div className="w-full mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="ms-2 mb-1">OEM Details</Label>
+                  <AsyncSelectBox
+                    label="OEM"
+                    value={
+                      selectedRow.uidoem
+                        ? {
+                            id: oemList.find(
+                              (item) => item.name === selectedRow.uidoem,
+                            )?.id,
+                            name: selectedRow.uidoem,
+                          }
+                        : null
                     }
-                  }}
-                  AddNewModal={OEMFirm}
-                  onDelete={onDeleteOem}
-                />
+                    // onChange={(val) => {
+                    //   setSelectedRow((prev) => ({
+                    //     ...prev,
+                    //     uidoem: val.name,
+                    //   }));
+                    // }}
+                    fetchOptions={fetchOemOptions}
+                    fetchDetails={async (id) => {
+                      if (!id) return null;
+                      try {
+                        const res = await apiService.get(`/oem/${id}`);
+                        return res.data;
+                      } catch (error) {
+                        console.error("Failed to fetch OEM details", error);
+                        return null;
+                      }
+                    }}
+                    // AddNewModal={OEMFirm}
+                    // onDelete={onDeleteOem}
+                  />
+                </div>
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Vendor / Third Party Supplier
+                  </Label>
+                  <AsyncSelectBox
+                    label="Vendor/ Third Party Supplier"
+                    value={
+                      selectedRow.supplier
+                        ? {
+                            id: supplierList.find(
+                              (item) => item.name === selectedRow.supplier,
+                            )?.id,
+                            name: selectedRow.supplier,
+                          }
+                        : null
+                    }
+                    // onChange={(val) => {
+                    //   setSelectedRow((prev) => ({
+                    //     ...prev,
+                    //     supplier: val.name,
+                    //   }));
+                    // }}
+                    fetchOptions={fetchSupplierOptions}
+                    fetchDetails={fetchSupplierDetails}
+                    // AddNewModal={SupplierFirm}
+                    // onDelete={onDeleteSupplier}
+                  />
+                </div>
               </div>
-              <div>
-                <Label className="ms-2 mb-1">
-                  Vendor / Third Party Supplier
-                </Label>
-                <AsyncSelectBox
-                  label="Vendor/ Third Party Supplier"
-                  value={
-                    selectedRow.supplier
-                      ? {
-                          id: supplierList.find(
-                            (item) => item.name === selectedRow.supplier,
-                          )?.id,
-                          name: selectedRow.supplier,
-                        }
-                      : null
-                  }
-                  onChange={(val) => {
-                    setSelectedRow((prev) => ({
-                      ...prev,
-                      supplier: val.name,
-                    }));
-                  }}
-                  fetchOptions={fetchSupplierOptions}
-                  fetchDetails={fetchSupplierDetails}
-                  AddNewModal={SupplierFirm}
-                  onDelete={onDeleteSupplier}
-                />
-              </div>
-            </div>
 
-            <div className="w-full mt-6">
-              <Label className="ms-1 mb-1">Remarks</Label>
-              <Textarea
-                placeholder="Remarks"
-                name="remarks"
-                className="h-1 resize-none"
-                value={selectedRow.remarks}
-                onChange={handleEditChange}
-              />
+              <div className="w-full mt-6">
+                <Label className="ms-1 mb-1">Remarks</Label>
+                <Textarea
+                  placeholder="Remarks"
+                  name="remarks"
+                  className="h-1 resize-none"
+                  value={selectedRow.remarks}
+                  readOnly
+                />
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                setIsOpen((prev) => ({ ...prev, editDocument: false }));
-                resetImageState(); // clear image payload
-                setSelectedRow({});
-              }}
-              variant="outline"
-              className="cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="text-white hover:bg-primary/85 cursor-pointer"
-              onClick={handleEditDocument}
-            >
-              Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setIsOpen((prev) => ({ ...prev, editDocument: false }));
+                  resetImageState(); // clear image payload
+                  setSelectedRow({});
+                }}
+                variant="destructive"
+                className="cursor-pointer"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      {/*///// End of User Role ////*/}
+
       <Dialog
         open={isOpen.withdrawSpare}
         onOpenChange={(open) =>

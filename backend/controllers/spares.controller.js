@@ -63,8 +63,8 @@ async function getSpares(req, res) {
 
   try {
     // base where
-    let whereClause = "WHERE department = ?";
-    let params = [department.id];
+    let whereClause = "WHERE 1=1";
+    let params = [];
 
     if (search) {
       // Split search by comma OR space
@@ -382,8 +382,8 @@ async function getCriticalSpares(req, res) {
   const department = req.department;
 
   try {
-    let whereClause = "WHERE department = ? AND critical_spare = 1";
-    let params = [department.id];
+    let whereClause = "WHERE 1=1 AND critical_spare = 1";
+    let params = [];
 
     if (search) {
       const searchableFields = [

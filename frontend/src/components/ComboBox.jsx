@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { FaEye, FaTrash } from "react-icons/fa";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
 import toaster from "../utils/toaster";
+import { Context } from "../utils/Context";
 import {
   Command,
   CommandEmpty,
@@ -40,6 +41,8 @@ const ComboBox = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(propValue || "");
+
+  const { user } = useContext(Context);
 
   useEffect(() => {
     if (propValue !== undefined) {
@@ -180,7 +183,7 @@ const ComboBox = ({
                           <FaEye className="size-4" />
                         </Button>
                       )}
-                      {onDelete && (
+                      {onDelete && user.role != "user" && (
                         <Button
                           size="icon"
                           variant="ghost"
@@ -200,14 +203,16 @@ const ComboBox = ({
                     </div>
                   </CommandItem>
                 ))}
-                <CommandItem
-                  value="other_custom_option"
-                  onSelect={handleSelect}
-                  className="cursor-pointer"
-                >
-                  <Check className="mr-2 h-4 w-4 opacity-0" />
-                  Other...
-                </CommandItem>
+                {user.role != "user" && (
+                  <CommandItem
+                    value="other_custom_option"
+                    onSelect={handleSelect}
+                    className="cursor-pointer"
+                  >
+                    <Check className="mr-2 h-4 w-4 opacity-0" />
+                    Other...
+                  </CommandItem>
+                )}
               </CommandGroup>
             </CommandList>
           </Command>
@@ -233,12 +238,14 @@ const ComboBox = ({
                   {placeholderOne}
                 </DialogTitle>
               </DialogHeader>
-              <div className="py-4">
-                <Input
-                  value={customInputValue}
-                  onChange={(e) => setCustomInputValue(e.target.value)}
-                  placeholder="Type here..."
-                />
+                <div className="py-4">
+                  {user.role != "user" && (
+                    <Input
+                      value={customInputValue}
+                      onChange={(e) => setCustomInputValue(e.target.value)}
+                      placeholder="Type here..."
+                    />
+                  )}
               </div>
               <DialogFooter>
                 <Button

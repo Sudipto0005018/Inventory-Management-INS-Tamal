@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Context } from "../utils/Context";
 import {
   Select,
   SelectContent,
@@ -50,7 +51,7 @@ const OEMFirm = ({
     };
   });
   const [enabledFields, setEnabledFields] = useState({});
-
+  const { user } = useContext(Context);
   useEffect(() => {
     if (val && val != null) {
       setValue({
@@ -163,7 +164,7 @@ const OEMFirm = ({
   };
 
   const renderEditIcon = (key) => {
-    if (isEditable) return null;
+    if (isEditable || user.role === "user") return null;
     return (
       <Button
         variant="ghost"
@@ -172,7 +173,7 @@ const OEMFirm = ({
         onClick={() => enableField(key)}
         disabled={enabledFields[key]}
       >
-        <Pencil className="h-4 w-4" />
+        {user.role != "user" && <Pencil className="h-4 w-4" />}
       </Button>
     );
   };

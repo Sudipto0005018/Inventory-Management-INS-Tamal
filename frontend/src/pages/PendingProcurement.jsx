@@ -34,7 +34,7 @@ import SupplierFirm from "../components/Supplier";
 import AsyncSelectBox from "../components/AsyncSelectBox";
 
 const Procurement = () => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -58,7 +58,10 @@ const Procurement = () => {
     { key: "qty_received", header: "Received Qty" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "statusBadge", header: "Status" },
-    { key: "processed", header: "Proceed" },
+    ...(user.role != "user"
+      ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+      : []),
+    // { key: "processed", header: "Proceed" },
   ]);
 
   const options = [

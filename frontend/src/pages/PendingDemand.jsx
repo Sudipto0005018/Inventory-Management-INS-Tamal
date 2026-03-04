@@ -24,17 +24,16 @@ import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
-import { ChevronDownIcon, Plus } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import {
   formatDate,
   getTimeDate,
   getFormatedDate,
 } from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
-import Chip from "../components/Chip";
 
 const PendingDemand = () => {
-  const { config } = useContext(Context);
+  const { config, user } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -63,7 +62,10 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
-    { key: "processed", header: "Proceed", width: "min-w-[40px]" },
+    ...(user.role != "user"
+      ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+      : []),
+    // { key: "processed", header: "Proceed", width: "min-w-[40px]" },
   ]);
   const options = [
     {

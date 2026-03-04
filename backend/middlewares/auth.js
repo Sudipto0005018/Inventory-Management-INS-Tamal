@@ -49,9 +49,9 @@ const authMiddleware = async (req, res, next) => {
       const user = { ...rows[0] };
       delete user.password;
 
-      console.log("USER OBJECT:", user);
-      console.log("USER.DEPARTMENT VALUE:", user.department);
-      console.log("USER.DEPARTMENT_ID VALUE:", user.department_id);
+      // console.log("USER OBJECT:", user);
+      // console.log("USER.DEPARTMENT VALUE:", user.department);
+      // console.log("USER.DEPARTMENT_ID VALUE:", user.department_id);
       req.user = user;
 
       const [department] = await db.query(
@@ -140,15 +140,62 @@ const isUser = async (req, res, next) => {
       );
   }
   const { role } = req.user;
-  if (role?.toLowerCase() !== "user" && role?.toLowerCase() !== "admin") {
+  if (
+    role?.toLowerCase() !== "user" &&
+    role?.toLowerCase() !== "admin" &&
+    role?.toLowerCase() !== "officer"
+  ) {
     return res.status(403).json(new ApiErrorResponse(403, {}, "Access denied"));
   }
   next();
 };
 
+const isOfficer = async (req, res, next) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json(
+        new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
+      );
+  }
+
+  const { role } = req.user;
+
+  if (role?.toLowerCase() !== "officer") {
+    return res
+      .status(403)
+      .json(new ApiErrorResponse(403, {}, "Access denied, Officer only"));
+  }
+
+  next();
+};
+
+const allowRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json(
+          new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
+        );
+    }
+
+    const userRole = req.user.role?.toLowerCase();
+
+    if (!allowedRoles.includes(userRole)) {
+      return res
+        .status(403)
+        .json(new ApiErrorResponse(403, {}, "Access denied"));
+    }
+
+    next();
+  };
+};
 module.exports = {
   authMiddleware,
   isSuperAdmin,
   isAdmin,
   isUser,
+  isOfficer,
+  allowRoles
 };

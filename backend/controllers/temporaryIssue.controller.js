@@ -672,6 +672,7 @@ async function createTemporaryIssue(req, res) {
 async function updateTemporaryIssue(req, res) {
   const { id: userId } = req.user;
   const { id, qty_received, return_date, box_no, approve = true } = req.body;
+  const returnTransactionId = "TI-RET-" + Date.now();
   console.log(req.body);
 
   try {
@@ -687,8 +688,8 @@ async function updateTemporaryIssue(req, res) {
         .status(404)
         .json({ success: false, message: "Issue not found" });
     }
-
-    const { transaction_id } = issue;
+  const originalTransactionId = issue.transaction_id;
+    // const { transaction_id } = issue;
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = issue.spare_id || issue.tool_id;
@@ -758,8 +759,8 @@ async function updateTemporaryIssue(req, res) {
       totalDepositedQty += depositQty;
 
       boxTransactions.push([
-        transaction_id,
-        null,
+        returnTransactionId, // transaction_id
+        originalTransactionId, // demand_transaction
         isSpare ? issue.spare_id : null,
         !isSpare ? issue.tool_id : null,
         box.no,
@@ -822,12 +823,12 @@ async function updateTemporaryIssue(req, res) {
         transaction_id, previous_obs, new_obs
       ) VALUES (?, ?, ?)
       `,
-      [transaction_id, previousOBS, newOBS],
+      [returnTransactionId, previousOBS, newOBS],
     );
 
     res.json({
       success: true,
-      transactionId: transaction_id,
+      transactionId: returnTransactionId,
       status,
       message:
         status === "complete"

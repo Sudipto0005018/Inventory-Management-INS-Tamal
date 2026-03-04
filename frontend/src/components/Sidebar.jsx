@@ -21,17 +21,24 @@ import { Context } from "../utils/Context";
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "./ui/dialog";
 
 const menuItems = [
-  { name: "Dashboard", path: "/dashboard", icon: <FaRegClipboard /> },
+  {
+    name: "Dashboard",
+    path: "/dashboard",
+    icon: <FaRegClipboard />,
+    roles: ["admin", "user", "officer"],
+  },
   {
     name: "Spares",
     path: "/spares",
     icon: <FaGears />,
+    roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
   },
   {
     name: "Tools & Accessories",
     path: "/tools",
     icon: <FaTools />,
+    roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
   },
   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
@@ -40,6 +47,7 @@ const menuItems = [
     name: "Permanent Issue",
     path: "/permanent/pending-survey",
     icon: <FaRegClock />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
       { name: "Pending for Demand", path: "/permanent/pending-demand" },
@@ -54,6 +62,7 @@ const menuItems = [
     name: "Temporary Issue",
     path: "/temporary/temporary-issue",
     icon: <FaRegClock />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temporary/temporary-issue" },
       {
@@ -66,30 +75,13 @@ const menuItems = [
     name: "TY Loan",
     path: "/temp-loan/pending",
     icon: <BsCartPlus />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
       { name: "Completed", path: "/temp-loan/complete" },
     ],
   },
-  {
-    name: "Departments",
-    path: "/departments",
-    icon: <FaPeopleRoof />,
-    superAdmin: true,
-  },
-  { name: "Users", path: "/users", icon: <User />, superAdmin: true },
-  {
-    name: "Approvals",
-    path: "/approvals",
-    icon: <IoMdCheckmarkCircleOutline size={20} />,
-    superAdmin: true,
-  },
-  {
-    name: "History",
-    path: "/history",
-    icon: <BsClockHistory size={20} />,
-    superAdmin: true,
-  },
+
   // {
   //   name: "Successor Board",
   //   path: "/successor-board",
@@ -109,6 +101,7 @@ const menuItems = [
     name: "Documents Corner",
     path: "/documents",
     icon: <IoDocumentSharp />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       {
         name: "Documents Master",
@@ -128,6 +121,7 @@ const menuItems = [
     name: "Permanent Issue Logs",
     path: "/logs/pending-survey",
     icon: <LuLogs />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Survey Logs", path: "/logs/pending-survey" },
       { name: "Demand Logs", path: "/logs/pending-demand" },
@@ -141,6 +135,7 @@ const menuItems = [
     name: "D787",
     path: "/d787/original",
     icon: <SiPhpmyadmin size={25} />,
+    roles: ["admin", "user", "officer"],
     submenu: [
       {
         name: "D787 Original",
@@ -151,6 +146,25 @@ const menuItems = [
         path: "/d787/amendment",
       },
     ],
+  },
+  {
+    name: "Departments",
+    path: "/departments",
+    icon: <FaPeopleRoof />,
+    roles: ["superadmin"],
+  },
+  { name: "Users", path: "/users", icon: <User />, roles: ["superadmin"] },
+  {
+    name: "Approvals",
+    path: "/approvals",
+    icon: <IoMdCheckmarkCircleOutline size={20} />,
+    roles: ["superadmin", "officer"],
+  },
+  {
+    name: "History",
+    path: "/history",
+    icon: <BsClockHistory size={20} />,
+    roles: ["superadmin", "officer"],
   },
 ];
 
@@ -179,11 +193,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Menu */}
       <nav className="p-2 overflow-y-auto flex-1">
         {menuItems.map((item) => {
-          if (
-            (item.superAdmin && user?.role !== "superadmin") ||
-            (!item.superAdmin && user?.role === "superadmin")
-          )
-            return null;
+
+            if (!item.roles?.includes(user?.role)) return null;
 
           if (item.submenu) {
             return (
