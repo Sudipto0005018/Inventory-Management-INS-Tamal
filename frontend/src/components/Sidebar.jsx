@@ -24,20 +24,20 @@ const menuItems = [
   {
     name: "Dashboard",
     path: "/dashboard",
-    icon: <FaRegClipboard size={20}/>,
+    icon: <FaRegClipboard size={20} />,
     roles: ["admin", "user", "officer"],
   },
   {
     name: "Spares",
     path: "/spares",
-    icon: <FaGears size={22}/>,
+    icon: <FaGears size={22} />,
     roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
   },
   {
     name: "Tools & Accessories",
     path: "/tools",
-    icon: <FaTools size={20}/>,
+    icon: <FaTools size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
   },
@@ -46,7 +46,7 @@ const menuItems = [
   {
     name: "Permanent Issue",
     path: "/permanent/pending-survey",
-    icon: <FaRegClock size={20}/>,
+    icon: <FaRegClock size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
@@ -61,7 +61,7 @@ const menuItems = [
   {
     name: "Temporary Issue",
     path: "/temporary/temporary-issue",
-    icon: <FaRegClock size={20}/>,
+    icon: <FaRegClock size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temporary/temporary-issue" },
@@ -74,7 +74,7 @@ const menuItems = [
   {
     name: "TY Loan",
     path: "/temp-loan/pending",
-    icon: <FaRegClock size={20}/>,
+    icon: <FaRegClock size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
@@ -100,7 +100,7 @@ const menuItems = [
   {
     name: "Documents Corner",
     path: "/documents",
-    icon: <IoDocumentSharp size={20}/>,
+    icon: <IoDocumentSharp size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       {
@@ -120,7 +120,7 @@ const menuItems = [
   {
     name: "Permanent Issue Logs",
     path: "/logs/pending-survey",
-    icon: <LuLogs />,
+    icon: <GoLog size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Survey Logs", path: "/logs/pending-survey" },
@@ -150,19 +150,19 @@ const menuItems = [
   {
     name: "OIC",
     path: "/users",
-    icon: <FaUserTie size={20}/>,
+    icon: <FaUserTie size={20} />,
     roles: ["officer"],
     submenu: [
       { name: "Users", path: "/users", icon: <User /> },
       {
         name: "Approvals",
         path: "/approvals",
-        icon: <IoMdCheckmarkCircleOutline size={20} />
+        icon: <IoMdCheckmarkCircleOutline size={20} />,
       },
       {
         name: "History",
         path: "/history",
-        icon: <BsClockHistory size={20} />
+        icon: <BsClockHistory size={20} />,
       },
     ],
   },
