@@ -499,9 +499,10 @@ async function getDocIssue(req, res) {
 
   /* BASE WHERE*/
   let whereClause = `
-    WHERE (di.qty_received IS NULL 
-           OR di.qty_received < di.qty_withdrawn)
-  `;
+  WHERE di.status != 'reversed'
+  AND (di.qty_received IS NULL 
+       OR di.qty_received < di.qty_withdrawn)
+`;
 
   let searchClause = "";
   let searchParams = [];
@@ -1541,13 +1542,19 @@ async function reverseDocIssue(req, res) {
   const { id: userId } = req.user;
   const { issueId } = req.body;
 
+  const connection = await pool.getConnection();
+
   try {
-    /** 1️⃣ Fetch doc issue */
-    const [[issue]] = await pool.query(`SELECT * FROM doc_issue WHERE id = ?`, [
-      issueId,
-    ]);
+    await connection.beginTransaction();
+
+    /** 1️⃣ Fetch document issue (LOCKED) */
+    const [[issue]] = await connection.query(
+      `SELECT * FROM doc_issue WHERE id = ? FOR UPDATE`,
+      [issueId],
+    );
 
     if (!issue) {
+      await connection.rollback();
       return res.status(404).json({
         success: false,
         message: "Document Issue not found",
@@ -1555,79 +1562,110 @@ async function reverseDocIssue(req, res) {
     }
 
     if (issue.status === "reversed") {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message: "Already reversed",
       });
     }
 
-    const withdrawnQty = parseInt(issue.qty_withdrawn || 0);
-    const receivedQty = parseInt(issue.qty_received || 0);
-    const remainingQty = withdrawnQty - receivedQty;
-
-    if (remainingQty <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Nothing to restore",
-      });
-    }
-
-    /** 2️⃣ Fetch inventory */
-    const [[inventory]] = await pool.query(
-      `SELECT box_no, obs_held FROM doc_corner WHERE id = ?`,
+    /** 2️⃣ Fetch inventory (LOCKED) */
+    const [[inventory]] = await connection.query(
+      `SELECT box_no, obs_held FROM doc_corner WHERE id = ? FOR UPDATE`,
       [issue.doc_id],
     );
 
     if (!inventory) {
+      await connection.rollback();
       return res.status(404).json({
         success: false,
         message: "Inventory not found",
       });
     }
 
-    let boxes = [];
-
+    let boxes;
     try {
       boxes =
         typeof inventory.box_no === "string"
-          ? JSON.parse(inventory.box_no)
-          : inventory.box_no;
-
-      if (!Array.isArray(boxes)) boxes = [];
+          ? JSON.parse(inventory.box_no || "[]")
+          : inventory.box_no || [];
     } catch {
       boxes = [];
     }
 
-    let qtyToRestore = remainingQty;
+    /** 3️⃣ Fetch original box withdrawals */
+    const [boxLogs] = await connection.query(
+      `SELECT box_no, withdrawl_qty
+       FROM box_transaction
+       WHERE transaction_id = ?`,
+      [issue.transaction_id],
+    );
 
-    /** 3️⃣ Restore qty (deposit back) */
+    if (!boxLogs.length) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "No box transaction records found",
+      });
+    }
+
+    /** 4️⃣ Restore qty to respective boxes */
     const updatedBoxes = boxes.map((box) => {
-      if (qtyToRestore <= 0) return box;
+      const match = boxLogs.find((log) => log.box_no == box.no);
+
+      if (!match) return box;
 
       const currentQty = parseInt(box.qtyHeld || 0);
-
-      const deposit = qtyToRestore;
-      qtyToRestore = 0;
+      const withdrawnQty = Math.abs(parseInt(match.withdrawl_qty));
 
       return {
         ...box,
-        qtyHeld: (currentQty + deposit).toString(),
+        qtyHeld: (currentQty + withdrawnQty).toString(),
       };
     });
 
-    const previousOBS = parseInt(inventory.obs_held || 0);
-    const newOBS = previousOBS + remainingQty;
+    /** 5️⃣ Calculate total restore */
+    const totalRestoreQty = boxLogs.reduce(
+      (sum, log) => sum + Math.abs(parseInt(log.withdrawl_qty)),
+      0,
+    );
 
-    /** 4️⃣ Update inventory */
-    await pool.query(
+    const previousOBS = parseInt(inventory.obs_held || 0);
+    const newOBS = previousOBS + totalRestoreQty;
+
+    /** 6️⃣ Update inventory */
+    await connection.query(
       `UPDATE doc_corner
        SET box_no = ?, obs_held = ?
        WHERE id = ?`,
       [JSON.stringify(updatedBoxes), newOBS, issue.doc_id],
     );
 
-    /** 5️⃣ Mark issue reversed */
-    await pool.query(
+    /** 7️⃣ Insert reverse ledger entry (recommended) */
+    const reverseTransactionId = "DOC-REV-" + Date.now();
+    const now = new Date();
+
+    const reverseEntries = boxLogs.map((log) => [
+      reverseTransactionId,
+      issue.transaction_id,
+      null, // spare_id
+      null, // tool_id
+      log.box_no,
+      0,
+      Math.abs(parseInt(log.withdrawl_qty)), // positive restore
+      now,
+    ]);
+
+    await connection.query(
+      `INSERT INTO box_transaction
+       (transaction_id, demand_transaction, spare_id, tool_id,
+        box_no, prev_qty, withdrawl_qty, transaction_date)
+       VALUES ?`,
+      [reverseEntries],
+    );
+
+    /** 8️⃣ Mark issue reversed */
+    await connection.query(
       `UPDATE doc_issue
        SET status = 'reversed',
            approved_by = ?,
@@ -1636,16 +1674,21 @@ async function reverseDocIssue(req, res) {
       [userId, issueId],
     );
 
+    await connection.commit();
+
     res.json({
       success: true,
       message: "Document Issue successfully reversed",
     });
   } catch (err) {
+    await connection.rollback();
     console.error("REVERSE DOC ISSUE ERROR =>", err);
     res.status(500).json({
       success: false,
       message: err.message,
     });
+  } finally {
+    connection.release();
   }
 }
 

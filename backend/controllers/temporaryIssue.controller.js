@@ -1455,80 +1455,129 @@ async function reverseTemporaryIssue(req, res) {
   const { id: userId } = req.user;
   const { issueId } = req.body;
 
+  const connection = await pool.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     /** 1️⃣ Fetch temporary issue */
-    const [[issue]] = await pool.query(
-      `SELECT * FROM temporary_issue_local WHERE id = ?`,
+    const [[issue]] = await connection.query(
+      `SELECT * FROM temporary_issue_local WHERE id = ? FOR UPDATE`,
       [issueId],
     );
 
-    if (!issue)
+    if (!issue) {
+      await connection.rollback();
       return res.status(404).json({
         success: false,
         message: "Temporary Issue not found",
       });
+    }
 
-    if (issue.status === "reversed")
+    if (issue.status === "reversed") {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message: "Already reversed",
       });
+    }
 
     const isSpare = !!issue.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = issue.spare_id || issue.tool_id;
 
-    /** 🔹 Calculate remaining qty to restore */
-    const withdrawnQty = parseInt(issue.qty_withdrawn);
-    const returnedQty = parseInt(issue.qty_received || 0);
-    const remainingQty = withdrawnQty - returnedQty;
-
-    if (remainingQty <= 0)
-      return res.status(400).json({
-        success: false,
-        message: "Nothing to restore",
-      });
-
-    /** 2️⃣ Fetch inventory */
-    const [[inventory]] = await pool.query(
-      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ?`,
+    /** 2️⃣ Fetch inventory (LOCKED) */
+    const [[inventory]] = await connection.query(
+      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ? FOR UPDATE`,
       [inventoryId],
     );
+
+    if (!inventory) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Inventory not found",
+      });
+    }
 
     let boxes =
       typeof inventory.box_no === "string"
         ? JSON.parse(inventory.box_no || "[]")
         : inventory.box_no || [];
 
-    let qtyToRestore = remainingQty;
+    /** 3️⃣ Fetch original box transactions */
+    const [boxLogs] = await connection.query(
+      `SELECT box_no, withdrawl_qty
+       FROM box_transaction
+       WHERE transaction_id = ?`,
+      [issue.transaction_id],
+    );
 
-    /** 3️⃣ Restore quantity (deposit back) */
+    if (!boxLogs.length) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "No box transaction records found",
+      });
+    }
+
+    /** 4️⃣ Restore box-wise accurately */
     const updatedBoxes = boxes.map((box) => {
-      if (qtyToRestore <= 0) return box;
+      const match = boxLogs.find((log) => log.box_no == box.no);
 
-      const currentQty = parseInt(box.qtyHeld);
+      if (!match) return box;
 
-      const deposit = qtyToRestore; // deposit remaining qty
-      qtyToRestore = 0;
+      const currentQty = parseInt(box.qtyHeld || 0);
+      const withdrawnQty = Math.abs(parseInt(match.withdrawl_qty));
 
       return {
         ...box,
-        qtyHeld: (currentQty + deposit).toString(),
+        qtyHeld: (currentQty + withdrawnQty).toString(),
       };
     });
 
-    const newOBS = parseInt(inventory.obs_held) + remainingQty;
+    /** 5️⃣ Calculate total restored qty */
+    const totalRestoreQty = boxLogs.reduce(
+      (sum, log) => sum + Math.abs(parseInt(log.withdrawl_qty)),
+      0,
+    );
 
-    /** 4️⃣ Update inventory */
-    await pool.query(
+    const previousOBS = parseInt(inventory.obs_held || 0);
+    const newOBS = previousOBS + totalRestoreQty;
+
+    /** 6️⃣ Update inventory */
+    await connection.query(
       `UPDATE ${inventoryTable}
        SET box_no = ?, obs_held = ?
        WHERE id = ?`,
       [JSON.stringify(updatedBoxes), newOBS, inventoryId],
     );
 
-    /** 5️⃣ Mark temporary issue reversed */
-    await pool.query(
+    /** 7️⃣ (Optional but Recommended) Insert reverse ledger entries */
+    const reverseTransactionId = "TI-REV-" + Date.now();
+    const now = new Date();
+
+    const reverseEntries = boxLogs.map((log) => [
+      reverseTransactionId,
+      issue.transaction_id,
+      isSpare ? issue.spare_id : null,
+      !isSpare ? issue.tool_id : null,
+      log.box_no,
+      0, // prev_qty not needed here
+      Math.abs(parseInt(log.withdrawl_qty)), // positive restore
+      now,
+    ]);
+
+    await connection.query(
+      `INSERT INTO box_transaction
+       (transaction_id, demand_transaction, spare_id, tool_id,
+        box_no, prev_qty, withdrawl_qty, transaction_date)
+       VALUES ?`,
+      [reverseEntries],
+    );
+
+    /** 8️⃣ Mark issue reversed */
+    await connection.query(
       `UPDATE temporary_issue_local
        SET status = 'reversed',
            approved_by = ?,
@@ -1537,16 +1586,21 @@ async function reverseTemporaryIssue(req, res) {
       [userId, issueId],
     );
 
+    await connection.commit();
+
     res.json({
       success: true,
       message: "Temporary Issue successfully reversed",
     });
   } catch (err) {
+    await connection.rollback();
     console.error("REVERSE TEMP ISSUE ERROR =>", err);
     res.status(500).json({
       success: false,
       message: err.message,
     });
+  } finally {
+    connection.release();
   }
 }
 

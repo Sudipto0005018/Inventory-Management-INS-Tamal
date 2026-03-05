@@ -3,9 +3,9 @@ import { NavLink } from "react-router";
 import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { FaInfoCircle, FaRegClipboard, FaTools } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
+import { FaUserTie } from "react-icons/fa6";
 
 import { FaGears, FaPeopleRoof, FaRegClock } from "react-icons/fa6";
-import { BsCartPlus } from "react-icons/bs";
 import { LuNotebookPen } from "react-icons/lu";
 import { User } from "lucide-react";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
@@ -24,20 +24,20 @@ const menuItems = [
   {
     name: "Dashboard",
     path: "/dashboard",
-    icon: <FaRegClipboard />,
+    icon: <FaRegClipboard size={20}/>,
     roles: ["admin", "user", "officer"],
   },
   {
     name: "Spares",
     path: "/spares",
-    icon: <FaGears />,
+    icon: <FaGears size={22}/>,
     roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
   },
   {
     name: "Tools & Accessories",
     path: "/tools",
-    icon: <FaTools />,
+    icon: <FaTools size={20}/>,
     roles: ["admin", "user", "officer"],
     submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
   },
@@ -46,7 +46,7 @@ const menuItems = [
   {
     name: "Permanent Issue",
     path: "/permanent/pending-survey",
-    icon: <FaRegClock />,
+    icon: <FaRegClock size={20}/>,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
@@ -61,7 +61,7 @@ const menuItems = [
   {
     name: "Temporary Issue",
     path: "/temporary/temporary-issue",
-    icon: <FaRegClock />,
+    icon: <FaRegClock size={20}/>,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temporary/temporary-issue" },
@@ -74,7 +74,7 @@ const menuItems = [
   {
     name: "TY Loan",
     path: "/temp-loan/pending",
-    icon: <BsCartPlus />,
+    icon: <FaRegClock size={20}/>,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
@@ -100,7 +100,7 @@ const menuItems = [
   {
     name: "Documents Corner",
     path: "/documents",
-    icon: <IoDocumentSharp />,
+    icon: <IoDocumentSharp size={20}/>,
     roles: ["admin", "user", "officer"],
     submenu: [
       {
@@ -120,7 +120,7 @@ const menuItems = [
   {
     name: "Permanent Issue Logs",
     path: "/logs/pending-survey",
-    icon: <GoLog />,
+    icon: <LuLogs />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Survey Logs", path: "/logs/pending-survey" },
@@ -148,6 +148,25 @@ const menuItems = [
     ],
   },
   {
+    name: "OIC",
+    path: "/users",
+    icon: <FaUserTie size={20}/>,
+    roles: ["officer"],
+    submenu: [
+      { name: "Users", path: "/users", icon: <User /> },
+      {
+        name: "Approvals",
+        path: "/approvals",
+        icon: <IoMdCheckmarkCircleOutline size={20} />
+      },
+      {
+        name: "History",
+        path: "/history",
+        icon: <BsClockHistory size={20} />
+      },
+    ],
+  },
+  {
     name: "Departments",
     path: "/departments",
     icon: <FaPeopleRoof />,
@@ -158,13 +177,13 @@ const menuItems = [
     name: "Approvals",
     path: "/approvals",
     icon: <IoMdCheckmarkCircleOutline size={20} />,
-    roles: ["superadmin", "officer"],
+    roles: ["superadmin"],
   },
   {
     name: "History",
     path: "/history",
     icon: <BsClockHistory size={20} />,
-    roles: ["superadmin", "officer"],
+    roles: ["superadmin"],
   },
 ];
 
@@ -193,8 +212,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Menu */}
       <nav className="p-2 overflow-y-auto flex-1">
         {menuItems.map((item) => {
-
-            if (!item.roles?.includes(user?.role)) return null;
+          if (!item.roles?.includes(user?.role)) return null;
 
           if (item.submenu) {
             return (

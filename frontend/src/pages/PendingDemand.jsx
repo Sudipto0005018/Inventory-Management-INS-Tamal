@@ -33,7 +33,7 @@ import {
 import Spinner from "../components/Spinner";
 
 const PendingDemand = () => {
-  const { config, user } = useContext(Context);
+  const { config, user, officer } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -65,7 +65,9 @@ const PendingDemand = () => {
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
       : []),
-    // { key: "processed", header: "Proceed", width: "min-w-[40px]" },
+    ...(user.role === "officer"
+      ? [{ key: "rollback", header: "Rollback" }]
+      : []),
   ]);
   const options = [
     {
@@ -120,6 +122,29 @@ const PendingDemand = () => {
     demand_date: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
+
+   const handleRollback = async (row) => {
+     const confirm = window.confirm(
+       "Are you sure you want to revert this survey?",
+     );
+     if (!confirm) return;
+
+     try {
+       await apiService.post("/survey/reverse", {
+         survey_id: row.id,
+       });
+
+       toaster("success", "Survey reverted successfully");
+
+       // Remove row instantly from UI
+       setFetchedData((prev) => ({
+         ...prev,
+         items: prev.items.filter((item) => item.id !== row.id),
+       }));
+     } catch (error) {
+       toaster("error", error.response?.data?.message || "Rollback failed");
+     }
+   };
 
   // Placeholder fetch function as requested
   const fetchdata = async (page = currentPage, search = inputs.search) => {
@@ -216,6 +241,17 @@ const PendingDemand = () => {
           <FaChevronRight />
         </Button>
       ),
+      rollback:
+        user.role === "officer" ? (
+          <Button
+            variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700"
+            size="sm"
+            onClick={() => handleRollback(row)}
+          >
+            Rollback
+          </Button>
+        ) : null,
     }));
     setTableData(t);
   }, [fetchedData]);

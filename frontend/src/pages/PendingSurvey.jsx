@@ -36,7 +36,7 @@ import Chip from "../components/Chip";
 // oem/vendor details (non men)
 // local terminology (non men)
 const PendingSurvey = () => {
-  const { config, user } = useContext(Context);
+  const { config, user, officer } = useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -64,7 +64,9 @@ const PendingSurvey = () => {
     },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     ...(user.role != "user" ? [{ key: "processed", header: "Proceed" }] : []),
-    // { key: "processed", header: "Proceed", width: "min-w-[40px]" },
+    ...(user.role === "officer"
+      ? [{ key: "rollback", header: "Rollback" }]
+      : []),
   ]);
   const options = [
     { value: "description", label: "Item Description" },
@@ -110,31 +112,28 @@ const PendingSurvey = () => {
   });
   const [selectedRow, setSelectedRow] = useState({});
 
-  // const fetchdata = async () => {
-  //   try {
-  //     setIsLoading((prev) => ({ ...prev, table: true }));
-  //     const response = await apiService.get("/survey", {
-  //       params: {
-  //         page: currentPage,
-  //         search: inputs.search,
-  //         limit: config.row_per_page,
-  //         status: "pending",
-  //       },
-  //     });
-  //     setFetchedData(response.data);
-  //   } catch (error) {
-  //     console.log(error);
-  //     setFetchedData({
-  //       items: [],
-  //       totalItems: 0,
-  //       totalPages: 1,
-  //       currentPage: 1,
-  //     });
-  //     toaster.error(error.response.data.message);
-  //   } finally {
-  //     setIsLoading((prev) => ({ ...prev, table: false }));
-  //   }
-  // };
+  const handleRollback = async (row) => {
+    const confirm = window.confirm(
+      "Are you sure you want to revert this survey?",
+    );
+    if (!confirm) return;
+
+    try {
+      await apiService.post("/survey/reverse", {
+        survey_id: row.id,
+      });
+
+      toaster("success", "Survey reverted successfully");
+
+      // Remove row instantly from UI
+      setFetchedData((prev) => ({
+        ...prev,
+        items: prev.items.filter((item) => item.id !== row.id),
+      }));
+    } catch (error) {
+      toaster("error", error.response?.data?.message || "Rollback failed");
+    }
+  };
 
   const fetchdata = async (
     page = currentPage,
@@ -244,6 +243,17 @@ const PendingSurvey = () => {
           <FaChevronRight />
         </Button>
       ),
+      rollback:
+        user.role === "officer" ? (
+          <Button
+            variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700"
+            size="sm"
+            onClick={() => handleRollback(row)}
+          >
+            Rollback
+          </Button>
+        ) : null,
     }));
     setTableData(t);
   }, [fetchedData]);

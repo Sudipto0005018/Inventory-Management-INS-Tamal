@@ -241,8 +241,21 @@ const Users = () => {
   }, [currentPage]);
 
   useEffect(() => {
+    const roleMap = {
+      admin: "StoreKeeper",
+      officer: "OIC",
+      user: "Read Only",
+      superadmin: "Super Admin",
+    };
+
     const t = fetchedData.items.map((row) => ({
       ...row,
+
+      role: (
+        <span className="px-2 py-1 rounded text-black-700">
+          {roleMap[row.role] || row.role}
+        </span>
+      ),
       status: (
         <span
           className={`px-2 py-1 rounded text-xs font-medium ${
@@ -418,9 +431,9 @@ const Users = () => {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="officer">Officer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">Read Only</SelectItem>
+                  <SelectItem value="officer">OIC</SelectItem>
+                  <SelectItem value="admin">StoreKeeper</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -522,9 +535,9 @@ const Users = () => {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="officer">Officer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">Read Only</SelectItem>
+                  <SelectItem value="officer">OIC</SelectItem>
+                  <SelectItem value="admin">StoreKeeper</SelectItem>
                 </SelectContent>
               </Select>
             </div>

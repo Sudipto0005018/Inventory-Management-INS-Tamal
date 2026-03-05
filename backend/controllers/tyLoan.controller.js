@@ -1256,78 +1256,129 @@ async function reverseTyLoanIssue(req, res) {
   const { id: userId } = req.user;
   const { loanId } = req.body;
 
+  const connection = await pool.getConnection();
+
   try {
-    /** 1️⃣ Fetch loan */
-    const [[loan]] = await pool.query(`SELECT * FROM ty_loan WHERE id = ?`, [
-      loanId,
-    ]);
+    await connection.beginTransaction();
 
-    if (!loan)
-      return res
-        .status(404)
-        .json({ success: false, message: "Loan not found" });
+    /** 1️⃣ Fetch loan (LOCKED) */
+    const [[loan]] = await connection.query(
+      `SELECT * FROM ty_loan WHERE id = ? FOR UPDATE`,
+      [loanId],
+    );
 
-    if (loan.status === "reversed")
-      return res
-        .status(400)
-        .json({ success: false, message: "Already reversed" });
+    if (!loan) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Loan not found",
+      });
+    }
+
+    if (loan.status === "reversed") {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Already reversed",
+      });
+    }
 
     const isSpare = !!loan.spare_id;
     const inventoryTable = isSpare ? "spares" : "tools";
     const inventoryId = loan.spare_id || loan.tool_id;
 
-    /** 🔹 Calculate remaining qty to restore */
-    const withdrawnQty = parseInt(loan.qty_withdrawn);
-    const returnedQty = parseInt(loan.qty_received || 0);
-    const remainingQty = withdrawnQty - returnedQty;
-
-    if (remainingQty <= 0)
-      return res.status(400).json({
-        success: false,
-        message: "Nothing to restore",
-      });
-
-    /** 2️⃣ Fetch inventory */
-    const [[inventory]] = await pool.query(
-      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ?`,
+    /** 2️⃣ Fetch inventory (LOCKED) */
+    const [[inventory]] = await connection.query(
+      `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ? FOR UPDATE`,
       [inventoryId],
     );
+
+    if (!inventory) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Inventory not found",
+      });
+    }
 
     let boxes =
       typeof inventory.box_no === "string"
         ? JSON.parse(inventory.box_no || "[]")
         : inventory.box_no || [];
 
-    let qtyToRestore = remainingQty;
+    /** 3️⃣ Get original box withdrawals */
+    const [boxLogs] = await connection.query(
+      `SELECT box_no, withdrawl_qty
+       FROM box_transaction
+       WHERE transaction_id = ?`,
+      [loan.transaction_id],
+    );
 
-    /** 3️⃣ Restore qty across boxes (simple distribution) */
+    if (!boxLogs.length) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "No box transaction records found",
+      });
+    }
+
+    /** 4️⃣ Restore quantity to respective boxes */
     const updatedBoxes = boxes.map((box) => {
-      if (qtyToRestore <= 0) return box;
+      const match = boxLogs.find((log) => log.box_no == box.no);
 
-      const currentQty = parseInt(box.qtyHeld);
+      if (!match) return box;
 
-      // Deposit everything into first available boxes
-      const deposit = qtyToRestore;
-      qtyToRestore = 0;
+      const currentQty = parseInt(box.qtyHeld || 0);
+      const withdrawnQty = Math.abs(parseInt(match.withdrawl_qty));
 
       return {
         ...box,
-        qtyHeld: (currentQty + deposit).toString(),
+        qtyHeld: (currentQty + withdrawnQty).toString(),
       };
     });
 
-    const newOBS = parseInt(inventory.obs_held) + remainingQty;
+    /** 5️⃣ Calculate total restored */
+    const totalRestoreQty = boxLogs.reduce(
+      (sum, log) => sum + Math.abs(parseInt(log.withdrawl_qty)),
+      0,
+    );
 
-    /** 4️⃣ Update inventory */
-    await pool.query(
+    const previousOBS = parseInt(inventory.obs_held || 0);
+    const newOBS = previousOBS + totalRestoreQty;
+
+    /** 6️⃣ Update inventory */
+    await connection.query(
       `UPDATE ${inventoryTable}
        SET box_no = ?, obs_held = ?
        WHERE id = ?`,
       [JSON.stringify(updatedBoxes), newOBS, inventoryId],
     );
 
-    /** 5️⃣ Mark loan reversed */
-    await pool.query(
+    /** 7️⃣ Insert reverse ledger entry (recommended) */
+    const reverseTransactionId = "TY-REV-" + Date.now();
+    const now = new Date();
+
+    const reverseEntries = boxLogs.map((log) => [
+      reverseTransactionId,
+      loan.transaction_id,
+      isSpare ? loan.spare_id : null,
+      !isSpare ? loan.tool_id : null,
+      log.box_no,
+      0,
+      Math.abs(parseInt(log.withdrawl_qty)), // positive restore
+      now,
+    ]);
+
+    await connection.query(
+      `INSERT INTO box_transaction
+       (transaction_id, demand_transaction, spare_id, tool_id,
+        box_no, prev_qty, withdrawl_qty, transaction_date)
+       VALUES ?`,
+      [reverseEntries],
+    );
+
+    /** 8️⃣ Mark loan reversed */
+    await connection.query(
       `UPDATE ty_loan
        SET status = 'reversed',
            approved_by = ?,
@@ -1336,13 +1387,21 @@ async function reverseTyLoanIssue(req, res) {
       [userId, loanId],
     );
 
+    await connection.commit();
+
     res.json({
       success: true,
       message: "TY Loan successfully reversed",
     });
   } catch (err) {
-    console.error("REVERSE ISSUE ERROR =>", err);
-    res.status(500).json({ success: false, message: err.message });
+    await connection.rollback();
+    console.error("REVERSE TY LOAN ERROR =>", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
   }
 }
 

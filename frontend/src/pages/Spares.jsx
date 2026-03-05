@@ -714,10 +714,7 @@ const Spares = ({ type = "" }) => {
       formData.append("oem", inputs.oem || "");
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
-      formData.append(
-        "critical_spare",
-        inputs.critical_spare == "yes" ? 1 : 0 || 0,
-      );
+      formData.append("critical_spare", inputs.critical_spare || 0);
       formData.append("supplier", inputs.supplier || "");
       const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -1688,7 +1685,6 @@ const Spares = ({ type = "" }) => {
                       <Label className="ms-2 mb-1">
                         Critical Spare<span className="text-red-500">*</span>
                       </Label>
-
                       <RadioGroup
                         value={inputs.critical_spare}
                         onValueChange={(value) =>
@@ -3819,6 +3815,16 @@ const Spares = ({ type = "" }) => {
             unbounded
             onInteractOutside={(e) => {
               e.preventDefault(); // 🚫 Prevent outside click close
+            }}
+            onOpenChange={(open) => {
+              const box = JSON.parse(selectedRow.box_no);
+              for (let i = 0; i < box.length; i++) {
+                box[i].incDecQty = "";
+              }
+              setSelectedRow((prev) => ({
+                ...prev,
+                box_no: JSON.stringify(box),
+              }));
             }}
             className="w-[55vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
           >

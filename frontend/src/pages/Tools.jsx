@@ -711,10 +711,7 @@ const Tools = ({ type = "" }) => {
       formData.append("oem", inputs.oem || "");
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
-      formData.append(
-        "critical_tool",
-        inputs.critical_tool == "yes" ? 1 : 0 || 0,
-      );
+      formData.append("critical_tool", inputs.critical_tool || 0);
       formData.append("supplier", inputs.supplier || "");
       console.log(selectedRow.category);
 
@@ -1688,7 +1685,6 @@ const Tools = ({ type = "" }) => {
                       <Label className="ms-2 mb-1">
                         Critical Tool<span className="text-red-500">*</span>
                       </Label>
-
                       <RadioGroup
                         value={inputs.critical_tool}
                         onValueChange={(value) =>
