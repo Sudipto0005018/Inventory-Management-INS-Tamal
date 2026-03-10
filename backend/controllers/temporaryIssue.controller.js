@@ -202,6 +202,8 @@ async function getTemporaryIssueList(req, res) {
       qty_withdrawn: ["til.qty_withdrawn"],
       loan_duration: ["til.loan_duration"],
       created_at: ["til.created_at"],
+      qty_received: ["til.qty_received"],
+      issue_date: ["til.issue_date"],
     };
 
     const validCols = cols.map((c) => c.trim()).filter((col) => columnMap[col]);
@@ -555,6 +557,7 @@ async function createTemporaryIssue(req, res) {
       qty_received,
       box_no,
       a,
+      individual_name,
     } = req.body;
 
     const transactionId = "TI-" + Date.now();
@@ -614,10 +617,10 @@ async function createTemporaryIssue(req, res) {
       `
       INSERT INTO temporary_issue_local (
         transaction_id, spare_id, tool_id, qty_withdrawn,
-        service_no, issue_to, issue_date, loan_duration,
+        service_no, individual_name, issue_to, issue_date, loan_duration,
         return_date, qty_received, created_by, created_at,
         approved_by, approved_at, box_no, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
       `,
       [
         transactionId,
@@ -625,6 +628,7 @@ async function createTemporaryIssue(req, res) {
         a === "tool" ? tool_id : null,
         qty_withdrawn,
         service_no,
+        individual_name || null,
         issue_to || null,
         issue_date || null,
         loan_duration || null,
@@ -870,7 +874,7 @@ async function generateQRCode(req, res) {
 
     if (tool_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM tools WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM tools WHERE id = ?",
         [tool_id],
       );
 
@@ -885,7 +889,7 @@ async function generateQRCode(req, res) {
       data = rows[0];
     } else if (spare_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM spares WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM spares WHERE id = ?",
         [spare_id],
       );
 
@@ -904,22 +908,6 @@ async function generateQRCode(req, res) {
         .json(new ApiErrorResponse(400, {}, "Invalid QR generation request"));
     }
 
-    // for (let i = 0; i < boxes.length; i++) {
-    //   const box_no = boxes[i].box_no;
-    //   const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
-    //   const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
-    //   const copy_count = Number(boxes[i].copy_count);
-    //   for (let j = 0; j < Number(copy_count); j++) {
-    //     if (i + j > 0) doc.addPage();
-    //     doc.image(qrURL, 5, 5, { width: 50, height: 50 });
-    //     doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
-    //     doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-    //     doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-    //     doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
-    //     doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
-    //   }
-    // }
-
     let isFirstPage = true;
 
     for (let i = 0; i < boxes.length; i++) {
@@ -932,7 +920,18 @@ async function generateQRCode(req, res) {
         continue;
       }
 
-      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+      let location = "";
+
+      if (data.box_no) {
+        const boxes = JSON.parse(data.box_no);
+
+        const selectedBox = boxes.find((b) => b.no === box_no);
+
+        if (selectedBox) {
+          location = selectedBox.location || "";
+        }
+      }
+      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}|${location}`;
       const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
 
       for (let j = 0; j < copy_count; j++) {
@@ -946,9 +945,9 @@ async function generateQRCode(req, res) {
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
         doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
         doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-        doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-        doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
-        doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+        doc.fontSize(8).text(data.equipment_system, 60, 25, { width: 100 });
+        doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
+        doc.fontSize(8).text(location, 60, 45, { width: 100 });
       }
     }
     doc.end();
@@ -976,20 +975,22 @@ async function getLogsTemporary(req, res) {
 
   /* SEARCH FILTER */
   if (search) {
-    const columnMap = {
-      description: ["s.description", "t.description"],
-      indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
-      category: ["s.category", "t.category"],
-      equipment_system: ["s.equipment_system", "t.equipment_system"],
-      service_no: ["til.service_no"],
-      issue_to: ["til.issue_to"],
-      created_by_name: ["u1.name"],
-      approved_by_name: ["u2.name"],
-      box_no: ["til.box_no"],
-      qty_withdrawn: ["til.qty_withdrawn"],
-      loan_duration: ["til.loan_duration"],
-      created_at: ["til.created_at"],
-    };
+   const columnMap = {
+     issue_date: ["til.issue_date"],
+     description: ["s.description", "t.description"],
+     indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
+     denos: ["s.denos", "t.denos"],
+     category: ["s.category", "t.category"],
+     equipment_system: ["s.equipment_system", "t.equipment_system"],
+     qty_withdrawn: ["til.qty_withdrawn"],
+     issue_to: ["til.issue_to"],
+     name: ["til.individual_name"],
+     service_no: ["til.service_no"],
+     qty_received: ["til.qty_received"],
+    //  utilised_qty: ["til.utilised_qty"],
+     loan_duration: ["til.loan_duration"],
+     created_at: ["til.created_at"],
+   };
 
     const validCols = cols.map((c) => c.trim()).filter((col) => columnMap[col]);
 
@@ -1105,6 +1106,8 @@ async function getLogsTemporary(req, res) {
         til.qty_withdrawn,
         til.qty_received,
 
+        til.individual_name AS name,
+
         (til.qty_withdrawn - IFNULL(til.qty_received,0)) AS balance_qty,
 
         til.service_no,
@@ -1151,6 +1154,12 @@ async function getLogsTemporary(req, res) {
           WHEN til.tool_id IS NOT NULL THEN t.equipment_system
           ELSE NULL
         END AS equipment_system,
+
+        CASE
+          WHEN til.spare_id IS NOT NULL THEN s.denos
+          WHEN til.tool_id IS NOT NULL THEN t.denos
+          ELSE NULL
+        END AS denos,
 
          til.status AS loan_status,
 

@@ -30,7 +30,7 @@ import {
 import GenerateQRDialog from "../components/GenerateQRDialog";
 
 const PermanentPendings = () => {
-  const { config, user } = useContext(Context);
+  const { config, user, officer } = useContext(Context);
 
   const options = [
     {
@@ -126,12 +126,13 @@ const PermanentPendings = () => {
       },
       { key: "demand_quantity", header: "Demanded Qty" },
       { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
-      { key: "created_at", header: "Created On", width: "min-w-[40px]" },
       { key: "status_badge", header: "Status" },
       ...(user.role != "user"
         ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
         : []),
-      // { key: "processed", header: "Proceed" },
+      ...(user.role === "officer"
+        ? [{ key: "rollback", header: "Rollback" }]
+        : []),
     ],
     [],
   );
@@ -185,7 +186,29 @@ const PermanentPendings = () => {
     gate_pass_calender: new Date(),
   });
 
-  const [boxNo, setBoxNo] = useState([]);
+  const handleRollback = async (row) => {
+    const confirm = window.confirm(
+      "Are you sure you want to rollback this Pending Issue?",
+    );
+
+    if (!confirm) return;
+
+    try {
+      console.log("reverse deman res", response);
+      const response = await apiService.post("/demand/reverse", {
+        pending_issue_id: row.id,
+      });
+
+      if (response.success) {
+        toaster("success", "Pending Issue rolled back successfully");
+        fetchData();
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      toaster("error", error.response?.data?.message || error.message);
+    }
+  };
 
   const fetchData = async (page = currentPage) => {
     try {
@@ -252,6 +275,17 @@ const PermanentPendings = () => {
             <FaChevronRight />
           </Button>
         ),
+        rollback:
+          user.role === "officer" ? (
+            <Button
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-700"
+              size="sm"
+              onClick={() => handleRollback(row)}
+            >
+              Rollback
+            </Button>
+          ) : null,
       };
     });
 
@@ -357,17 +391,6 @@ const PermanentPendings = () => {
     <>
       <div className="w-full px-2 pt-2 h-full rounded-md bg-white">
         <div className="mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-full">
           <Input
             type="text"
             placeholder="Search..."
@@ -377,6 +400,19 @@ const PermanentPendings = () => {
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
           />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-full">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
@@ -434,7 +470,7 @@ const PermanentPendings = () => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+                pb-2 border-b"
           >
             <DialogTitle className="text-lg font-semibold">
               Updation for Qty NAC / Issued
@@ -518,7 +554,10 @@ const PermanentPendings = () => {
                     placeholder="Enter NAC No."
                     value={inputs.nac_no}
                     onChange={(e) =>
-                      setInputs((p) => ({ ...p, nac_no: e.target.value }))
+                      setInputs((p) => ({
+                        ...p,
+                        nac_no: e.target.value.toUpperCase(),
+                      }))
                     }
                   />
                 </div>
@@ -611,7 +650,10 @@ const PermanentPendings = () => {
                     placeholder="Enter MO Gate Pass No."
                     value={inputs.mo_no}
                     onChange={(e) =>
-                      setInputs((p) => ({ ...p, mo_no: e.target.value }))
+                      setInputs((p) => ({
+                        ...p,
+                        mo_no: e.target.value.toUpperCase(),
+                      }))
                     }
                   />
                 </div>

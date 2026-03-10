@@ -35,7 +35,7 @@ const PermanentPendings = () => {
       ),
     },
     { value: "category", label: "Category" },
-
+    { value: "denos", label: "Denos" },
     { value: "mo_no", label: "Demand No." },
 
     { value: "demand_date", label: "Demand Date" },
@@ -60,6 +60,7 @@ const PermanentPendings = () => {
       },
       { key: "item_type", header: "Type" },
       { key: "category", header: "Category" },
+      { key: "denos", header: "Denos" },
       {
         key: "display_demand_no",
         header: "Demand No.",
@@ -328,17 +329,6 @@ const PermanentPendings = () => {
     <>
       <div className="w-full px-2 pt-2 h-full rounded-md bg-white">
         <div className="mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-full">
           <Input
             type="text"
             placeholder="Search..."
@@ -348,6 +338,19 @@ const PermanentPendings = () => {
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
           />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-full">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

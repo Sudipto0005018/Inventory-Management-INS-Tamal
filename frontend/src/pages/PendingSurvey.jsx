@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "../components/ui/popover";
 import { MultiSelect } from "../components/ui/multi-select";
+import ComboBox from "../components/ComboBox";
 
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
@@ -36,7 +37,8 @@ import Chip from "../components/Chip";
 // oem/vendor details (non men)
 // local terminology (non men)
 const PendingSurvey = () => {
-  const { config, user, officer } = useContext(Context);
+  const { config, user, officer, surveyReason, fetchSurveyReason } =
+    useContext(Context);
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -62,7 +64,6 @@ const PendingSurvey = () => {
       header: "Surveyed Qty",
       width: "max-w-[40px]",
     },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     ...(user.role != "user" ? [{ key: "processed", header: "Proceed" }] : []),
     ...(user.role === "officer"
       ? [{ key: "rollback", header: "Rollback" }]
@@ -80,11 +81,16 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
+    { value: "withdrawl_date", label: "Withdrawal Date" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
     { value: "withdrawl_qty", label: "Withdrawal Qty" },
     { value: "survey_quantity", label: "Surveyed Qty" },
   ];
+
+  //for survey-stockin
+  const [repairStatus, setRepairStatus] = useState(null);
+
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,6 +111,7 @@ const PendingSurvey = () => {
     voucher_no: "",
     survey_calender: new Date(),
     quantity: "",
+    remarks: "",
   });
   const [isOpen, setIsOpen] = useState({
     survey: false,
@@ -135,6 +142,40 @@ const PendingSurvey = () => {
     }
   };
 
+  const resetSurveyDialog = () => {
+    setRepairStatus(null);
+
+    setInputs({
+      search: "",
+      voucher_no: "",
+      survey_calender: new Date(),
+      quantity: "",
+      remarks: "",
+    });
+
+    setSelectedRow({});
+  };
+  const addToDropdown = async (type, value) => {
+    try {
+      const data = {
+        type,
+        attr: [value],
+      };
+
+      const response = await apiService.post("/config/add", data);
+      console.log("ADD RESPONSE:", response);
+      if (response.success) {
+        toaster("success", "Data Added");
+
+        if (type === "survey") {
+          await fetchSurveyReason();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toaster("error", "Failed to add");
+    }
+  };
   const fetchdata = async (
     page = currentPage,
     search = inputs.search,
@@ -187,27 +228,38 @@ const PendingSurvey = () => {
   const handleServay = async () => {
     try {
       setIsLoading((prev) => ({ ...prev, survey: true }));
-      const result = await apiService.post("/demand/create", {
-        spare_id: selectedRow.spare_id,
-        tool_id: selectedRow.tool_id,
-        survey_qty: inputs.quantity,
-        survey_voucher_no: inputs.voucher_no,
-        survey_date: formatDate(inputs.survey_calender),
-        transaction_id: selectedRow.transaction_id,
-      });
-      if (result.success) {
-        toaster("success", "Survey completed successfully");
-        setIsOpen((prev) => ({ ...prev, survey: false }));
-        fetchdata();
-        setInputs({
-          search: "",
-          voucher_no: "",
-          survey_calender: new Date(),
-          quantity: "",
+
+      if (repairStatus === "yes") {
+        await apiService.post("/demand/repair-stock", {
+          spare_id: selectedRow.spare_id,
+          tool_id: selectedRow.tool_id,
+          repairable_qty: inputs.quantity,
+          transaction_id: selectedRow.transaction_id,
         });
+
+        toaster("success", "Item sent to repair stock");
+      } else {
+        if (!selectedRow.surveyReason) {
+          return toaster("error", "Please select reason for survey");
+        }
+        await apiService.post("/demand/create", {
+          spare_id: selectedRow.spare_id,
+          tool_id: selectedRow.tool_id,
+          survey_qty: inputs.quantity,
+          survey_voucher_no: inputs.voucher_no,
+          survey_date: formatDate(inputs.survey_calender),
+          transaction_id: selectedRow.transaction_id,
+          reason_for_survey: selectedRow.surveyReason,
+          remarks: inputs.remarks,
+        });
+
+        toaster("success", "Survey completed successfully");
       }
+
+      setIsOpen((prev) => ({ ...prev, survey: false }));
+      fetchdata();
     } catch (error) {
-      toaster("error", error.response.data.message);
+      toaster("error", error.response?.data?.message);
     } finally {
       setIsLoading((prev) => ({ ...prev, survey: false }));
     }
@@ -265,17 +317,6 @@ const PendingSurvey = () => {
   return (
     <div className="px-2 w-full">
       <div className="mb-2">
-        <MultiSelect
-          className="bg-white hover:bg-blue-50"
-          options={options}
-          placeholder="Select Fields"
-          onValueChange={setSelectedValues}
-          defaultValue={selectedValues}
-          singleLine
-          maxCount={6}
-        />
-      </div>
-      <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
           placeholder="Search survey items"
@@ -285,6 +326,19 @@ const PendingSurvey = () => {
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
         />
+      </div>
+      <div className="flex items-center mb-4 gap-4 w-full">
+        <div className="w-full">
+          <MultiSelect
+            className="bg-white hover:bg-blue-50"
+            options={options}
+            placeholder="Select Fields"
+            onValueChange={setSelectedValues}
+            defaultValue={selectedValues}
+            singleLine
+            maxCount={6}
+          />
+        </div>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}
@@ -331,18 +385,10 @@ const PendingSurvey = () => {
 
       <Dialog
         open={isOpen.survey}
-        onOpenChange={(set) =>
-          setIsOpen((prev) => {
-            if (!set) {
-              setInputs((prev) => ({
-                ...prev,
-                servay_number: "",
-                voucher_no: "",
-              }));
-            }
-            return { ...prev, survey: set };
-          })
-        }
+        onOpenChange={(open) => {
+          if (!open) resetSurveyDialog();
+          setIsOpen((prev) => ({ ...prev, survey: open }));
+        }}
       >
         <DialogContent
           className="unbounded w-full !max-w-2xl"
@@ -364,139 +410,251 @@ const PendingSurvey = () => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+                pb-2 border-b"
           >
             <DialogTitle className="capitalize">
               Issue {selectedRow.spare_id ? "spare" : "tool"}
             </DialogTitle>
             <button
               type="button"
-              onClick={() => setIsOpen((prev) => ({ ...prev, survey: false }))}
+              onClick={() => {
+                resetSurveyDialog();
+                setIsOpen((prev) => ({ ...prev, survey: false }));
+              }}
               className="justify-self-end rounded-md p-1 transition"
             >
               ✕
             </button>
           </div>
-          <div className="flex items-start gap-2 mb-3">
-            <span className="font-semibold text-gray-700">
-              Item Description :
-            </span>
 
-            <span className="text-gray-900 font-medium ml-1">
-              {selectedRow?.description || "-"}
-            </span>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col gap-1 mb-3">
+              <span className="font-semibold text-gray-700">
+                Item Description :
+              </span>
+
+              <span className="text-gray-900">
+                {selectedRow?.description || "-"}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2 mb-3">
+              <Label className="font-semibold">
+                Item Repaired / Serviceable?
+              </Label>
+
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="repairStatus"
+                    value="yes"
+                    checked={repairStatus === "yes"}
+                    onChange={() => setRepairStatus("yes")}
+                  />
+                  Yes
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="repairStatus"
+                    value="no"
+                    checked={repairStatus === "no"}
+                    onChange={() => setRepairStatus("no")}
+                  />
+                  No
+                </label>
+              </div>
+            </div>
           </div>
+
           <DialogDescription className="hidden" />
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div>
-              <Label className="mb-1 ms-2">Withdrawal Qty</Label>
-              <Input
-                className="mt-2"
-                value={selectedRow?.withdrawl_qty ?? 0}
-                readOnly
-              />
+          {repairStatus === "yes" && (
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <Label>Withdrawal Qty</Label>
+                <Input value={selectedRow?.withdrawl_qty ?? 0} readOnly />
+              </div>
+
+              <div>
+                <Label>Previously Stocked In Qty</Label>
+                <Input value={selectedRow?.survey_quantity ?? 0} readOnly />
+              </div>
+
+              <div>
+                <Label>
+                  Repairable Qty <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  placeholder="Enter Repairable Qty"
+                  value={inputs.quantity}
+                  onChange={(e) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      quantity: e.target.value,
+                    }))
+                  }
+                />
+              </div>
             </div>
-            <div>
-              <Label className="mb-1 ms-2" htmlFor="quantity">
-                Previously Surveyed Qty
-              </Label>
-              <Input
-                className="mt-2"
-                id="quantity"
-                type="number"
-                placeholder="Quantity"
-                value={selectedRow?.survey_quantity ?? 0}
-                readOnly
-              />
-            </div>
-            <div>
-              <Label htmlFor="survey_quantity" className="mb-3 ms-2 ">
-                Survey Qty<span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="survey_quantity"
-                type="text"
-                placeholder="Enter Survey Quantity"
-                name="quantity"
-                value={inputs.quantity}
-                onChange={(e) =>
-                  setInputs((prev) => ({ ...prev, quantity: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="voucher_no" className="mt-4 mb-2 gap-1">
-                Survey Voucher No.<span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="text"
-                placeholder="Enter Survey Voucher No."
-                name="voucher_no"
-                value={inputs.voucher_no}
-                onChange={(e) =>
-                  setInputs((prev) => ({ ...prev, voucher_no: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="servay_number" className="mb-2 mt-4 gap-1">
-                Survey Date<span className="text-red-500">*</span>
-              </Label>
-              <Popover
-                open={isOpen.survey_calender}
-                onOpenChange={(set) => {
-                  setIsOpen((prev) => ({ ...prev, survey_calender: set }));
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    id="date"
-                    className="w-full justify-between font-normal"
-                  >
-                    {inputs.survey_calender
-                      ? getFormatedDate(inputs.survey_calender)
-                      : "Select date"}
-                    <ChevronDownIcon />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto overflow-hidden p-0"
-                  align="start"
-                >
-                  <Calendar
-                    mode="single"
-                    selected={inputs.survey_calender}
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
+          )}
+
+          {repairStatus === "no" && (
+            <>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <Label>Withdrawal Qty</Label>
+                  <Input value={selectedRow?.withdrawl_qty ?? 0} readOnly />
+                </div>
+
+                <div>
+                  <Label>Previously Surveyed Qty</Label>
+                  <Input value={selectedRow?.survey_quantity ?? 0} readOnly />
+                </div>
+
+                <div>
+                  <Label>
+                    Survey Qty <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Enter Survey Qty"
+                    value={inputs.quantity}
+                    onChange={(e) =>
                       setInputs((prev) => ({
                         ...prev,
-                        survey_calender: date,
-                      }));
-                      setIsOpen((prev) => ({
+                        quantity: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>
+                    Survey Voucher No. <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    placeholder="Enter Survey Voucher No."
+                    value={inputs.voucher_no}
+                    onChange={(e) =>
+                      setInputs((prev) => ({
                         ...prev,
-                        survey_calender: false,
+                        voucher_no: e.target.value.toUpperCase(),
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Survey Date <span className="text-red-500">*</span>
+                  </Label>
+
+                  <Popover
+                    open={isOpen.survey_calender}
+                    onOpenChange={(set) =>
+                      setIsOpen((prev) => ({ ...prev, survey_calender: set }))
+                    }
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between font-normal"
+                      >
+                        {inputs.survey_calender
+                          ? getFormatedDate(inputs.survey_calender)
+                          : "Select date"}
+                        <ChevronDownIcon />
+                      </Button>
+                    </PopoverTrigger>
+
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={inputs.survey_calender}
+                        captionLayout="dropdown"
+                        onSelect={(date) => {
+                          setInputs((prev) => ({
+                            ...prev,
+                            survey_calender: date,
+                          }));
+                          setIsOpen((prev) => ({
+                            ...prev,
+                            survey_calender: false,
+                          }));
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="flex flex-col gap-1 w-full mt-4">
+                  <label className="text-sm font-medium text-gray-700">
+                    Reason For Survey <span className="text-red-500">*</span>
+                  </label>
+
+                  <ComboBox
+                    options={surveyReason}
+                    className="w-[300px]"
+                    placeholder="Select reasons.."
+                    onCustomAdd={async (value) => {
+                      await addToDropdown("survey", value.name);
+                    }}
+                    onSelect={(value) => {
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        surveyReason: value.name,
                       }));
                     }}
+                    onDelete={async (value) => {
+                      try {
+                        await apiService.delete(`/config/${value.id}`);
+                        await fetchSurveyReason();
+                        toaster("success", "Deleted Successfully");
+                      } catch (error) {
+                        toaster("error", "Failed to delete the item");
+                      }
+                    }}
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+                </div>
+
+                <div className="mt-4">
+                  <Label>
+                    Remarks <span className="text-red-500">*</span>
+                  </Label>
+
+                  <Input
+                    className="mt-2"
+                    placeholder="Remarks"
+                    value={inputs.remarks}
+                    onChange={(e) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        remarks: e.target.value.toUpperCase(),
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </>
+          )}
           <div>
             <div className="flex items-center mt-4 gap-4 justify-end">
               <Button
                 variant="destructive"
-                onClick={() =>
-                  setIsOpen((prev) => ({ ...prev, survey: false }))
-                }
+                onClick={() => {
+                  resetSurveyDialog();
+                  setIsOpen((prev) => ({ ...prev, survey: false }));
+                }}
               >
                 Cancel
               </Button>
               <SpinnerButton
-                loading={isLoading.servay}
+                loading={isLoading.survey}
                 disabled={isLoading.survey}
                 loadingText="Submitting..."
                 className="text-white hover:bg-primary/85 cursor-pointer"

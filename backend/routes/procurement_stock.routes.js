@@ -10,6 +10,7 @@ const {
   getLogsProcurement,
   getLogsStockUpdate,
   generateQRCode,
+  getLogsNAC,
 } = require("../controllers/procurement_stock.controller");
 
 router.get("/procurement", authMiddleware, getProcurementPending);
@@ -19,5 +20,6 @@ router.get("/logsStock", authMiddleware, getLogsStockUpdate);
 router.put("/stock_in", authMiddleware, updateStock);
 router.put("/procurement", authMiddleware, updateProcurement);
 router.post("/genarate-qr", generateQRCode);
+router.get("/logsNAC", authMiddleware, getLogsNAC);
 
 module.exports = router;

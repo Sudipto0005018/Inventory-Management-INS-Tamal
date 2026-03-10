@@ -5,7 +5,7 @@ import { FaInfoCircle, FaRegClipboard, FaTools } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
 import { FaUserTie } from "react-icons/fa6";
 
-import { FaGears, FaPeopleRoof, FaRegClock } from "react-icons/fa6";
+import { FaGears, FaPeopleRoof, FaRegClock, FaCartPlus } from "react-icons/fa6";
 import { LuNotebookPen } from "react-icons/lu";
 import { User } from "lucide-react";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
@@ -32,6 +32,7 @@ const menuItems = [
     path: "/spares",
     icon: <FaGears size={22} />,
     roles: ["admin", "user", "officer"],
+    parentClickable: true,
     submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
   },
   {
@@ -39,6 +40,7 @@ const menuItems = [
     path: "/tools",
     icon: <FaTools size={20} />,
     roles: ["admin", "user", "officer"],
+    parentClickable: true,
     submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
   },
   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
@@ -61,7 +63,7 @@ const menuItems = [
   {
     name: "Temporary Issue",
     path: "/temporary/temporary-issue",
-    icon: <FaRegClock size={20} />,
+    icon: <FaCartPlus size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temporary/temporary-issue" },
@@ -74,7 +76,7 @@ const menuItems = [
   {
     name: "TY Loan",
     path: "/temp-loan/pending",
-    icon: <FaRegClock size={20} />,
+    icon: <FaCartPlus size={20} />,
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temp-loan/pending" },
@@ -102,11 +104,12 @@ const menuItems = [
     path: "/documents",
     icon: <IoDocumentSharp size={20} />,
     roles: ["admin", "user", "officer"],
+    parentClickable: true,
     submenu: [
-      {
-        name: "Documents Master",
-        path: "/documents",
-      },
+      // {
+      //   name: "Documents Master",
+      //   path: "/documents",
+      // },
       {
         name: "Pending",
         path: "/documents/issue",
@@ -126,6 +129,7 @@ const menuItems = [
       { name: "Survey Logs", path: "/logs/pending-survey" },
       { name: "Demand Logs", path: "/logs/pending-demand" },
       { name: "Issue Logs", path: "/logs/pending-issue" },
+      { name: "NAC Logs", path: "/logs/nac" },
       { name: "Procurement Logs", path: "/logs/procurement" },
       { name: "Stock Update Logs", path: "/logs/stock-update" },
       { name: "Special Demand Logs", path: "/logs/special-demand" },
@@ -223,9 +227,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   setOpenMenu(openMenu === item.name ? null : item.name)
                 }
               >
-                <div className="flex items-center justify-between p-3 rounded-md hover:bg-primary/40">
-                  {/* Parent navigation */}
-                  <NavLink
+                <div className="flex items-center justify-between p-3 rounded-md hover:bg-blue-700">
+                  {/* Parent navigation old logic*/}
+                  {/* <NavLink
                     to={item.path}
                     onClick={() => setIsOpen(false)}
                     className={({ isActive }) =>
@@ -237,7 +241,28 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   >
                     {item.icon}
                     {item.name}
-                  </NavLink>
+                  </NavLink> */}
+
+                  {item.parentClickable ? (
+                    <NavLink
+                      to={item.path}
+                      onClick={() => setIsOpen(false)}
+                      className="flex gap-3 items-center text-sm w-full"
+                    >
+                      {item.icon}
+                      {item.name}
+                    </NavLink>
+                  ) : (
+                    <div className="flex gap-3 items-center text-sm w-full">
+                      {item.icon}
+                      {item.name}
+                    </div>
+                  )}
+
+                  {/* <div className="flex gap-3 items-center text-sm w-full">
+                    {item.icon}
+                    {item.name}
+                  </div> */}
 
                   {/* Chevron toggle */}
                   <button
@@ -278,7 +303,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-primary/40",
+                  "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-blue-700",
                   isActive && "bg-primary",
                 )
               }

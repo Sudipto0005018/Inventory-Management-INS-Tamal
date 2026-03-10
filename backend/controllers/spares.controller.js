@@ -21,6 +21,8 @@ const ALLOWED_SEARCH_FIELDS = [
   "price_unit",
   "sub_component",
   "category",
+  "substitute_name",
+  "local_terminology",
 ];
 
 async function getSpares(req, res) {
@@ -56,6 +58,7 @@ async function getSpares(req, res) {
         "indian_pattern",
         "item_code",
         "category",
+        "substitute_name",
       ];
 
   const offset = (page - 1) * limit;
@@ -970,28 +973,38 @@ async function generateQRCode(req, res) {
     let data = null;
     if (tool_id) {
       const [rows] = await pool.query(
-        "SELECT description,indian_pattern,uid,equipment_system FROM tools WHERE id = ?",
+        "SELECT description,indian_pattern,equipment_system, box_no FROM tools WHERE id = ?",
         [tool_id],
       );
       data = rows[0];
     } else {
       const [rows] = await pool.query(
-        "SELECT description,indian_pattern,uid,equipment_system FROM spares WHERE id = ?",
+        "SELECT description,indian_pattern,equipment_system, box_no FROM spares WHERE id = ?",
         [spare_id],
       );
       data = rows[0];
     }
+    let location = "";
 
-    const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+    if (data.box_no) {
+      const boxes = JSON.parse(data.box_no);
+
+      const selectedBox = boxes.find((b) => b.no === box_no);
+
+      if (selectedBox) {
+        location = selectedBox.location || "";
+      }
+    }
+    const qrText = `${data.description}|${data.indian_pattern}|${data.equipment_system}|${box_no}|${location}`;
     const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
     for (let i = 0; i < copy_count; i++) {
       if (i > 0) doc.addPage();
       doc.image(qrURL, 5, 5, { width: 50, height: 50 });
       doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
       doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-      doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-      doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
-      doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+      doc.fontSize(8).text(data.equipment_system, 60, 25, { width: 100 });
+      doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
+      doc.fontSize(8).text(location, 60, 45, { width: 100 });
     }
     doc.end();
   } catch (error) {
@@ -1976,7 +1989,7 @@ async function getLowStockSpares(req, res) {
   try {
     let whereClause = `
   WHERE obs_authorised > 0
-  AND IFNULL(obs_held,0) < (0.25 * obs_authorised)
+  AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)
 `;
     let params = [];
     if (search) {

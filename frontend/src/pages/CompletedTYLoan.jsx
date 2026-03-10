@@ -21,6 +21,7 @@ import SpinnerButton from "../components/ui/spinner-button";
 const PendingTempLoan = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
+    { key: "issue_date_formated", header: "Date of Issue" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -35,18 +36,22 @@ const PendingTempLoan = () => {
       header: "Type",
       width: "min-w-[40px]",
     },
+    { key: "denos", header: "Denos" },
     { key: "category", header: "Category" },
-    { key: "qty_withdrawn", header: "Issued Qty" },
-    { key: "service_no", header: "Service No." },
+    { key: "qty_withdrawn", header: "Qty Issued" },
     { key: "concurred_by", header: "Concurred By" },
-    { key: "issue_date_formated", header: "Issued Date" },
+    { key: "unit", header: "Unit Name" },
+    { key: "name", header: "Name of Individual" },
+    { key: "service_no", header: "Service No." },
+    { key: "phone", header: "Phone No." },
+    { key: "qty_received", header: "Qty Returned" },
     { key: "loan_duration", header: "Loan Duration (days)" },
-    { key: "submission_date", header: "Expected Return Date" },
-    { key: "qty_received", header: "Returned Qty" },
+    // { key: "submission_date", header: "Expected Return Date" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
 
   const options = [
+    { value: "issue_date", label: "Date of Issue" },
     { value: "description", label: "Item Description" },
     {
       value: "indian_pattern",
@@ -57,11 +62,15 @@ const PendingTempLoan = () => {
         </span>
       ),
     },
+    { value: "denos", label: "Denos" },
     { value: "category", label: "Category" },
-    { value: "qty_withdrawn", label: "Issued Qty" },
-    { value: "qty_received", label: "Returned Qty" },
-    { value: "service_no", label: "Service No." },
+    { value: "qty_withdrawn", label: "Qty Issued" },
     { value: "concurred_by", label: "Concurred By" },
+    { value: "unit", label: "Unit Name" },
+    { value: "name", label: "Name of Individual" },
+    { value: "service_no", label: "Service No." },
+    { value: "phone", label: "Phone No." },
+    { value: "qty_received", label: "Qty Returned" },
     { value: "loan_duration", label: "Loan Duration" },
     { value: "created_at", label: "Created On" },
   ];
@@ -169,7 +178,9 @@ const PendingTempLoan = () => {
         loan_duration: row.loan_duration ?? "-",
 
         service_no: row.service_no || "-",
-
+        unit: row.unit_name || "-",
+        name: row.name || "-",
+        phone: row.phone || "-",
         issue_date_formated: row.issue_date
           ? getFormatedDate(row.issue_date)
           : "-",
@@ -227,17 +238,6 @@ const PendingTempLoan = () => {
     <>
       <div className="w-table-2 pt-2 rounded-md bg-white">
         <div className="mb-2 px-3">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search TY Loans for.."
@@ -250,7 +250,19 @@ const PendingTempLoan = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
-
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

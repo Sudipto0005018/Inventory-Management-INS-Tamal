@@ -312,6 +312,7 @@ async function getPendingLogs(req, res) {
     category: ["sp.category", "t.category"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    denos: ["sp.denos", "t.denos"],
     box_no: ["sp.box_no", "t.box_no"],
 
     /* ================= DEMAND FIELDS ================= */
@@ -438,6 +439,7 @@ async function getPendingLogs(req, res) {
         COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
         COALESCE(sp.category, t.category) as category,
         COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern,
+        COALESCE(sp.denos, t.denos) as denos,
         COALESCE(sp.box_no, t.box_no) as box_no
 
       FROM pending_issue pi

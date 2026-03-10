@@ -56,7 +56,6 @@ const PendingTempLoan = ({ type = "" }) => {
         { key: "submission_date", header: "Expected Return Date" },
         { key: "days_until_return", header: "Days Until Return" },
         { key: "qty_received", header: "Returned Qty" },
-        { key: "created_at", header: "Created On", width: "min-w-[40px]" },
         { key: "status", header: "Status" },
         ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
         ...(user.role === "officer"
@@ -79,10 +78,12 @@ const PendingTempLoan = ({ type = "" }) => {
     },
     { value: "category", label: "Category" },
     { value: "qty_withdrawn", label: "Issued Qty" },
-    { value: "qty_received", label: "Returned Qty" },
     { value: "service_no", label: "Service No." },
+
     { value: "concurred_by", label: "Concurred By" },
+    { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
+    { value: "qty_received", label: "Returned Qty" },
     { value: "created_at", label: "Created On" },
     { value: "loan_status", label: "Status" },
   ];
@@ -505,17 +506,6 @@ const PendingTempLoan = ({ type = "" }) => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="mb-2 px-3">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search TY Loans for.."
@@ -528,7 +518,19 @@ const PendingTempLoan = ({ type = "" }) => {
               if (e.key === "Enter") handleSearch();
             }}
           />
-
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
@@ -600,7 +602,7 @@ const PendingTempLoan = ({ type = "" }) => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+                pb-2 border-b"
           >
             <DialogTitle className="capitalize">
               TY Loan (other units)

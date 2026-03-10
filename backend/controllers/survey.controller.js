@@ -431,6 +431,7 @@ async function getSurveys(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    withdrawl_date: ["s.withdrawl_date"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     service_no: ["s.service_no"],
     issue_to: ["s.issue_to"],
@@ -557,17 +558,24 @@ async function getLogSurveys(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
-  const columnMap = {
-    description: ["sp.description", "t.description"],
-    category: ["sp.category", "t.category"],
-    equipment_system: ["sp.equipment_system", "t.equipment_system"],
-    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
-    service_no: ["s.service_no"],
-    issue_to: ["s.issue_to"],
-    withdrawl_qty: ["s.withdrawl_qty"],
-    survey_quantity: ["s.survey_quantity"],
-    created_at: ["s.created_at"],
-  };
+const columnMap = {
+  equipment_system: ["sp.equipment_system", "t.equipment_system"],
+  description: ["sp.description", "t.description"],
+  indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+  item_type: ["s.spare_id", "s.tool_id"],
+  category: ["sp.category", "t.category"],
+  denos: ["sp.denos", "t.denos"],
+  survey_quantity: ["s.survey_quantity"],
+  reason_for_survey: ["d.reason_for_survey"],
+  survey_voucher_no: ["d.survey_voucher_no"],
+  survey_date: ["d.survey_date"],
+  remarks: ["d.remarks"],
+  withdrawl_qty: ["s.withdrawl_qty"],
+  withdrawl_date: ["s.withdrawl_date"],
+  service_no: ["s.service_no"],
+  issue_to: ["s.issue_to"],
+  created_at: ["s.created_at"],
+};
 
   const connection = await pool.getConnection();
 
@@ -635,7 +643,8 @@ async function getLogSurveys(req, res) {
       `SELECT COUNT(*) as count 
        FROM survey s 
        LEFT JOIN spares sp ON s.spare_id = sp.id 
-       LEFT JOIN tools t ON s.tool_id = t.id 
+       LEFT JOIN tools t ON s.tool_id = t.id
+       LEFT JOIN demand d ON s.transaction_id = d.transaction_id
        ${finalWhereClause}`,
       queryParams,
     );
@@ -654,13 +663,19 @@ async function getLogSurveys(req, res) {
     const [rows] = await connection.query(
       `SELECT 
           s.*,
+            d.reason_for_survey,
+            d.survey_voucher_no,
+            d.survey_date,
+            d.remarks,
           COALESCE(sp.description, t.description) as description,
           COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
           COALESCE(sp.category, t.category) as category,
+          COALESCE(sp.denos, t.denos) as denos,
           COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
        FROM survey s
        LEFT JOIN spares sp ON s.spare_id = sp.id
        LEFT JOIN tools t ON s.tool_id = t.id
+       LEFT JOIN demand d ON s.transaction_id = d.transaction_id
        ${finalWhereClause}
        ORDER BY s.created_at DESC
        LIMIT ? OFFSET ?`,

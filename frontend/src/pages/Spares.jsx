@@ -66,6 +66,8 @@ const SEARCH_FIELDS = [
   { label: "Price/Unit", value: "price_unit" },
   { label: "Sub Component", value: "sub_component" },
   { label: "Location of Storage", value: "storage_location" },
+  { label: "Substitute IN Part No.", value: "substitute_name" },
+  { label: "Local Terminology", value: "local_terminology" },
 ];
 
 const Spares = ({ type = "" }) => {
@@ -123,7 +125,7 @@ const Spares = ({ type = "" }) => {
     {
       key: "boxNo",
       header: "Box No.",
-      width: "min-w-[80px]",
+      width: "min-w-[90px]",
     },
 
     {
@@ -136,7 +138,7 @@ const Spares = ({ type = "" }) => {
       header: "Location of Storage",
       width: "max-w-[40px]",
     },
-    { key: "edit", header: "Actions", width: "max-w-[40px]" },
+    { key: "edit", header: "Actions", width: "max-w-[35px]" },
   ]);
 
   const [open, setOpen] = useState(false);
@@ -361,10 +363,22 @@ const Spares = ({ type = "" }) => {
     }));
   };
 
+  //old logic
+  // const updateDynamicInputs = (newValues, fieldName) => {
+  //   setInputs((prev) => ({
+  //     ...prev,
+  //     [fieldName]: newValues,
+  //   }));
+  // };
+
   const updateDynamicInputs = (newValues, fieldName) => {
+    const upperValues = newValues.map((value) =>
+      value ? value.toUpperCase() : value,
+    );
+
     setInputs((prev) => ({
       ...prev,
-      [fieldName]: newValues,
+      [fieldName]: upperValues,
     }));
   };
 
@@ -587,82 +601,97 @@ const Spares = ({ type = "" }) => {
 
   const handleaddSpare = async () => {
     try {
+      if (!inputs.description?.trim()) {
+        toaster("error", "Description is required");
+        return;
+      }
+
+      if (!inputs.equipment_system?.trim()) {
+        toaster("error", "Equipment / System is required");
+        return;
+      }
+
+      const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
+      const hasBoxes = boxes.length > 0;
       let s = 0,
         s1 = 0,
         s2 = 0;
 
       // Validate boxNo exists and parseable
-      const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
-      if (!boxes.length) {
-        toaster("error", "Item Storage Distribution is required");
-        return;
-      }
+      if (hasBoxes) {
+        for (let i = 0; i < boxes.length; i++) {
+          const { no, location, qtyHeld, qn, qnMain } = boxes[i];
 
-      for (let i = 0; i < boxes.length; i++) {
-        const { no, location, qtyHeld, qn, qnMain } = boxes[i];
+          if (!no?.trim()) {
+            toaster("error", `Box No is required in row ${i + 1}`);
+            return;
+          }
 
-        if (!no?.trim()) {
-          toaster("error", `Box No is required in row ${i + 1}`);
+          if (qn === "" || qn === null || isNaN(qn)) {
+            toaster("error", `Authorised Qty is required in row ${i + 1}`);
+            return;
+          }
+
+          if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
+            toaster("error", `Qty Held is required in row ${i + 1}`);
+            return;
+          }
+
+          if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
+            toaster("error", `Qty Maintained is required in row ${i + 1}`);
+            return;
+          }
+
+          if (!location?.trim()) {
+            toaster("error", `Location is required in row ${i + 1}`);
+            return;
+          }
+        }
+
+        // Sum calculations
+        for (let i = 0; i < boxes.length; i++) {
+          const qty = boxes[i].qn;
+          const qty1 = boxes[i].qtyHeld;
+          const qty2 = boxes[i].qnMain;
+
+          if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
+            toaster("error", "Invalid Authorised Qty");
+            return;
+          }
+
+          if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
+            toaster("error", "Invalid Held Qty");
+            return;
+          }
+
+          if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+            toaster("error", "Invalid Maintained Qty");
+            return;
+          }
+
+          s += Number(qty || 0);
+          s1 += Number(qty1 || 0);
+          s2 += Number(qty2 || 0);
+        }
+
+        const obsAuthorised = Number(inputs.obs_authorised);
+        const obsMaintained = Number(inputs.obs_maintained);
+        const obsHeld = Number(inputs.obs_held);
+
+        if (s !== obsAuthorised) {
+          toaster("error", "Authorised Qty not matched with OBS Authorised");
           return;
         }
 
-        if (qn === "" || qn === null || isNaN(qn)) {
-          toaster("error", `Authorised Qty is required in row ${i + 1}`);
+        if (s2 !== obsMaintained) {
+          toaster("error", "Maintained Qty not matched with OBS Maintained");
           return;
         }
 
-        if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
-          toaster("error", `Qty Held is required in row ${i + 1}`);
+        if (s1 !== obsHeld) {
+          toaster("error", "Qty Held not matched with OBS Held");
           return;
         }
-
-        if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
-          toaster("error", `Qty Maintained is required in row ${i + 1}`);
-          return;
-        }
-
-        if (!location?.trim()) {
-          toaster("error", `Location is required in row ${i + 1}`);
-          return;
-        }
-      }
-
-      for (let i = 0; i < boxes.length; i++) {
-        const qty = boxes[i].qn;
-        if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
-          toaster("error", "Invalid Authorised Qty");
-          return;
-        }
-        const qty1 = boxes[i].qtyHeld;
-        if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
-          toaster("error", "Invalid Held Qty");
-          return;
-        }
-
-        const qty2 = boxes[i].qnMain;
-        if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
-          toaster("error", "Invalid Maintained Qty");
-          return;
-        }
-        s += Number(boxes[i].qn || 0);
-        s1 += Number(qty1 || 0);
-        s2 += Number(qty2 || 0);
-      }
-
-      const obsAuthorised = Number(inputs.obs_authorised);
-      const obsMaintained = Number(inputs.obs_maintained);
-      const obsHeld = Number(inputs.obs_held);
-      const prevHeld = Number(savedHeld || 0);
-      const currentHeld = Number(obsHeld || 0);
-
-      if (s !== obsAuthorised) {
-        toaster("error", "Authorised Qty not matched with OBS Authorised");
-        return;
-      }
-
-      if (s2 !== obsMaintained) {
-        toaster("error", "Maintained Qty not matched with OBS Maintained");
-        return;
       }
 
       // Qty-Held totals comparison against any existing saved boxes (if present)
@@ -678,17 +707,6 @@ const Spares = ({ type = "" }) => {
         }
       }
 
-      if (s1 !== obsHeld) {
-        toaster("error", "Qty Held not matched with OBS Held");
-        return;
-      }
-      if (!inputs.description?.trim()) {
-        toaster("error", "Description is required");
-        return;
-      } else if (!inputs.equipment_system?.trim()) {
-        toaster("error", "Equipment / System is required");
-        return;
-      }
       const formData = new FormData();
       // ✅ Append multi images
       Object.values(imagePayload?.newImageFiles || {}).forEach((file) => {
@@ -1311,16 +1329,6 @@ const Spares = ({ type = "" }) => {
       <div className="px-2 w-full h-[calc(100vh-135px)] flex">
         <div className="h-full  w-[calc(100%-308px)]">
           <div className="mb-2">
-            <MultiSelect
-              className="bg-white hover:bg-blue-50"
-              options={SEARCH_FIELDS}
-              value={selectedSearchFields}
-              onValueChange={setSelectedSearchFields}
-              placeholder="Search Fields"
-            />
-          </div>
-
-          <div className="flex items-center mb-4 gap-2 w-full">
             <Input
               type="text"
               placeholder="Search spares..."
@@ -1330,7 +1338,17 @@ const Spares = ({ type = "" }) => {
                 setInputs((prev) => ({ ...prev, search: e.target.value }))
               }
             />
-
+          </div>
+          <div className="flex items-center mb-4 gap-2 w-full">
+            <div className="w-full">
+              <MultiSelect
+                className="bg-white hover:bg-blue-50"
+                options={SEARCH_FIELDS}
+                value={selectedSearchFields}
+                onValueChange={setSelectedSearchFields}
+                placeholder="Search Fields"
+              />
+            </div>
             <SpinnerButton
               className="cursor-pointer hover:bg-primary/85"
               onClick={handleSearch}
@@ -1379,6 +1397,7 @@ const Spares = ({ type = "" }) => {
           </div>
 
           <div className="min-w-0 overflow-x-auto">
+            {" "}
             <PaginationTable
               data={tableData}
               columns={columns}
@@ -1551,7 +1570,7 @@ const Spares = ({ type = "" }) => {
                       OBS Authorised<span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="text"
+                      type="number"
                       name="obs_authorised"
                       value={inputs.obs_authorised}
                       onChange={handleChange}
@@ -1566,7 +1585,7 @@ const Spares = ({ type = "" }) => {
                       OBS Maintained<span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="text"
+                      type="number"
                       name="obs_maintained"
                       value={inputs.obs_maintained}
                       onChange={handleChange}
@@ -1577,7 +1596,7 @@ const Spares = ({ type = "" }) => {
                       OBS Held<span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      type="text"
+                      type="number"
                       name="obs_held"
                       value={inputs.obs_held}
                       onChange={handleChange}
@@ -2017,6 +2036,7 @@ const Spares = ({ type = "" }) => {
                     </Label>
 
                     <InputWithPencil
+                      type="number"
                       name="obs_authorised"
                       value={selectedRow.obs_authorised}
                       readOnly
@@ -2038,6 +2058,7 @@ const Spares = ({ type = "" }) => {
                       OBS Maintained<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
+                      type="number"
                       name="obs_maintained"
                       value={selectedRow.obs_maintained}
                       onChange={handleEditChange}
@@ -2052,6 +2073,7 @@ const Spares = ({ type = "" }) => {
                       OBS Held<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
+                      type="number"
                       name="obs_held"
                       value={selectedRow.obs_held}
                       onChange={handleEditChange}
@@ -3451,8 +3473,10 @@ const Spares = ({ type = "" }) => {
                     <div>
                       <Label className="mb-2">Unit Name (Mention INS)</Label>
                       <Input
-                        name="Unit_name"
-                        value={selectedRow.unit_name}
+                        type="text"
+                        className="uppercase"
+                        name="unit_name"
+                        value={selectedRow.unit_name || ""}
                         onChange={handleEditChange}
                         editable={editableFields.unit_name}
                       />
@@ -3746,6 +3770,8 @@ const Spares = ({ type = "" }) => {
                           ? 1
                           : Number(selectedRow.new_val),
                       service_no: selectedPerson.tempPerson.serviceNumber || "",
+
+                      individual_name: selectedPerson.tempPerson?.name || "",
                       issue_to:
                         selectedRow.issue_to_text || selectedRow.issue_to,
 
@@ -3786,6 +3812,12 @@ const Spares = ({ type = "" }) => {
                           ? 1
                           : Number(selectedRow.new_val),
                       service_no: selectedPerson.loanPerson.serviceNumber || "",
+
+                      individual_name: selectedPerson.loanPerson.name || "",
+                      phone: selectedPerson?.loanPerson.phone_no || "",
+                      designation: selectedPerson.loanPerson.rank || "",
+
+                      unit_name: selectedRow.unit_name || "",
                       concurred_by:
                         selectedRow.concurred_by_text ||
                         selectedRow.concurred_by,
@@ -3930,7 +3962,7 @@ const Spares = ({ type = "" }) => {
                     onChange={(e) =>
                       setObsDialog((prev) => ({
                         ...prev,
-                        quoteAuthority: e.target.value,
+                        quoteAuthority: e.target.value.toUpperCase(),
                       }))
                     }
                   />
@@ -3996,14 +4028,19 @@ const Spares = ({ type = "" }) => {
                         onChange={(e) =>
                           setObsDialog((prev) => ({
                             ...prev,
-                            internalDemandNo: e.target.value,
+                            internalDemandNo: e.target.value.toUpperCase(),
                           }))
                         }
                       />
                     </div>
 
                     <FormattedDatePicker
-                      label="Date *"
+                      label={
+                        <>
+                          Date <span className="text-red-500">*</span>
+                        </>
+                      }
+                      className="w-[360px]"
                       value={obsDialog.internalDemandDate}
                       onChange={(val) =>
                         setObsDialog((prev) => ({
@@ -4024,13 +4061,14 @@ const Spares = ({ type = "" }) => {
                         onChange={(e) =>
                           setObsDialog((prev) => ({
                             ...prev,
-                            requisitionNo: e.target.value,
+                            requisitionNo: e.target.value.toUpperCase(),
                           }))
                         }
                       />
                     </div>
                     <FormattedDatePicker
                       label="Date"
+                      className="w-[360px]"
                       value={obsDialog.requisitionDate}
                       onChange={(val) =>
                         setObsDialog((prev) => ({
@@ -4051,7 +4089,7 @@ const Spares = ({ type = "" }) => {
                         onChange={(e) =>
                           setObsDialog((prev) => ({
                             ...prev,
-                            moDemandNo: e.target.value,
+                            moDemandNo: e.target.value.toUpperCase(),
                           }))
                         }
                       />
@@ -4059,6 +4097,7 @@ const Spares = ({ type = "" }) => {
 
                     <FormattedDatePicker
                       label="Date"
+                      className="w-[360px]"
                       value={obsDialog.moDemandDate}
                       onChange={(val) =>
                         setObsDialog((prev) => ({

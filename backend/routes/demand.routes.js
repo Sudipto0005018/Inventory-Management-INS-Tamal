@@ -9,6 +9,9 @@ const {
   getPendingIssue,
   updatePendingIssue,
   getDemandLogs,
+  revertDemand,
+  revertPendingIssue,
+  createRepairStock,
 } = require("../controllers/demand.controller");
 
 router.post("/create", authMiddleware, createDemand);
@@ -17,5 +20,8 @@ router.get("/logs", authMiddleware, getDemandLogs);
 router.post("/create-pending-issue", authMiddleware, createPendingIssue);
 router.get("/pending-issue", authMiddleware, getPendingIssue);
 router.put("/pending-issue/:id", authMiddleware, updatePendingIssue);
+router.post("/reverse", authMiddleware, revertDemand);
+router.post("/reverse", authMiddleware, revertPendingIssue);
+router.post("/repair-stock", authMiddleware, createRepairStock);
 
 module.exports = router;

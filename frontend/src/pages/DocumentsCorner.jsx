@@ -3,7 +3,7 @@ import { FaMagnifyingGlass, FaPlus } from "react-icons/fa6";
 import { MultiSelect } from "../components/ui/multi-select";
 import InputWithPencil from "../components/ui/InputWithPencil";
 import { IoMdRefresh } from "react-icons/io";
-import ActionIcons from "../components/ActionIcons";
+import ActionIconDocuments from "../components/ActionIconDocuments";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -1023,7 +1023,7 @@ const DocumentsCorner = ({ type = "" }) => {
         location: boxNo?.map((box) => box.location)?.join(", "),
 
         edit: (
-          <ActionIcons
+          <ActionIconDocuments
             row={row}
             onEdit={(row) => {
               if (row.image) {
@@ -1080,25 +1080,26 @@ const DocumentsCorner = ({ type = "" }) => {
     <div className="px-2 w-full h-[calc(100vh-135px)] flex">
       <div className="h-full  w-[calc(100%-308px)]">
         <div className="mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={SEARCH_FIELDS}
-            value={selectedSearchFields}
-            onValueChange={setSelectedSearchFields}
-            placeholder="Search Fields"
-          />
-        </div>
-
-        <div className="flex items-center mb-4 gap-2 w-full">
           <Input
             type="text"
-            placeholder="Search spares..."
+            placeholder="Search Documents..."
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
           />
+        </div>
+        <div className="flex items-center mb-4 gap-2 w-full">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={SEARCH_FIELDS}
+              value={selectedSearchFields}
+              onValueChange={setSelectedSearchFields}
+              placeholder="Search Fields"
+            />
+          </div>
 
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
@@ -2545,7 +2546,7 @@ const DocumentsCorner = ({ type = "" }) => {
                   onChange={(e) =>
                     setObsDialog((prev) => ({
                       ...prev,
-                      quoteAuthority: e.target.value,
+                      quoteAuthority: e.target.value.toUpperCase(),
                     }))
                   }
                 />
@@ -2611,14 +2612,19 @@ const DocumentsCorner = ({ type = "" }) => {
                       onChange={(e) =>
                         setObsDialog((prev) => ({
                           ...prev,
-                          internalDemandNo: e.target.value,
+                          internalDemandNo: e.target.value.toUpperCase(),
                         }))
                       }
                     />
                   </div>
 
                   <FormattedDatePicker
-                    label="Date *"
+                    label={
+                      <>
+                        Date <span className="text-red-500">*</span>
+                      </>
+                    }
+                    className="w-[360px]"
                     value={obsDialog.internalDemandDate}
                     onChange={(val) =>
                       setObsDialog((prev) => ({
@@ -2639,13 +2645,14 @@ const DocumentsCorner = ({ type = "" }) => {
                       onChange={(e) =>
                         setObsDialog((prev) => ({
                           ...prev,
-                          requisitionNo: e.target.value,
+                          requisitionNo: e.target.value.toUpperCase(),
                         }))
                       }
                     />
                   </div>
                   <FormattedDatePicker
                     label="Date"
+                    className="w-[360px]"
                     value={obsDialog.requisitionDate}
                     onChange={(val) =>
                       setObsDialog((prev) => ({
@@ -2666,7 +2673,7 @@ const DocumentsCorner = ({ type = "" }) => {
                       onChange={(e) =>
                         setObsDialog((prev) => ({
                           ...prev,
-                          moDemandNo: e.target.value,
+                          moDemandNo: e.target.value.toUpperCase(),
                         }))
                       }
                     />
@@ -2674,6 +2681,7 @@ const DocumentsCorner = ({ type = "" }) => {
 
                   <FormattedDatePicker
                     label="Date"
+                    className="w-[360px]"
                     value={obsDialog.moDemandDate}
                     onChange={(val) =>
                       setObsDialog((prev) => ({

@@ -196,7 +196,7 @@ async function getTyLoanList(req, res) {
 
       created_by_name: ["u1.name"],
       approved_by_name: ["u2.name"],
-
+      issue_date: ["ty.issue_date"],
       loan_status: [
         `
       (
@@ -430,6 +430,10 @@ async function createTyLoan(req, res) {
       qty_received,
       box_no,
       a,
+      unit_name,
+      individual_name,
+      phone,
+      designation,
     } = req.body;
 
     const transactionId = "TY-" + Date.now();
@@ -486,30 +490,56 @@ async function createTyLoan(req, res) {
     );
 
     /** 4. Insert ty loan */
-    await pool.query(
-      `
-      INSERT INTO ty_loan (
-        transaction_id, spare_id, tool_id, qty_withdrawn,
-        service_no, concurred_by, issue_date, loan_duration,
-        return_date, qty_received, created_by, created_at,
-        approved_by, approved_at, box_no, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
-      `,
-      [
-        transactionId,
-        a === "spare" ? spare_id : null,
-        a === "tool" ? tool_id : null,
-        qty_withdrawn,
-        service_no,
-        concurred_by || null,
-        issue_date || null,
-        loan_duration || null,
-        return_date || null,
-        qty_received || null,
-        userId,
-        JSON.stringify(updatedBoxes),
-      ],
-    );
+  await pool.query(
+    `
+  INSERT INTO ty_loan (
+    transaction_id,
+    spare_id,
+    tool_id,
+    qty_withdrawn,
+    service_no,
+    unit_name,
+    individual_name,
+    phone,
+    designation,
+    concurred_by,
+    issue_date,
+    loan_duration,
+    return_date,
+    qty_received,
+    created_by,
+    created_at,
+    approved_by,
+    approved_at,
+    box_no,
+    status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+  `,
+    [
+      transactionId,
+      a === "spare" ? spare_id : null,
+      a === "tool" ? tool_id : null,
+      qty_withdrawn,
+
+      service_no,
+
+      unit_name || null,
+      individual_name || null,
+      phone || null,
+      designation || null,
+
+      concurred_by || null,
+
+      issue_date || null,
+      loan_duration || null,
+      return_date || null,
+      qty_received || null,
+
+      userId,
+
+      JSON.stringify(updatedBoxes),
+    ],
+  );
 
     /** 5. Insert box transactions */
     if (boxTransactions.length) {
@@ -768,7 +798,7 @@ async function generateQRCode(req, res) {
 
     if (tool_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM tools WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM tools WHERE id = ?",
         [tool_id],
       );
 
@@ -783,7 +813,7 @@ async function generateQRCode(req, res) {
       data = rows[0];
     } else if (spare_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM spares WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM spares WHERE id = ?",
         [spare_id],
       );
 
@@ -803,8 +833,19 @@ async function generateQRCode(req, res) {
     }
 
     for (let i = 0; i < boxes.length; i++) {
+      let location = "";
+
+      if (data.box_no) {
+        const boxes = JSON.parse(data.box_no);
+
+        const selectedBox = boxes.find((b) => b.no === box_no);
+
+        if (selectedBox) {
+          location = selectedBox.location || "";
+        }
+      }
       const box_no = boxes[i].box_no;
-      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}|${location}`;
       const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
       const copy_count = Number(boxes[i].copy_count);
       for (let j = 0; j < Number(copy_count); j++) {
@@ -812,9 +853,9 @@ async function generateQRCode(req, res) {
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
         doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
         doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-        doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-        doc.fontSize(8).text(data.equipment_system, 60, 35, { width: 100 });
-        doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+        doc.fontSize(8).text(data.equipment_system, 60, 25, { width: 100 });
+        doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
+        doc.fontSize(8).text(location, 60, 45, { width: 100 });
       }
     }
     doc.end();
@@ -848,6 +889,7 @@ async function getLogsTy(req, res) {
       description: ["s.description", "t.description"],
       indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
       category: ["s.category", "t.category"],
+      denos: ["s.denos", "t.denos"],
 
       qty_withdrawn: ["ty.qty_withdrawn"],
       qty_received: ["ty.qty_received"],
@@ -856,12 +898,17 @@ async function getLogsTy(req, res) {
       concurred_by: ["ty.concurred_by"],
       box_no: ["ty.box_no"],
 
+      unit: ["ty.unit_name"],
+      name: ["ty.individual_name"],
+      phone: ["ty.phone"],
+
+      issue_date: ["ty.issue_date"],
       loan_duration: ["ty.loan_duration"],
       created_at: ["ty.created_at"],
 
       created_by_name: ["u1.name"],
       approved_by_name: ["u2.name"],
-
+      issue_date: ["ty.issue_date"],
       loan_status: [
         `
       (
@@ -995,6 +1042,11 @@ async function getLogsTy(req, res) {
         ty.qty_withdrawn,
         ty.qty_received,
 
+        ty.unit_name,
+        ty.individual_name AS name,
+        ty.phone,
+        ty.designation,
+        
         (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
 
         ty.service_no,
@@ -1032,6 +1084,11 @@ async function getLogsTy(req, res) {
           WHEN ty.spare_id IS NOT NULL THEN s.category
           WHEN ty.tool_id IS NOT NULL THEN t.category
         END AS category,
+
+        CASE
+          WHEN ty.spare_id IS NOT NULL THEN s.denos
+          WHEN ty.tool_id IS NOT NULL THEN t.denos
+        END AS denos,
 
         CASE
           WHEN ty.spare_id IS NOT NULL THEN s.days_untill_return

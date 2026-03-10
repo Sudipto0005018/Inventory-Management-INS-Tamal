@@ -35,7 +35,7 @@ export default function ServicePersonnelSearch({
   }, [value]);
 
   const handleSearchChange = (e) => {
-    const text = e.target.value;
+    const text = e.target.value.toUpperCase();
     setSearchTerm(text);
 
     const match = options.find(
@@ -150,7 +150,10 @@ export default function ServicePersonnelSearch({
                     id="name"
                     value={newEntry.name}
                     onChange={(e) =>
-                      setNewEntry({ ...newEntry, name: e.target.value })
+                      setNewEntry({
+                        ...newEntry,
+                        name: e.target.value.toUpperCase(),
+                      })
                     }
                     placeholder="Name"
                     className="col-span-3"
@@ -164,7 +167,10 @@ export default function ServicePersonnelSearch({
                     id="rank"
                     value={newEntry.rank}
                     onChange={(e) =>
-                      setNewEntry({ ...newEntry, rank: e.target.value })
+                      setNewEntry({
+                        ...newEntry,
+                        rank: e.target.value.toUpperCase(),
+                      })
                     }
                     placeholder="Rank"
                     className="col-span-3"
@@ -176,6 +182,7 @@ export default function ServicePersonnelSearch({
                   </Label>
                   <Input
                     id="phone"
+                    type="number"
                     value={newEntry.phone_no}
                     onChange={(e) =>
                       setNewEntry({ ...newEntry, phone_no: e.target.value })

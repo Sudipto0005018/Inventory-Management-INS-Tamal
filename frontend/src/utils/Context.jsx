@@ -11,6 +11,7 @@ const ContextProvider = ({ children }) => {
   const [storageLocation, setStorageLocation] = useState([]);
   const [concurredBy, setConcurredBy] = useState([]);
   const [issueTo, setIssueTo] = useState([]);
+  const [surveyReason, setSurveyReason] = useState([]);
 
   async function fetchStorageLocation() {
     try {
@@ -48,6 +49,18 @@ const ContextProvider = ({ children }) => {
       console.log(error);
     }
   }
+
+const fetchSurveyReason = async () => {
+  try {
+    const response = await apiService.get("/config/survey");
+
+    if (response.success) {
+      setSurveyReason(response.data);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
   return (
     <Context.Provider
       value={{
@@ -65,9 +78,12 @@ const ContextProvider = ({ children }) => {
         setIssueTo,
         concurredBy,
         setConcurredBy,
+        surveyReason,
+        setSurveyReason,
         fetchIssueTo,
         fetchStorageLocation,
         fetchConcurredBy,
+        fetchSurveyReason
       }}
     >
       {children}

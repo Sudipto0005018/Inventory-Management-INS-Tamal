@@ -18,7 +18,8 @@ const ALLOWED_TOOL_SEARCH_FIELDS = [
   "obs_authorised",
   "obs_maintained",
   "obs_held",
-  "category",
+  "substitute_name",
+  "local_terminology",
 ];
 
 async function getTools(req, res) {
@@ -52,6 +53,7 @@ async function getTools(req, res) {
         "indian_pattern",
         "item_code",
         "category",
+        "substitute_name",
       ];
 
   const offset = (page - 1) * limit;
@@ -789,7 +791,7 @@ async function getLowStockTools(req, res) {
   try {
     let whereClause = `
   WHERE obs_authorised > 0
-  AND IFNULL(obs_held,0) < (0.25 * obs_authorised)
+  AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)
 `;
     let params = [];
     if (search) {

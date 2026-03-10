@@ -152,6 +152,21 @@ async function getPersonnel(req, res) {
   }
 }
 
+async function getSurveyReason(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, attr_1 FROM config WHERE type = 'survey'`,
+    );
+    const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
+    res.status(200).json(new ApiResponse(200, data, "All Survey Reason List:"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   addConfig,
   getLocationStorage,
@@ -160,4 +175,5 @@ module.exports = {
   getUserByServiceNo,
   deleteConfig,
   getPersonnel,
+  getSurveyReason,
 };

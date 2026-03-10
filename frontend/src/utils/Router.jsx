@@ -39,6 +39,7 @@ import LogsSurvey from "../pages/LogsSurvey";
 import LogsDemand from "../pages/LogsDemand";
 import LogsIssue from "../pages/LogsIssue";
 import LogsProcurement from "../pages/LogsProcurement";
+import LogsNAC from "../pages/LogsNAC";
 import LogsStock from "../pages/LogsStock";
 import LogsSpecialDemand from "../pages/LogsSpecialDemand";
 import Original from "../pages/Original";
@@ -396,6 +397,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <LogsIssue />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/logs/nac"
+          element={
+            <ProtectedRoute>
+              <LogsNAC />
             </ProtectedRoute>
           }
         />

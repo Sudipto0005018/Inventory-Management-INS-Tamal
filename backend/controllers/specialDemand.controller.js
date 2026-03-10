@@ -474,6 +474,7 @@ async function getLogsSpecialDemand(req, res) {
     description: ["s.description", "t.description"],
     indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
     category: ["s.category", "t.category"],
+    denos: ["s.denos", "t.denos"],
 
     quantity: ["sd.obs_increase_qty"],
     obs_authorised: ["sd.obs_authorised"],
@@ -650,7 +651,13 @@ async function getLogsSpecialDemand(req, res) {
           WHEN sd.spare_id IS NOT NULL THEN s.category
           WHEN sd.tool_id IS NOT NULL THEN t.category
           ELSE NULL
-        END AS category
+        END AS category,
+
+         CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.denos
+          WHEN sd.tool_id IS NOT NULL THEN t.denos
+          ELSE NULL
+        END AS denos
 
       FROM special_demand sd
       LEFT JOIN spares s ON s.id = sd.spare_id

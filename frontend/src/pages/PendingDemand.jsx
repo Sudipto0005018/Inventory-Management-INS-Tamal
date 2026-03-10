@@ -61,7 +61,6 @@ const PendingDemand = () => {
       header: "Surveyed Date / Utilised Date",
       width: "min-w-[40px]",
     },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
       : []),
@@ -85,15 +84,19 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
+    {
+      value: "survey_voucher_no",
+      label: "Survey Voucher No.",
+      width: "min-w-[40px]",
+    },
     {
       value: "survey_qty",
       label: "Surveyed / Utilised Qty",
       width: "min-w-[40px]",
     },
     {
-      value: "survey_voucher_no",
-      label: "Survey Voucher No",
+      value: "survey_date",
+      label: "Surveyed Date / Utilised Date",
       width: "min-w-[40px]",
     },
   ];
@@ -123,28 +126,38 @@ const PendingDemand = () => {
   });
   const [selectedRow, setSelectedRow] = useState({});
 
-   const handleRollback = async (row) => {
-     const confirm = window.confirm(
-       "Are you sure you want to revert this survey?",
-     );
-     if (!confirm) return;
+  const handleRollback = async (row) => {
+    const confirm = window.confirm(
+      "Are you sure you want to rollback this transaction?",
+    );
+    if (!confirm) return;
 
-     try {
-       await apiService.post("/survey/reverse", {
-         survey_id: row.id,
-       });
+    try {
+      // Case 1️⃣ : Manual Withdrawl (C / LP → Demand)
+      if (row.transaction_id?.startsWith("PI-")) {
+        await apiService.post("/survey/reverse", {
+          survey_id: row.id,
+        });
+      }
 
-       toaster("success", "Survey reverted successfully");
+      // Case 2️⃣ : Survey → Demand (Pending Survey Flow)
+      else {
+        await apiService.post("/demand/reverse", {
+          demand_id: row.id,
+        });
+      }
 
-       // Remove row instantly from UI
-       setFetchedData((prev) => ({
-         ...prev,
-         items: prev.items.filter((item) => item.id !== row.id),
-       }));
-     } catch (error) {
-       toaster("error", error.response?.data?.message || "Rollback failed");
-     }
-   };
+      toaster("success", "Rollback successful");
+
+      // remove row instantly
+      setFetchedData((prev) => ({
+        ...prev,
+        items: prev.items.filter((item) => item.id !== row.id),
+      }));
+    } catch (error) {
+      toaster("error", error.response?.data?.message || "Rollback failed");
+    }
+  };
 
   // Placeholder fetch function as requested
   const fetchdata = async (page = currentPage, search = inputs.search) => {
@@ -263,17 +276,6 @@ const PendingDemand = () => {
   return (
     <div className="px-2 w-full">
       <div className="mb-2">
-        <MultiSelect
-          className="bg-white hover:bg-blue-50"
-          options={options}
-          placeholder="Select Fields"
-          onValueChange={setSelectedValues}
-          defaultValue={selectedValues}
-          singleLine
-          maxCount={6}
-        />
-      </div>
-      <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
           placeholder="Search..."
@@ -283,6 +285,19 @@ const PendingDemand = () => {
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
         />
+      </div>
+      <div className="flex items-center mb-4 gap-4 w-full">
+        <div className="w-full">
+          <MultiSelect
+            className="bg-white hover:bg-blue-50"
+            options={options}
+            placeholder="Select Fields"
+            onValueChange={setSelectedValues}
+            defaultValue={selectedValues}
+            singleLine
+            maxCount={6}
+          />
+        </div>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}
@@ -359,7 +374,7 @@ const PendingDemand = () => {
           <div
             className="sticky top-0 z-10 bg-background 
                 grid grid-cols-2 items-center 
-                px-4 py-2 border-b"
+                pb-2 border-b"
           >
             <DialogTitle className="capitalize">Demand Details</DialogTitle>
             <button
@@ -404,7 +419,10 @@ const PendingDemand = () => {
               name="demand_no"
               value={inputs.demand_no}
               onChange={(e) =>
-                setInputs((prev) => ({ ...prev, demand_no: e.target.value }))
+                setInputs((prev) => ({
+                  ...prev,
+                  demand_no: e.target.value.toUpperCase(),
+                }))
               }
             />
 

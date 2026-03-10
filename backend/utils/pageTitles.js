@@ -26,6 +26,7 @@ export const pageTitles = {
   "/logs/pending-survey": "Survey Logs",
   "/logs/pending-demand": "Demand Logs",
   "/logs/pending-issue": "Issue Logs",
+  "/logs/nac": "NAC Logs",
   "/logs/procurement": "Procurement Logs",
   "/logs/stock-update": "Stock Update Logs",
   "/logs/special-demand": "Special Demand Logs",

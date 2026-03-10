@@ -16,6 +16,8 @@ import Spinner from "../components/Spinner";
 const PendingDemand = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
+    { key: "demand_no", header: "Demand No." },
+    { key: "demand_date", header: "Demand Date" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -32,6 +34,15 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
+    { key: "denos", header: "Denos", width: "min-w-[40px]" },
+    { key: "demand_quantity", header: "Qty Demanded", width: "min-w-[40px]" },
+    { key: "quote_authority", header: "Authority", width: "min-w-[40px]" },
+    { key: "qty_received", header: "Qty Received", width: "min-w-[40px]" },
+    {
+      key: "mo_no",
+      header: "MO Gate Pass No.",
+      width: "min-w-[40px]",
+    },
     {
       key: "survey_voucher_no",
       header: "Survey Voucher No.",
@@ -42,15 +53,14 @@ const PendingDemand = () => {
       header: "Surveyed / Utilised Qty",
       width: "max-w-[100px]",
     },
-    { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
+    { key: "survey_date", header: "Surveyed Date", width: "min-w-[40px]" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
+
   const options = [
-    {
-      value: "description",
-      label: "Item Description",
-      width: "min-w-[40px]",
-    },
+    { value: "demand_no", label: "Demand No.", width: "min-w-[40px]" },
+    { value: "demand_date", label: "Demand Date", width: "min-w-[40px]" },
+    { value: "description", label: "Item Description", width: "min-w-[40px]" },
     {
       value: "indian_pattern",
       label: (
@@ -61,15 +71,45 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "survey_date", label: "Survey Date", width: "min-w-[40px]" },
+    { value: "denos", label: "Denos", width: "min-w-[40px]" },
+    {
+      value: "demand_quantity",
+      label: "Qty Demanded",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "quote_authority",
+      label: "Authority",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "qty_received",
+      label: "Qty Received",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "mo_no",
+      label: "MO Gate Pass No.",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "survey_voucher_no",
+      label: "Survey Voucher No.",
+      width: "min-w-[40px]",
+    },
     {
       value: "survey_qty",
       label: "Surveyed / Utilised Qty",
       width: "min-w-[40px]",
     },
     {
-      value: "survey_voucher_no",
-      label: "Survey Voucher No",
+      value: "survey_date",
+      label: "Surveyed Date",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "created_at",
+      label: "Created On",
       width: "min-w-[40px]",
     },
   ];
@@ -107,9 +147,11 @@ const PendingDemand = () => {
         params: {
           page,
           search,
+          cols: selectedValues.join(","),
           limit: config.row_per_page,
         },
       });
+      console.log("API DATA:", response.data.items);
 
       setFetchedData(response.data);
     } catch (error) {
@@ -152,6 +194,7 @@ const PendingDemand = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
+      demand_date: getFormatedDate(row.demand_date),
       item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
       survey_date: getFormatedDate(row.survey_date),
       created_at: getTimeDate(row.created_at),
@@ -166,17 +209,6 @@ const PendingDemand = () => {
   return (
     <div className="px-2 w-full">
       <div className="mb-2">
-        <MultiSelect
-          className="bg-white hover:bg-blue-50"
-          options={options}
-          placeholder="Select Fields"
-          onValueChange={setSelectedValues}
-          defaultValue={selectedValues}
-          singleLine
-          maxCount={6}
-        />
-      </div>
-      <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
           placeholder="Search..."
@@ -186,6 +218,19 @@ const PendingDemand = () => {
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
         />
+      </div>
+      <div className="flex items-center mb-4 gap-4 w-full">
+        <div className="w-full">
+          <MultiSelect
+            className="bg-white hover:bg-blue-50"
+            options={options}
+            placeholder="Select Fields"
+            onValueChange={setSelectedValues}
+            defaultValue={selectedValues}
+            singleLine
+            maxCount={6}
+          />
+        </div>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}

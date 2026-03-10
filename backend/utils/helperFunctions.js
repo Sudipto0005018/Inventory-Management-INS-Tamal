@@ -1,3 +1,6 @@
+const crypto = require("crypto");
+require("dotenv").config({ path: "../.env", quiet: true });
+
 function validateUsername(str) {
   const regex = /^(?=[a-z])[a-z0-9_]+$/;
   return regex.test(str);
@@ -43,9 +46,39 @@ function getSQLTimestamp() {
   return `${y}-${m}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+const algorithm = "aes-256-cbc";
+const keyHex =
+  "3ff0782747a19dff7e6ea74afb097b9df9f4290e369d3a488c37a2ae8192abb3";
+
+const key = Buffer.from(keyHex, "hex");
+
+function encrypt(str) {
+  const iv = crypto.randomBytes(16);
+
+  let cipher = crypto.createCipheriv(algorithm, key, iv);
+  let encrypted = cipher.update(str, "utf8");
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+  return iv.toString("hex") + encrypted.toString("hex");
+}
+
+function decrypt(encStr = "") {
+  if (!encStr) return "";
+  let iv = encStr.slice(0, 32);
+  iv = Buffer.from(iv, "hex");
+  let encHex = encStr.slice(32);
+  let encBuffer = Buffer.from(encHex, "hex");
+  let decipher = crypto.createDecipheriv(algorithm, key, iv);
+  let decrypted = decipher.update(encBuffer);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString("utf8");
+}
+
 module.exports = {
   validateUsername,
   mergeAndSubArrays,
   getTimeStamp,
   getSQLTimestamp,
+  encrypt,
+  decrypt,
 };

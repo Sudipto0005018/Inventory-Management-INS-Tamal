@@ -518,6 +518,8 @@ async function getDocIssue(req, res) {
       concurred_by: "di.concurred_by",
       issue_to: "di.issue_to",
       created_at: "di.created_at",
+      issue_date: "di.issue_date",
+      loan_duration: "di.loan_duration",
     };
 
     const fieldsToSearch =
@@ -1074,7 +1076,8 @@ async function generateQRCode(req, res) {
       `SELECT 
           description,
           indian_pattern,
-          equipment_system
+          equipment_system,
+          box_no
        FROM doc_corner
        WHERE id = ?`,
       [issue.doc_id],
@@ -1116,9 +1119,24 @@ async function generateQRCode(req, res) {
       const copy_count = parseInt(box.copy_count || 0);
 
       if (!box_no || copy_count <= 0) continue;
+      let location = "";
 
+      if (docData.box_no) {
+        let boxList = docData.box_no;
+
+        // Parse only if string
+        if (typeof boxList === "string") {
+          boxList = JSON.parse(boxList);
+        }
+
+        const selectedBox = boxList.find((b) => b.no === box_no);
+
+        if (selectedBox) {
+          location = selectedBox.location || "";
+        }
+      }
       /** QR TEXT (Removed UID) */
-      const qrText = `${docData.description}|${docData.indian_pattern}|${docData.equipment_system}|${box_no}`;
+      const qrText = `${docData.description}|${docData.indian_pattern}|${docData.equipment_system}|${box_no}|${location}`;
 
       const qrURL = await qr.toDataURL(qrText, {
         margin: 0,
@@ -1139,13 +1157,19 @@ async function generateQRCode(req, res) {
 
         doc
           .fontSize(8)
-          .text(`IN: ${docData.indian_pattern}`, 60, 15, { width: 100 });
+          .text(`${docData.indian_pattern}`, 60, 15, { width: 100 });
 
         doc
           .fontSize(8)
-          .text(`EQPT: ${docData.equipment_system}`, 60, 25, { width: 100 });
+          .text(`${docData.equipment_system}`, 60, 25, { width: 100 });
 
-        doc.fontSize(8).text(`BOX: ${box_no}`, 60, 35, { width: 100 });
+        doc.fontSize(8).text(`${box_no}`, 60, 35, { width: 100 });
+
+        doc.fontSize(8).text(`${location}`, 60, 45, { width: 100 });
+
+        //  doc
+        //    .fontSize(8)
+        //    .text(`EQPT: ${docData.equipment_system}`, 60, 25, { width: 100 });
       }
     }
 
@@ -1184,6 +1208,8 @@ async function getDocLogs(req, res) {
       service_no: "di.service_no",
       concurred_by: "di.concurred_by",
       issue_to: "di.issue_to",
+      issue_date: "di.issue_date",
+      loan_duration: "di.loan_duration",
       created_at: "di.created_at",
     };
 
@@ -1692,6 +1718,73 @@ async function reverseDocIssue(req, res) {
   }
 }
 
+async function generateQRCodeDocCorner(req, res) {
+  const PDFDocument = require("pdfkit");
+  const qr = require("qrcode");
+
+  try {
+    const {
+      description,
+      indian_pattern,
+      equipment_system,
+      box_no,
+      location = "",
+      copy_count,
+    } = req.body;
+
+    const copies = parseInt(copy_count);
+
+    if (
+      !description ||
+      !indian_pattern ||
+      !equipment_system ||
+      !box_no ||
+      !copies
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const doc = new PDFDocument({
+      size: [50 * 2.83465, 25 * 2.83465],
+      margins: { top: 0, left: 0, right: 0, bottom: 0 },
+    });
+
+    const buffers = [];
+    doc.on("data", buffers.push.bind(buffers));
+
+    doc.on("end", () => {
+      const pdfData = Buffer.concat(buffers);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="qrcodes_${Date.now()}.pdf"`,
+      );
+      res.send(pdfData);
+    });
+
+    const qrText = `${description}|${indian_pattern}|${equipment_system}|${box_no}|${location}`;
+
+    const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
+
+    for (let i = 0; i < copies; i++) {
+      if (i > 0) doc.addPage();
+
+      doc.image(qrURL, 5, 5, { width: 50, height: 50 });
+
+      doc.fontSize(8).text(description, 60, 5, { width: 100 });
+      doc.text(indian_pattern, 60, 15);
+      doc.text(equipment_system, 60, 25);
+      doc.text(box_no, 60, 35);
+      doc.text(location, 60, 45);
+    }
+
+    doc.end();
+  } catch (error) {
+    console.log("QR error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 module.exports = {
   createDocCorner,
   getDocCorner,
@@ -1704,4 +1797,5 @@ module.exports = {
   getLowStockDocuments,
   getDocOverdue,
   reverseDocIssue,
+  generateQRCodeDocCorner,
 };

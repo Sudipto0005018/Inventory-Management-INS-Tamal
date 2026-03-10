@@ -4,6 +4,11 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const path = require("path");
+const { encrypt } = require("./utils/helperFunctions");
+
+// const enc = encrypt(new Date('2027-03-10').getTime() + "");
+// console.log(enc);
+
 
 dotenv.config({ path: "./.env", quiet: true });
 

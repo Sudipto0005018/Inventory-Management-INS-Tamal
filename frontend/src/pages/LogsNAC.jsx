@@ -1,72 +1,75 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdRefresh } from "react-icons/io";
+import Chip from "../components/Chip";
+
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
 import SpinnerButton from "../components/ui/spinner-button";
 import toaster from "../utils/toaster";
-import { getFormatedDate, getTimeDate } from "../utils/helperFunctions";
+import {
+  getFormatedDate,
+  getTimeDate,
+} from "../utils/helperFunctions";
+
 import { MultiSelect } from "../components/ui/multi-select";
 
-const Procurement = () => {
-  const { config } = useContext(Context);
-  const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
-    {
-      key: "indian_pattern",
-      header: (
-        <span>
-          <i>IN</i> Part No.
-        </span>
-      ),
-      width: "min-w-[40px]",
-    },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
-    { key: "category", header: "Category" },
-    { key: "denos", header: "Denos" },
-    { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Demanded Qty" },
-    { key: "nac_qty", header: "NAC/ Ordered Qty" },
-    { key: "nac_no", header: "NAC No." },
-    { key: "nac_date", header: "NAC Date" },
-    { key: "validity", header: "Validity" },
-    { key: "rate_unit", header: "Rate/ Unit" },
-    { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Created On" },
-  ]);
+const NACLogs = () => {
+  const { config, user } = useContext(Context);
+    const columns = useMemo(() => [
+      { key: "demand_no", header: "Demand No." },
+      { key: "demand_date", header: "Demand Date" },
+      { key: "nac_no", header: "NAC No." },
+      { key: "nac_date", header: "NAC Date" },
+      { key: "description", header: "Item Description" },
+      {
+        key: "indian_pattern",
+        header: (
+          <span>
+            <i>IN</i> Part No.
+          </span>
+        ),
+        width: "min-w-[40px]",
+      },
+      { key: "category", header: "Category" },
+      { key: "denos", header: "Denos" },
 
-  const options = [
-    { value: "description", label: "Item Description" },
-    {
-      value: "indian_pattern",
-      label: (
-        <p>
-          <i>IN</i> Part No.
-        </p>
-      ),
-      width: "min-w-[40px]",
-    },
-    { value: "category", label: "Category" },
-    { value: "denos", label: "Denos" },
-    { value: "demand_no", label: "Demand No." },
-    { value: "demand_date", label: "Demanded Date" },
-    { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "nac_qty", label: "NAC / Ordered Qty" },
-    { value: "nac_no", label: "NAC No." },
-    { value: "nac_date", label: "NAC Date" },
-    { value: "validity", label: "Validity" },
-    { value: "rate_unit", label: "Rate/ Unit" },
-    { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Created On" },
-  ];
+      { key: "demand_quantity", header: "Demanded Qty" },
+      { key: "nac_qty", header: "NAC / Ordered Qty" },
+
+      { key: "validity", header: "Validity" },
+      { key: "rate_unit", header: "Rate/ Unit" },
+      { key: "qty_received", header: "Qty Received" },
+    ]);
+
+    const options = [
+      { value: "demand_no", label: "Demand No." },
+      { value: "demand_date", label: "Demand date" },
+      { value: "nac_no", label: "NAC No." },
+      { value: "nac_date", label: "NAC Date" },
+      { value: "description", label: "Item Description" },
+      {
+        value: "indian_pattern",
+        label: (
+          <p>
+            <i>IN</i> Part No.
+          </p>
+        ),
+        width: "min-w-[40px]",
+      },
+      { value: "category", label: "Category" },
+      { value: "denos", label: "Denos" },
+      { value: "demand_quantity", label: "Demanded Qty" },
+      { value: "nac_qty", label: "NAC / Ordered Qty" },
+      { value: "validity", label: "Validity" },
+      { value: "rate_unit", label: "Rate/ Unit" },
+      { value: "qty_received", label: "Qty Received" },
+      { value: "created_at", label: "Created On" },
+    ];
 
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -114,13 +117,13 @@ const Procurement = () => {
     try {
       setIsLoading((prev) => ({ ...prev, table: true }));
 
-      const response = await apiService.get("/stocks/logsProcure", {
+      const response = await apiService.get("/stocks/logsNAC", {
         params: {
           page,
           limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
-          status: "complete",
+          status: "NAC_GENERATED",
         },
       });
       console.log(response);
@@ -173,37 +176,19 @@ const Procurement = () => {
     fetchdata(1);
   }, [selectedValues]);
 
-  useEffect(() => {
-    const t = fetchedData.items.map((row) => ({
-      ...row,
-      survey_quantity: row.survey_quantity || "0",
-      created_at: getTimeDate(row.created_at),
-      item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
-      demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
-      nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",
-      qty_received:
-        row.qty_received && row.qty_received > 0 ? row.qty_received : null,
-      processed: (
-        <Button
-          size="icon"
-          className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            console.log(row);
+ useEffect(() => {
+   const t = fetchedData.items.map((row) => ({
+     ...row,
+     survey_quantity: row.survey_quantity || "0",
+     demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
+     nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",
+     created_at: getTimeDate(row.created_at),
+     qty_received:
+       row.qty_received && row.qty_received > 0 ? row.qty_received : null,
+   }));
 
-            const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
-
-            setBoxNo(normalizeBoxNoForDeposit(parsedBoxNo));
-
-            setIsOpen((prev) => ({ ...prev, receive: true }));
-          }}
-        >
-          <FaChevronRight />
-        </Button>
-      ),
-    }));
-    setTableData(t);
-  }, [fetchedData]);
+   setTableData(t);
+ }, [fetchedData]);
 
   const normalizeBoxNoForDeposit = (boxNo = []) => {
     return boxNo.map((item) => ({
@@ -222,14 +207,6 @@ const Procurement = () => {
     }));
   };
 
-  const closeDialog = () => {
-    setIsOpen((prev) => ({ ...prev, receive: false }));
-    setBoxNo([]);
-    setInputs({
-      receive_date: new Date(),
-      quantity_received: "",
-    });
-  };
   return (
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
@@ -247,7 +224,7 @@ const Procurement = () => {
             }}
           />
         </div>
-        <div className="flex items-center mb-4 gap-4 w-[99%] mx-auto">
+        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <div className="w-full">
             <MultiSelect
               className="bg-white hover:bg-blue-50"
@@ -308,4 +285,4 @@ const Procurement = () => {
   );
 };
 
-export default Procurement;
+export default NACLogs;

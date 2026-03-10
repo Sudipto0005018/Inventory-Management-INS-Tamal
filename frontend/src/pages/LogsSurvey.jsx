@@ -17,6 +17,7 @@ import Spinner from "../components/Spinner";
 const PendingSurvey = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
+    { key: "equipment_system", header: "Equipment/ System" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -33,44 +34,85 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
-    { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
+    { key: "denos", header: "Denos", width: "min-w-[40px]" },
+    {
+      key: "survey_quantity",
+      header: "Qty Surveyed",
+      width: "max-w-[50px]",
+    },
+    {
+      key: "reason_for_survey",
+      header: (
+        <span>
+          Reason for
+          <br />
+          Survey
+        </span>
+      ),
+      width: "min-w-[30px]",
+    },
+    {
+      key: "survey_voucher_no",
+      header: (
+        <span>
+          Survey Voucher <br />
+          No.
+        </span>
+      ),
+      width: "min-w-[40px]",
+    },
+    { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
+    { key: "remarks", header: "Remarks", width: "min-w-[40px]" },
+    {
+      key: "withdrawl_qty",
+      header: (
+        <span>
+          Withdrawal
+          <br />
+          Qty
+        </span>
+      ),
+      width: "min-w-[40px]",
+    },
     {
       key: "withdrawl_date_str",
-      header: "Withdrawal Date",
+      header: (
+        <span>
+          Withdrawal
+          <br />
+          Date
+        </span>
+      ),
       width: "min-w-[40px]",
     },
     { key: "service_no", header: "Service No.", width: "min-w-[40px]" },
     { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
-    {
-      key: "survey_quantity",
-      header: "Surveyed Qty",
-      width: "max-w-[40px]",
-    },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
   const options = [
+    { value: "equipment_system", label: "Equipment / System" },
+    { value: "description", label: "Item Description" },
     {
-      value: "description",
-      label: "Item Description",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "vue",
+      value: "indian_pattern",
       label: (
         <span>
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[40px]",
     },
-    { value: "category", label: "Category", width: "min-w-[40px]" },
+    { value: "item_type", label: "Type" },
+    { value: "category", label: "Category" },
+    { value: "denos", label: "Denos" },
+    { value: "survey_quantity", label: "Qty Surveyed" },
+    { value: "reason_for_survey", label: "Reason for Survey" },
+    { value: "survey_voucher_no", label: "Survey Voucher No." },
+    { value: "survey_date", label: "Survey Date" },
+    { value: "remarks", label: "Remarks" },
     { value: "withdrawl_qty", label: "Withdrawal Qty" },
-    {
-      value: "survey_quantity",
-      label: "Surveyed Quantity",
-      width: "min-w-[40px]",
-    },
-    { value: "status", label: "Status", width: "min-w-[40px]" },
+    { value: "withdrawl_date", label: "Withdrawal Date" },
+    { value: "service_no", label: "Service No." },
+    { value: "issue_to", label: "Issued To" },
+    { value: "created_at", label: "Created On" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -105,6 +147,7 @@ const PendingSurvey = () => {
         params: {
           page,
           search,
+          cols: selectedValues.join(","),
           limit: config.row_per_page,
           status: "pending",
         },
@@ -131,7 +174,8 @@ const PendingSurvey = () => {
       setActualSearch(searchTerm);
     }
     setIsLoading((prev) => ({ ...prev, search: true }));
-    await fetchdata();
+    await fetchdata(1, searchTerm);
+    setCurrentPage(1);
     setIsLoading((prev) => ({ ...prev, search: false }));
   };
 
@@ -150,6 +194,7 @@ const PendingSurvey = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
+      survey_date: getFormatedDate(row.survey_date),
       survey_quantity: row.survey_quantity || "0",
       issue_date: getFormatedDate(row.issue_date),
       withdrawl_date_str: getFormatedDate(row.withdrawl_date),
@@ -166,17 +211,6 @@ const PendingSurvey = () => {
   return (
     <div className="px-2 w-full">
       <div className="mb-2">
-        <MultiSelect
-          className="bg-white hover:bg-blue-50"
-          options={options}
-          placeholder="Select Fields"
-          onValueChange={setSelectedValues}
-          defaultValue={selectedValues}
-          singleLine
-          maxCount={6}
-        />
-      </div>
-      <div className="flex items-center mb-4 gap-4 w-full">
         <Input
           type="text"
           placeholder="Search survey items"
@@ -186,6 +220,19 @@ const PendingSurvey = () => {
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
         />
+      </div>
+      <div className="flex items-center mb-4 gap-4 w-full">
+        <div className="w-full">
+          <MultiSelect
+            className="bg-white hover:bg-blue-50"
+            options={options}
+            placeholder="Select Fields"
+            onValueChange={setSelectedValues}
+            defaultValue={selectedValues}
+            singleLine
+            maxCount={6}
+          />
+        </div>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}

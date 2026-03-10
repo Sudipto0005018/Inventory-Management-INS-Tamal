@@ -41,23 +41,13 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "equipment_system",
-      label: "Equipment / System",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "category",
-      label: "Category",
-      width: "min-w-[40px]",
-    },
-    {
       value: "indian_pattern",
       label: "Folder No.",
       width: "min-w-[40px]",
     },
     {
-      value: "service_no",
-      label: "Service No.",
+      value: "equipment_system",
+      label: "Equipment / System",
       width: "min-w-[40px]",
     },
     {
@@ -66,8 +56,22 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
+      value: "service_no",
+      label: "Service No.",
+      width: "min-w-[40px]",
+    },
+    {
       value: "concurred_by",
       label: "Concurred By",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "issue_date",
+      label: "Issued Date",
+    },
+    {
+      value: "loan_duration",
+      label: "Loan Duration",
       width: "min-w-[40px]",
     },
     {
@@ -322,17 +326,6 @@ const PendingTempLoan = () => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="mb-2 px-3">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search Documents Issue for.."
@@ -345,7 +338,19 @@ const PendingTempLoan = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
-
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[99%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

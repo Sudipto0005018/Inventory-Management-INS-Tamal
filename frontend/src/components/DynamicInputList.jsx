@@ -8,7 +8,7 @@ const DynamicInputList = ({ data = [], onChange, placeholder = "Input" }) => {
 
     const handleInputChange = (index, value) => {
         const newInputs = [...inputs];
-        newInputs[index] = value;
+        newInputs[index] = value.toUpperCase();
         onChange(newInputs);
     };
 
@@ -32,7 +32,7 @@ const DynamicInputList = ({ data = [], onChange, placeholder = "Input" }) => {
                             // placeholder={`${placeholder} ${index + 1}`}
                             value={value}
                             onChange={(e) => handleInputChange(index, e.target.value)}
-                            className="flex-1"
+                            className="flex-1 uppercase"
                         />
 
                         <div className="w-10 flex justify-center">

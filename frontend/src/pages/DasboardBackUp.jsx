@@ -1,172 +1,172 @@
-import React, { useContext } from "react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Context } from "../utils/Context";
+// import React, { useContext } from "react";
+// import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+// import {
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableHead,
+//   TableHeader,
+//   TableRow,
+// } from "@/components/ui/table";
+// import { Context } from "../utils/Context";
 
-const TableRows = ({ rowCount, cellCount }) =>
-  Array.from({ length: rowCount }).map((_, idx) => (
-    <TableRow key={idx} classboxName="whitespace-nowrap">
-      {Array.from({ length: cellCount }).map((_, idx2) => (
-        <TableCell
-          key={idx + "" + idx2}
-          className="py-4 text-center"
-        ></TableCell>
-      ))}
-    </TableRow>
-  ));
+// const TableRows = ({ rowCount, cellCount }) =>
+//   Array.from({ length: rowCount }).map((_, idx) => (
+//     <TableRow key={idx} classboxName="whitespace-nowrap">
+//       {Array.from({ length: cellCount }).map((_, idx2) => (
+//         <TableCell
+//           key={idx + "" + idx2}
+//           className="py-4 text-center"
+//         ></TableCell>
+//       ))}
+//     </TableRow>
+//   ));
 
-const Dashboard = () => {
-  return (
-    <div className="h-[calc(100vh-130px)] overflow-hidden">
-      <div className="w-full h-full grid grid-rows-2 gap-2">
-        <div className="grid grid-cols-3 w-full h-full gap-2 min-h-0">
-          <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
-            <h4 className="w-full text-center font-bold text-black mb-2">
-              TY Loan
-            </h4>
-            <div className="flex-1 w-full min-h-0 relative">
-              <ScrollArea className="h-full w-full rounded-md border">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 left-0 right-0">
-                    <TableRow className="whitespace-nowrap bg-gray-100">
-                      <TableHead>UNIT Name</TableHead>
-                      <TableHead>Name of Individual, Rank</TableHead>
-                      <TableHead>Service Number</TableHead>
-                      <TableHead>Phone Number</TableHead>
-                      <TableHead>Loan Duration</TableHead>
-                      <TableHead>Concurred by</TableHead>
-                      <TableHead>Qty. Withdrawl</TableHead>
-                      <TableHead>Item Storage Duration</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRows rowCount={20} cellCount={8} />
-                  </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-                <ScrollBar orientation="vertical" />
-              </ScrollArea>
-            </div>
-          </div>
+// const Dashboard = () => {
+//   return (
+//     <div className="h-[calc(100vh-130px)] overflow-hidden">
+//       <div className="w-full h-full grid grid-rows-2 gap-2">
+//         <div className="grid grid-cols-3 w-full h-full gap-2 min-h-0">
+//           <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
+//             <h4 className="w-full text-center font-bold text-black mb-2">
+//               TY Loan
+//             </h4>
+//             <div className="flex-1 w-full min-h-0 relative">
+//               <ScrollArea className="h-full w-full rounded-md border">
+//                 <Table>
+//                   <TableHeader className="sticky top-0 z-10 left-0 right-0">
+//                     <TableRow className="whitespace-nowrap bg-gray-100">
+//                       <TableHead>UNIT Name</TableHead>
+//                       <TableHead>Name of Individual, Rank</TableHead>
+//                       <TableHead>Service Number</TableHead>
+//                       <TableHead>Phone Number</TableHead>
+//                       <TableHead>Loan Duration</TableHead>
+//                       <TableHead>Concurred by</TableHead>
+//                       <TableHead>Qty. Withdrawl</TableHead>
+//                       <TableHead>Item Storage Duration</TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     <TableRows rowCount={20} cellCount={8} />
+//                   </TableBody>
+//                 </Table>
+//                 <ScrollBar orientation="horizontal" />
+//                 <ScrollBar orientation="vertical" />
+//               </ScrollArea>
+//             </div>
+//           </div>
 
-          <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
-            <h4 className="w-full text-center font-bold text-black mb-2">
-              Temporary Loan
-            </h4>
-            <div className="flex-1 w-full min-h-0">
-              <ScrollArea className="h-full w-full rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="whitespace-nowrap bg-gray-100">
-                      <TableHead>Issue to</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Probable Duration</TableHead>
-                      <TableHead>Return Qty</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRows rowCount={10} cellCount={5} />
-                  </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-                <ScrollBar orientation="vertical" />
-              </ScrollArea>
-            </div>
-          </div>
+//           <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
+//             <h4 className="w-full text-center font-bold text-black mb-2">
+//               Temporary Loan
+//             </h4>
+//             <div className="flex-1 w-full min-h-0">
+//               <ScrollArea className="h-full w-full rounded-md border">
+//                 <Table>
+//                   <TableHeader>
+//                     <TableRow className="whitespace-nowrap bg-gray-100">
+//                       <TableHead>Issue to</TableHead>
+//                       <TableHead>Date</TableHead>
+//                       <TableHead>Qty</TableHead>
+//                       <TableHead>Probable Duration</TableHead>
+//                       <TableHead>Return Qty</TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     <TableRows rowCount={10} cellCount={5} />
+//                   </TableBody>
+//                 </Table>
+//                 <ScrollBar orientation="horizontal" />
+//                 <ScrollBar orientation="vertical" />
+//               </ScrollArea>
+//             </div>
+//           </div>
 
-          <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
-            <h4 className="w-full text-center font-bold text-black mb-2">
-              NAC
-            </h4>
-            <div className="flex-1 w-full min-h-0">
-              <ScrollArea className="h-full w-full rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="whitespace-nowrap bg-gray-100">
-                      <TableHead>Issue to</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Probable Duration</TableHead>
-                      <TableHead>Return Qty</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRows rowCount={10} cellCount={5} />
-                  </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-                <ScrollBar orientation="vertical" />
-              </ScrollArea>
-            </div>
-          </div>
-        </div>
+//           <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
+//             <h4 className="w-full text-center font-bold text-black mb-2">
+//               NAC
+//             </h4>
+//             <div className="flex-1 w-full min-h-0">
+//               <ScrollArea className="h-full w-full rounded-md border">
+//                 <Table>
+//                   <TableHeader>
+//                     <TableRow className="whitespace-nowrap bg-gray-100">
+//                       <TableHead>Issue to</TableHead>
+//                       <TableHead>Date</TableHead>
+//                       <TableHead>Qty</TableHead>
+//                       <TableHead>Probable Duration</TableHead>
+//                       <TableHead>Return Qty</TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     <TableRows rowCount={10} cellCount={5} />
+//                   </TableBody>
+//                 </Table>
+//                 <ScrollBar orientation="horizontal" />
+//                 <ScrollBar orientation="vertical" />
+//               </ScrollArea>
+//             </div>
+//           </div>
+//         </div>
 
-        <div className="grid grid-cols-2 w-full h-full gap-2 min-h-0">
-          <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
-            <h4 className="w-full text-center font-bold text-black mb-2">
-              LOG Records
-            </h4>
-            <div className="flex-1 w-full min-h-0">
-              <ScrollArea className="h-full w-full rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="whitespace-nowrap bg-gray-100">
-                      <TableHead>Transaction Type</TableHead>
-                      <TableHead>Transaction Details</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRows rowCount={10} cellCount={3} />
-                  </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-                <ScrollBar orientation="vertical" />
-              </ScrollArea>
-            </div>
-          </div>
+//         <div className="grid grid-cols-2 w-full h-full gap-2 min-h-0">
+//           <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
+//             <h4 className="w-full text-center font-bold text-black mb-2">
+//               LOG Records
+//             </h4>
+//             <div className="flex-1 w-full min-h-0">
+//               <ScrollArea className="h-full w-full rounded-md border">
+//                 <Table>
+//                   <TableHeader>
+//                     <TableRow className="whitespace-nowrap bg-gray-100">
+//                       <TableHead>Transaction Type</TableHead>
+//                       <TableHead>Transaction Details</TableHead>
+//                       <TableHead>Date</TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     <TableRows rowCount={10} cellCount={3} />
+//                   </TableBody>
+//                 </Table>
+//                 <ScrollBar orientation="horizontal" />
+//                 <ScrollBar orientation="vertical" />
+//               </ScrollArea>
+//             </div>
+//           </div>
 
-          <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
-            <h4 className="w-full text-center font-bold text-black mb-1">
-              D787
-            </h4>
-            <div className="flex-1 w-full min-h-0">
-              <ScrollArea className="h-full w-full rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="whitespace-nowrap bg-gray-100">
-                      <TableHead>Item Description</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Current OBS Authorised</TableHead>
-                      <TableHead>Future OBS Authorised</TableHead>
-                      <TableHead>Request Status</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRows rowCount={10} cellCount={6} />
-                  </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-                <ScrollBar orientation="vertical" />
-              </ScrollArea>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+//           <div className="min-w-0 h-full bg-white rounded-md shadow-md p-2 flex flex-col overflow-hidden">
+//             <h4 className="w-full text-center font-bold text-black mb-1">
+//               D787
+//             </h4>
+//             <div className="flex-1 w-full min-h-0">
+//               <ScrollArea className="h-full w-full rounded-md border">
+//                 <Table>
+//                   <TableHeader>
+//                     <TableRow className="whitespace-nowrap bg-gray-100">
+//                       <TableHead>Item Description</TableHead>
+//                       <TableHead>Category</TableHead>
+//                       <TableHead>Current OBS Authorised</TableHead>
+//                       <TableHead>Future OBS Authorised</TableHead>
+//                       <TableHead>Request Status</TableHead>
+//                       <TableHead>Date</TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     <TableRows rowCount={10} cellCount={6} />
+//                   </TableBody>
+//                 </Table>
+//                 <ScrollBar orientation="horizontal" />
+//                 <ScrollBar orientation="vertical" />
+//               </ScrollArea>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
 
-export default Dashboard;
+// export default Dashboard;
 
 // dashboard changes
 // completed, pending, remainder issued, over-due, total -> ty loan
@@ -307,3 +307,365 @@ export default Dashboard;
 // d787 changes
 // doc corner chnages , issue to not coming, manual withdrawal will be replaced with temporary issue, should come directly
 // dashboard changes low stock spares whichever is less than 25% obs_authorised will show
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import {
+  FaTools,
+  FaExclamationCircle,
+  FaClock,
+} from "react-icons/fa";
+import { GoStarFill } from "react-icons/go";
+import { IoDocument } from "react-icons/io5";
+import { FaGears } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
+import { navigateTo } from "../utils/navigate";
+import { useEffect, useState } from "react";
+import apiService from "../utils/apiService";
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await apiService.get("/users/dashboard");
+        console.log("DASHBOARD RESPONSE =>", res.data);
+        setDashboardData(res.data);
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  const spares = dashboardData?.spares || {};
+  const tools = dashboardData?.tools || {};
+  const doc = dashboardData?.doc || {};
+  const permanent = dashboardData?.permanent || {};
+  const temporary = dashboardData?.temporary || {};
+  const tyLoan = dashboardData?.tyLoan || {};
+  const documents = dashboardData?.documents || {};
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* HEADER */}
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Dashboard Overview
+        </h1>
+        <p className="text-sm text-gray-500">
+          Complete Inventory Management Summary
+        </p>
+      </div>
+
+      {/* INVENTORY SUMMARY */}
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+        Inventory Summary
+      </h2>
+
+      {/* ===== BIG CARDS ROW ===== */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+        {/* TOTAL SPARES*/}
+        <BigCard
+          title="Spares"
+          icon={<FaGears size={22} className="text-gray-700" />}
+        >
+          <div className="grid grid-cols-1 text-[5px] md:grid-cols-3 gap-4">
+            <Card
+              title="Total Spares"
+              value={dashboardData?.spares?.total || 0}
+              subtitle="total spares"
+              icon={<FaGears size={22} className="text-blue-700" />}
+              onClick={() => navigateTo("/spares")}
+            />
+
+            <Card
+              title="Critical Spares"
+              value={spares.criticalSpare || 0}
+              subtitle="critical spares"
+              icon={<GoStarFill size={18} className="text-yellow-500" />}
+              valueColor="text-blue-700"
+              onClick={() => navigateTo("/spares/critical")}
+            />
+
+            <Card
+              title="Low Stock Spares"
+              value={spares.lowStock || 0}
+              subtitle="below minimum"
+              icon={<FaExclamationCircle size={18} className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigate("/spares/low-stock")}
+            />
+          </div>
+        </BigCard>
+
+        {/* TOTAL TOOLS */}
+        <BigCard
+          title="Tools & Accessories"
+          icon={<FaTools size={22} className="text-gray-700" />}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Total Tools available"
+              value={tools.total || 0}
+              subtitle="available tools"
+              icon={<FaTools size={18} className="text-blue-700" />}
+              onClick={() => navigateTo("/tools")}
+            />
+
+            <Card
+              title="Critical / Special Tools"
+              value={tools.criticalTool || 0}
+              subtitle="critical tools"
+              icon={<GoStarFill size={20} className="text-yellow-500" />}
+              valueColor="text-blue-700"
+              onClick={() => navigateTo("/tools/critical")}
+            />
+          </div>
+        </BigCard>
+{/*
+        <BigCard
+          title="Documents Corner"
+          icon={<IoDocument size={22} className="text-gray-700" />}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Total Documents"
+              value={doc.total || 0}
+              subtitle="available documents"
+              icon={<IoDocument size={22} className="text-blue-700" />}
+              onClick={() => navigateTo("/documents")}
+            />{" "}
+            <Card
+              title="Low Stock Documents"
+              value={doc.lowStock || 0}
+              subtitle="below minimum"
+              icon={<FaExclamationCircle size={22} className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigate("/documents/low-stock")}
+            />
+          </div>
+        </BigCard> */}
+      </div>
+      {/* PERMANENT ISSUE WORKFLOW */}
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+        Permanent Issue Workflow
+      </h2>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+        <Card
+          title="Pending Survey"
+          value={permanent.pendingSurvey || 0}
+          subtitle="awaiting survey"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-red-900"
+          onClick={() => navigateTo("/permanent/pending-survey")}
+        />
+
+        <Card
+          title="Pending Demand"
+          value={permanent.pendingDemand || 0}
+          subtitle="items pending"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-purple-500"
+          onClick={() => navigateTo("/permanent/pending-demand")}
+        />
+
+        <Card
+          title="Pending Issue"
+          value={permanent.pendingIssue || 0}
+          subtitle="items pending"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-blue-600"
+          onClick={() => navigateTo("/permanent/pending-issue")}
+        />
+
+        <Card
+          title="Pending Stock In"
+          value={permanent.pendingStockIn || 0}
+          subtitle="to be stocked in"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-red-500"
+          onClick={() => navigateTo("/permanent/stock-update")}
+        />
+
+        <Card
+          title="Pending Procurement"
+          value={permanent.pendingProcurement || 0}
+          subtitle="to be procured"
+          icon={<FaClock className="text-gray-600" />}
+          valueColor="text-blue-500"
+          onClick={() => navigateTo("/permanent/procurement")}
+        />
+
+        <Card
+          title="Pending NAC"
+          value={permanent.pendingProcurement || 0}
+          subtitle="items pending"
+          icon={<FaClock className="text-gray-800" />}
+          valueColor="text-blue-900"
+          onClick={() => navigateTo("/permanent/nac")}
+        />
+      </div>
+
+      {/* TEMPORARY & LOAN */}
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* TEMPORARY ISSUE LOCAL */}
+        <BigCard title="Temporary Issue (Local)" icon={<FaClock />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active Temporary Issue"
+              value={temporary.active || 0}
+              subtitle="currently issued"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/temporary/temporary-issue")}
+            />
+
+            <Card
+              title="Overdue Temporary Issue"
+              value={temporary.overdue || 0}
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigate("/temporary-issue/overdue")}
+            />
+          </div>
+        </BigCard>
+
+        {/* TY LOAN */}
+        <BigCard title="TY Loan (Other Units)" icon={<FaClock />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active TY Loan"
+              value={tyLoan.active || 0}
+              subtitle="currently on loan"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/temp-loan/pending")}
+            />
+
+            <Card
+              title="Overdue TY Loan"
+              value={tyLoan.overdue || 0}
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigateTo("/temp-loan/overdue")}
+            />
+          </div>
+        </BigCard>
+
+        {/* DOCUMENTS ISSUE */}
+        <BigCard title="Documents Issue" icon={<IoDocument size={20} />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              title="Active Documents"
+              value={documents.active || 0}
+              subtitle="currently issued"
+              icon={<FaClock className="text-gray-700" />}
+              onClick={() => navigateTo("/documents/issue")}
+            />
+
+            <Card
+              title="Overdue Documents"
+              value={documents.overdue || 0}
+              subtitle="overdue returns"
+              icon={<FaExclamationCircle className="text-red-500" />}
+              valueColor="text-red-500"
+              onClick={() => navigateTo("/documents/overdue")}
+            />
+          </div>
+        </BigCard>
+      </div>
+    </div>
+  );
+}
+
+/* SMALL CARD */
+function Card({
+  title,
+  value,
+  subtitle,
+  icon,
+  valueColor = "text-gray-900",
+  onClick,
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        bg-white border border-gray-100 rounded-lg p-3
+        transition-all duration-200
+        ${onClick ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : ""}
+      `}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col leading-tight">
+          <p className="text-[11px] font-semibold text-gray-700">{title}</p>
+
+          <p className={`text-lg font-bold ${valueColor}`}>{value}</p>
+
+          <p className="text-[10px] font-medium text-gray-500">{subtitle}</p>
+        </div>
+
+        <div className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-100 text-gray-600">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* BIG GROUP CARD */
+function BigCard({ title, icon, children }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4 border-b pb-2">
+        <div className="text-blue-600">{icon}</div>
+        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+
+
+//1. add spare, mandatory field box validation (done)
+//2. cpaitalize for tools/spare (done)
+//3. created on(remove) (done)
+//4. search bar column position switch (done)
+//5. all fields not visible in search (done)
+//6. demand no., req no. and mo no. in capital (done)
+//7. remove uid from qr and add location of storage as column last (done)
+//8. survey->remarks, reason for survey(BER,BLR,servicebale) REASON FOR SURVEY DROPDOWN: BER(BEYOND ECONOMIC REPAIR)> BLR(BEYOND LOCAL REPAIR)> REMARKS SERVICEABLE (done)
+//9. withdrawl qty, prev surveyed/stock in qty, repairable/serviceable-> yes/no, yes> serviceable qty will be shown in stock in qty in stock update page (done)
+//10. add survey() 
+//11. repair/serviceable-> yes -> repairable qty (done)
+//12. low stock held qty <= 30% (done)
+//13. dashboard remove low stock tools (done)
+//14. star symbol critical spares, critical tools (done)
+//15. special demand -> authority (done)
+//16. add demad-> yes/ no
+//17. special demand add-> type of special demand(PTS, D787, OPDEM, STORDEM)
+//18. LOG BOOK according to xlsx file.

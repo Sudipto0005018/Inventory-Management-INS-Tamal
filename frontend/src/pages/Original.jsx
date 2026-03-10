@@ -166,17 +166,6 @@ const Original = () => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="px-3 mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select columns"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={7}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search Special Demands"
@@ -189,6 +178,19 @@ const Original = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[99%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select columns"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={7}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

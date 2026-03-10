@@ -17,7 +17,8 @@ async function getProcurementPending(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
 
     // Demand (from pending_issue)
-    demand_no: ["pi.demand_no" || "pi.mo_no"],
+    demand_no: ["pi.demand_no", "pi.mo_no"],
+    demand_date: ["pi.demand_date", "pi.mo_date"],
     demand_quantity: ["pi.demand_quantity"],
 
     // NAC / Procurement (from procurement table p)
@@ -91,6 +92,7 @@ async function getProcurementPending(req, res) {
       FROM procurement p
       LEFT JOIN spares sp ON p.spare_id = sp.id
       LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
       ${finalWhere}
       `,
       queryParams,
@@ -313,7 +315,9 @@ async function getStockUpdatePending(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     mo_no: ["s.mo_no"],
     mo_date: ["s.mo_date"],
-    // demand_no: ["pi.demand_no"],
+    demand_no: ["pi.demand_no", "pi.mo_no"],
+    demand_date: ["pi.demand_date", "pi.mo_date"],
+    demand_quantity: ["pi.demand_quantity"],
     demand_quantity: ["pi.demand_quantity"],
     qty_received: ["s.qty_received"],
     stocked_in_qty: ["s.stocked_in_qty"],
@@ -942,6 +946,7 @@ async function getLogsProcurement(req, res) {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    denos: ["sp.denos", "t.denos"],
 
     // Demand (from pending_issue)
     demand_no: ["pi.demand_no" || "pi.mo_no"],
@@ -1034,6 +1039,7 @@ async function getLogsProcurement(req, res) {
         COALESCE(sp.category, t.category) AS category,
         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.denos, t.denos) AS denos,
         COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
 
         'PROCUREMENT' AS source,
@@ -1093,6 +1099,7 @@ async function getLogsStockUpdate(req, res) {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    denos: ["sp.denos", "t.denos"],
     mo_no: ["s.mo_no"],
     mo_date: ["s.mo_date"],
     // demand_no: ["pi.demand_no"],
@@ -1196,6 +1203,7 @@ async function getLogsStockUpdate(req, res) {
         COALESCE(sp.category, t.category) AS category,
         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.denos, t.denos) AS denos,
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,
 
         'STOCK_UPDATE' AS source,
@@ -1279,7 +1287,7 @@ async function generateQRCode(req, res) {
 
     if (tool_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM tools WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM tools WHERE id = ?",
         [tool_id],
       );
 
@@ -1294,7 +1302,7 @@ async function generateQRCode(req, res) {
       data = rows[0];
     } else if (spare_id) {
       const [rows] = await pool.query(
-        "SELECT description, indian_pattern, uid, equipment_system FROM spares WHERE id = ?",
+        "SELECT description, indian_pattern, equipment_system, box_no FROM spares WHERE id = ?",
         [spare_id],
       );
 
@@ -1322,7 +1330,19 @@ async function generateQRCode(req, res) {
       // ✅ Skip invalid boxes
       if (!box_no || copy_count <= 0) continue;
 
-      const qrText = `${data.description}|${data.indian_pattern}|${data.uid}|${data.equipment_system}|${box_no}`;
+      let location = "";
+
+      if (data.box_no) {
+        const boxes = JSON.parse(data.box_no);
+
+        const selectedBox = boxes.find((b) => b.no === box_no);
+
+        if (selectedBox) {
+          location = selectedBox.location || "";
+        }
+      }
+
+      const qrText = `${data.description}|${data.indian_pattern}|${data.equipment_system}|${box_no}|${location}`;
 
       const qrURL = await qr.toDataURL(qrText, {
         margin: 0,
@@ -1338,11 +1358,11 @@ async function generateQRCode(req, res) {
 
         doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
         doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-        doc.fontSize(8).text(data.uid, 60, 25, { width: 100 });
-        doc.fontSize(8).text(data.equipment_system, 60, 35, {
+        doc.fontSize(8).text(data.equipment_system, 60, 25, {
           width: 100,
         });
-        doc.fontSize(8).text(box_no, 60, 45, { width: 100 });
+        doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
+        doc.fontSize(8).text(location, 60, 45, { width: 100 });
       }
     }
 
@@ -1362,6 +1382,158 @@ async function generateQRCode(req, res) {
   }
 }
 
+async function getLogsNAC(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const offset = (page - 1) * limit;
+  const search = req.query.search ? req.query.search.trim() : "";
+  const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+
+ const columnMap = {
+   description: ["sp.description", "t.description"],
+   category: ["sp.category", "t.category"],
+   indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+   denos: ["sp.denos", "t.denos"],
+
+   demand_no: ["pi.demand_no", "pi.mo_no"],
+   demand_quantity: ["pi.demand_quantity"],
+
+   nac_qty: ["p.nac_qty"],
+   nac_no: ["p.nac_no"],
+   nac_date: ["p.nac_date"],
+   validity: ["p.validity"],
+   rate_unit: ["p.rate_unit"],
+   created_at: ["p.created_at"],
+   qty_received: ["p.qty_received"],
+ };
+
+  const connection = await pool.getConnection();
+
+  try {
+    let whereConditions = [`p.status = 'complete'`];
+    let queryParams = [];
+
+    if (search) {
+      let searchConditions = [];
+
+      // Normalize selected columns
+      const rawColsNormalized = (req.query.cols || "")
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => columnMap[c]);
+
+      const selectedCols =
+        rawColsNormalized.length > 0
+          ? rawColsNormalized
+          : ["description", "nac_no"]; // fallback
+
+      const searchWords = search
+        .split(/[,;\s]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
+      for (const word of searchWords) {
+        let wordConditions = [];
+
+        for (const col of selectedCols) {
+          const dbCols = columnMap[col];
+
+          for (const dbCol of dbCols) {
+            wordConditions.push(`${dbCol} LIKE ?`);
+            queryParams.push(`%${word}%`);
+          }
+        }
+
+        // Each word must match in any selected column
+        searchConditions.push(`(${wordConditions.join(" OR ")})`);
+      }
+
+      // Combine words with AND
+      whereConditions.push(`(${searchConditions.join(" AND ")})`);
+    }
+    const finalWhere =
+      whereConditions.length > 0
+        ? "WHERE " + whereConditions.join(" AND ")
+        : "";
+
+    const [countRows] = await connection.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM procurement p
+      LEFT JOIN spares sp ON p.spare_id = sp.id
+      LEFT JOIN tools t ON p.tool_id = t.id
+      LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+      ${finalWhere}
+      `,
+      queryParams,
+    );
+
+    const totalItems = countRows[0].count;
+
+    if (totalItems === 0) {
+      return new ApiResponse(
+        200,
+        { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+        "No pending procurement found",
+      ).send(res);
+    }
+
+    const [rows] = await connection.query(
+      `
+      SELECT  
+        p.*,
+        COALESCE(sp.description, t.description) AS description,
+        COALESCE(sp.category, t.category) AS category,
+        COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
+        COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+        COALESCE(sp.denos, t.denos) AS denos,
+        COALESCE(sp.box_no, t.box_no, p.box_no) AS box_no,
+
+        'PROCUREMENT' AS source,
+        CASE 
+         WHEN pi.mo_no IS NOT NULL AND pi.mo_no != '' 
+         THEN pi.mo_no 
+         ELSE pi.demand_no 
+        END AS demand_no,
+
+        CASE 
+         WHEN pi.mo_date IS NOT NULL 
+         THEN pi.mo_date 
+         ELSE pi.demand_date 
+        END AS demand_date,
+
+        pi.demand_quantity
+
+      FROM procurement p
+LEFT JOIN spares sp ON p.spare_id = sp.id
+LEFT JOIN tools t ON p.tool_id = t.id
+LEFT JOIN pending_issue pi ON p.issue_id = pi.id
+
+      ${finalWhere}
+
+      ORDER BY p.id DESC
+      LIMIT ? OFFSET ?
+      `,
+      [...queryParams, limit, offset],
+    );
+
+    return new ApiResponse(
+      200,
+      {
+        items: rows,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      },
+      "Procurement logs fetched successfully",
+    ).send(res);
+  } catch (error) {
+    console.log("Procurement pending error:", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getProcurementPending,
   getStockUpdatePending,
@@ -1370,4 +1542,5 @@ module.exports = {
   getLogsProcurement,
   getLogsStockUpdate,
   generateQRCode,
+  getLogsNAC,
 };

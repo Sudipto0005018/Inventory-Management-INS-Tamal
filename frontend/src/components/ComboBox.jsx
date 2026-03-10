@@ -242,7 +242,7 @@ const ComboBox = ({
                   {user.role != "user" && (
                     <Input
                       value={customInputValue}
-                      onChange={(e) => setCustomInputValue(e.target.value)}
+                      onChange={(e) => setCustomInputValue(e.target.value.toUpperCase())}
                       placeholder="Type here..."
                     />
                   )}

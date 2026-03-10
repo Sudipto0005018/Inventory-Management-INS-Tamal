@@ -52,7 +52,6 @@ const PermanentPendings = () => {
     { key: "mo_date", header: "MO Date" },
 
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "statusBadge", header: "Status" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
@@ -72,7 +71,8 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
-    // { value: "demand_no", label: "Demand No." },
+    { value: "demand_no", label: "Demand No." },
+    { value: "demand_date", label: "Demand Date" },
     { value: "demand_quantity", label: "Demanded Qty" },
     { value: "stocked_in_qty", label: "Stocked In Qty" },
     { value: "mo_no", label: "MO Gate Pass No." },
@@ -404,17 +404,6 @@ const PermanentPendings = () => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="px-3 mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select columns"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={7}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search Stock items"
@@ -427,7 +416,19 @@ const PermanentPendings = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
-
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[98.5%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select columns"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={7}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

@@ -35,7 +35,7 @@ export default function ServicePersonnel({
   }, [value]);
 
   const handleSearchChange = (e) => {
-    const text = e.target.value;
+    const text = e.target.value.toUpperCase();
     setSearchTerm(text);
 
     const match = options.find(
@@ -130,7 +130,7 @@ export default function ServicePersonnel({
                     id="name"
                     value={newEntry.name}
                     onChange={(e) =>
-                      setNewEntry({ ...newEntry, name: e.target.value })
+                      setNewEntry({ ...newEntry, name: e.target.value.toUpperCase() })
                     }
                     placeholder="Name"
                     className="col-span-3"

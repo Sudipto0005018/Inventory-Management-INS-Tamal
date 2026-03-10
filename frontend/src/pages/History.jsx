@@ -83,12 +83,12 @@ const History = () => {
       header: "Requested On",
     },
     {
-      key: "approved_on",
-      header: "Approved On",
-    },
-    {
       key: "requested_by",
       header: "Requested By",
+    },
+    {
+      key: "approved_on",
+      header: "Approved On",
     },
     {
       key: "approved_by",

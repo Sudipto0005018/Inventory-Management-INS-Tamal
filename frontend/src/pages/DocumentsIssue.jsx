@@ -44,7 +44,6 @@ const PendingTempLoan = ({ type = "" }) => {
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
     { key: "days_until_return", header: "Days Until Return" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "status", header: "Status" },
     ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
     ...(user.role === "officer"
@@ -60,18 +59,13 @@ const PendingTempLoan = ({ type = "" }) => {
       width: "min-w-[40px]",
     },
     {
-      value: "equipment_system",
-      label: "Equipment / System",
-      width: "min-w-[40px]",
-    },
-    {
       value: "indian_pattern",
       label: "Folder No.",
       width: "min-w-[40px]",
     },
     {
-      value: "service_no",
-      label: "Service No.",
+      value: "equipment_system",
+      label: "Equipment / System",
       width: "min-w-[40px]",
     },
     {
@@ -80,8 +74,22 @@ const PendingTempLoan = ({ type = "" }) => {
       width: "min-w-[40px]",
     },
     {
+      value: "service_no",
+      label: "Service No.",
+      width: "min-w-[40px]",
+    },
+    {
       value: "concurred_by",
       label: "Concurred By",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "issue_date",
+      label: "Issued Date",
+    },
+    {
+      value: "loan_duration",
+      label: "Loan Duration",
       width: "min-w-[40px]",
     },
     {
@@ -665,17 +673,6 @@ const PendingTempLoan = ({ type = "" }) => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="mb-2 px-3">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select Fields"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={6}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search Documents Issue for.."
@@ -688,6 +685,19 @@ const PendingTempLoan = ({ type = "" }) => {
               if (e.key === "Enter") handleSearch();
             }}
           />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[99%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select Fields"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={6}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

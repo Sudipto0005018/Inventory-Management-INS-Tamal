@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
@@ -7,6 +9,7 @@ const ApiResponse = require("../utils/ApiResponse");
 const {
   validateUsername,
   getSQLTimestamp,
+  decrypt,
 } = require("../utils/helperFunctions");
 
 const cookieOptions = {
@@ -80,6 +83,18 @@ async function signIn(req, res) {
     return res
       .status(400)
       .json(new ApiErrorResponse(400, {}, "All fields are required"));
+  }
+
+  const txt = fs.readFileSync(path.join(__dirname, "..", "license.txt"));
+  const key = txt.toString();
+  if (key.length != 64) {
+    return new ApiErrorResponse(400, {}, "Invalid key").send(res);
+  }
+
+  const decrypted = decrypt(key);
+
+  if (decrypted < Date.now()) {
+    return new ApiErrorResponse(400, {}, "License Expired").send(res);
   }
 
   const query = `SELECT * FROM users WHERE username = ?`;
@@ -270,7 +285,7 @@ async function getDashboardData(req, res) {
       `SELECT
         COUNT(*) AS total,
         SUM(critical_spare = 1) AS criticalSpare,
-        SUM(obs_authorised > 0 AND IFNULL(obs_held,0) < (0.25 * obs_authorised)) AS lowStock
+        SUM(obs_authorised > 0 AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)) AS lowStock
       FROM spares`,
     );
 
@@ -279,7 +294,7 @@ async function getDashboardData(req, res) {
       SELECT
             COUNT(*) AS total,
              SUM(critical_tool = 1) AS criticalTool,
-            SUM(obs_authorised > 0 AND IFNULL(obs_held,0) < (0.25 * obs_authorised)) AS lowStock
+            SUM(obs_authorised > 0 AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)) AS lowStock
       FROM tools
     `);
 

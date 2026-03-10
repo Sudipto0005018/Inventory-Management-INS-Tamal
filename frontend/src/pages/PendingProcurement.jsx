@@ -56,7 +56,6 @@ const Procurement = () => {
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
     { key: "statusBadge", header: "Status" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
@@ -76,8 +75,9 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
-    // { value: "demand_no", label: "Demand No." },
-    // { value: "demand_quantity", label: "Demanded Qty" },
+    { value: "demand_no", label: "Demand No." },
+    { value: "demand_date", label: "Demanded Date" },
+    { value: "demand_quantity", label: "Demanded Qty" },
     { value: "nac_qty", label: "NAC / Ordered Qty" },
     { value: "nac_no", label: "NAC No." },
     { value: "nac_date", label: "NAC Date" },
@@ -531,17 +531,6 @@ const Procurement = () => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="px-3 mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select columns"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={7}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search procurement items"
@@ -554,6 +543,19 @@ const Procurement = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[98.5%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select columns"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={7}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}

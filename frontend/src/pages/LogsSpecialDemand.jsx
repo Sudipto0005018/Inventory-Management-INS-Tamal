@@ -31,8 +31,17 @@ const PendingSpecial = () => {
       header: "Type",
       width: "min-w-[40px]",
     },
+    { key: "denos", header: "Denos" },
     { key: "category", header: "Category" },
-    { key: "quantity", header: "Qty" },
+    {
+      key: "quantity",
+      header: (
+        <span>
+          Qty
+          <br /> Inc/Dec
+        </span>
+      ),
+    },
     {
       key: "modified_obs",
       header: (
@@ -41,13 +50,59 @@ const PendingSpecial = () => {
         </span>
       ),
     },
-    { key: "quote_authority", header: "Quote Authority" },
-    { key: "demandno", header: "Internal Demand No." },
-    { key: "demanddate", header: "Internal Demand Date." },
-    { key: "requisition", header: "Requisition No." },
-    { key: "Reqdate", header: "Requisition Date." },
-    { key: "modemand", header: "MO Demand No." },
-    { key: "modate", header: "MO Demand Date" },
+    { key: "quote_authority", header: "Authority" },
+    {
+      key: "demandno",
+      header: (
+        <span>
+          Internal <br />
+          Demand No.
+        </span>
+      ),
+    },
+    {
+      key: "demanddate",
+      header: (
+        <span>
+          Internal <br />
+          Demand Date
+        </span>
+      ),
+    },
+    {
+      key: "requisition",
+      header: (
+        <span>
+          Requisition <br /> No.
+        </span>
+      ),
+    },
+    {
+      key: "Reqdate",
+      header: (
+        <span>
+         Requisition <br /> Date
+        </span>
+      ),
+    },
+    {
+      key: "modemand",
+      header: (
+        <span>
+          {" "}
+          MO <br />
+          Demand No.
+        </span>
+      ),
+    },
+    {
+      key: "modate",
+      header: (
+        <span>
+          MO <br /> Demand Date
+        </span>
+      ),
+    },
     // { key: "status", header: "Status" },
     { key: "created_at", header: "Created On" },
   ]);
@@ -55,10 +110,11 @@ const PendingSpecial = () => {
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
+    { value: "denos", label: "Denos" },
     { value: "category", label: "Category" },
     { value: "quantity", label: "Issued Quantity" },
     { value: "obs_authorised", label: "Modified OBS Authorised" },
-    { value: "quote_authority", label: "Quote Authority" },
+    { value: "quote_authority", label: "Authority" },
     { value: "internal_demand_no", label: "Internal Demand No." },
     { value: "internal_demand_date", label: "Internal Demand Date." },
     { value: "requisition_no", label: "Requisition No." },
@@ -236,17 +292,6 @@ const PendingSpecial = () => {
     <>
       <div className="w-table-2 pt-2 h-full rounded-md bg-white">
         <div className="px-3 mb-2">
-          <MultiSelect
-            className="bg-white hover:bg-blue-50"
-            options={options}
-            placeholder="Select columns"
-            onValueChange={setSelectedValues}
-            defaultValue={selectedValues}
-            singleLine
-            maxCount={7}
-          />
-        </div>
-        <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
             placeholder="Search Special Demands"
@@ -259,7 +304,19 @@ const PendingSpecial = () => {
               if (e.key === "Enter") handleSearch();
             }}
           />
-
+        </div>
+        <div className="flex items-center mb-4 gap-4 w-[99%] mx-auto">
+          <div className="w-full">
+            <MultiSelect
+              className="bg-white hover:bg-blue-50"
+              options={options}
+              placeholder="Select columns"
+              onValueChange={setSelectedValues}
+              defaultValue={selectedValues}
+              singleLine
+              maxCount={7}
+            />
+          </div>
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
