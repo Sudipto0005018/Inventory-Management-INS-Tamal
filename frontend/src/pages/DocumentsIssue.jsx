@@ -99,6 +99,15 @@ const PendingTempLoan = ({ type = "" }) => {
     },
   ];
 
+
+
+  
+  const [rollbackDialog, setRollbackDialog] = useState(false);
+  const [rollbackChoice, setRollbackChoice] = useState("yes");
+  const [rollbackIssueId, setRollbackIssueId] = useState(null);
+  const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
+
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
   // "returned" | "utilised"
@@ -131,28 +140,59 @@ const PendingTempLoan = ({ type = "" }) => {
     receive: false,
   });
 
-  const handleRollback = async (id) => {
-    const confirm = window.confirm(
-      "Are you sure you want to rollback this Document Issue?",
-    );
+  // const handleRollback = async (id) => {
+  //   const confirm = window.confirm(
+  //     "Are you sure you want to rollback this Document Issue?",
+  //   );
 
-    if (!confirm) return;
+  //   if (!confirm) return;
 
-    try {
-      const response = await apiService.post("/document/reverse", {
-        issueId: id,
-      });
+  //   try {
+  //     const response = await apiService.post("/document/reverse", {
+  //       issueId: id,
+  //     });
 
-      if (response.success) {
-        toaster("success", "Document Issue rolled back successfully");
-        fetchdata();
-      } else {
-        toaster("error", response.message);
-      }
-    } catch (error) {
-      toaster("error", error.response?.data?.message || error.message);
-    }
+  //     if (response.success) {
+  //       toaster("success", "Document Issue rolled back successfully");
+  //       fetchdata();
+  //     } else {
+  //       toaster("error", response.message);
+  //     }
+  //   } catch (error) {
+  //     toaster("error", error.response?.data?.message || error.message);
+  //   }
+  // };
+
+    const handleRollback = (issueId, description) => {
+      setRollbackIssueId(issueId);
+      setRollbackItemDesc(description);
+      setRollbackChoice("yes");
+      setRollbackDialog(true);
   };
+  
+   const confirmRollback = async () => {
+     if (rollbackChoice !== "yes") {
+       setRollbackDialog(false);
+       return;
+     }
+
+     try {
+       const response = await apiService.post("/document/reverse", {
+         issueId: rollbackIssueId,
+       });
+
+       if (response.success) {
+         toaster("success", "TY Loan rolled back successfully");
+         fetchdata();
+       } else {
+         toaster("error", response.message);
+       }
+     } catch (error) {
+       toaster("error", error.response?.data?.message || error.message);
+     } finally {
+       setRollbackDialog(false);
+     }
+   };
 
   const fetchdata = async (page = currentPage) => {
     try {
@@ -259,7 +299,7 @@ const PendingTempLoan = ({ type = "" }) => {
               size="sm"
               variant="destructive"
               className="bg-red-600 text-white hover:bg-red-700"
-              onClick={() => handleRollback(row.id)}
+              onClick={() => handleRollback(row.id, row.description)}
             >
               Rollback
             </Button>
@@ -515,7 +555,7 @@ const PendingTempLoan = ({ type = "" }) => {
               size="sm"
               variant="destructive"
               className="bg-red-600 text-white hover:bg-red-700"
-              onClick={() => handleRollback(row.id)}
+              onClick={() => handleRollback(row.id, row.description)}
             >
               Rollback
             </Button>
@@ -916,6 +956,61 @@ const PendingTempLoan = ({ type = "" }) => {
             >
               Submit
             </SpinnerButton>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
+        <DialogContent className="w-[420px] p-6">
+          <DialogTitle>
+            Rollback:{" "}
+            <span className="text-sm">{rollbackItemDesc || "Item"}</span>
+          </DialogTitle>
+
+          <div className="mt-4">
+            <p className="mb-3 text-sm text-gray-700">
+              Are you sure you want to rollback this TY Loan?
+            </p>
+
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="yes"
+                  checked={rollbackChoice === "yes"}
+                  onChange={() => setRollbackChoice("yes")}
+                />
+                Yes
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="no"
+                  checked={rollbackChoice === "no"}
+                  onChange={() => setRollbackChoice("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => setRollbackDialog(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white hover:bg-primary/85 cursor-pointer"
+              onClick={confirmRollback}
+            >
+              Confirm
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

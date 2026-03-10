@@ -88,6 +88,11 @@ const PendingSurvey = () => {
     { value: "survey_quantity", label: "Surveyed Qty" },
   ];
 
+  const [rollbackDialog, setRollbackDialog] = useState(false);
+  const [rollbackChoice, setRollbackChoice] = useState("yes");
+  const [rollbackIssueId, setRollbackIssueId] = useState(null);
+  const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
   //for survey-stockin
   const [repairStatus, setRepairStatus] = useState(null);
 
@@ -119,26 +124,57 @@ const PendingSurvey = () => {
   });
   const [selectedRow, setSelectedRow] = useState({});
 
-  const handleRollback = async (row) => {
-    const confirm = window.confirm(
-      "Are you sure you want to revert this survey?",
-    );
-    if (!confirm) return;
+  // const handleRollback = async (row) => {
+  //   const confirm = window.confirm(
+  //     "Are you sure you want to revert this survey?",
+  //   );
+  //   if (!confirm) return;
+
+  //   try {
+  //     await apiService.post("/survey/reverse", {
+  //       survey_id: row.id,
+  //     });
+
+  //     toaster("success", "Survey reverted successfully");
+
+  //     // Remove row instantly from UI
+  //     setFetchedData((prev) => ({
+  //       ...prev,
+  //       items: prev.items.filter((item) => item.id !== row.id),
+  //     }));
+  //   } catch (error) {
+  //     toaster("error", error.response?.data?.message || "Rollback failed");
+  //   }
+  // };
+
+  const handleRollback = (issueId, description) => {
+    setRollbackIssueId(issueId);
+    setRollbackItemDesc(description);
+    setRollbackChoice("yes");
+    setRollbackDialog(true);
+  };
+
+  const confirmRollback = async () => {
+    if (rollbackChoice !== "yes") {
+      setRollbackDialog(false);
+      return;
+    }
 
     try {
-      await apiService.post("/survey/reverse", {
-        survey_id: row.id,
+      const response = await apiService.post("/survey/reverse", {
+        survey_id: rollbackIssueId,
       });
 
-      toaster("success", "Survey reverted successfully");
-
-      // Remove row instantly from UI
-      setFetchedData((prev) => ({
-        ...prev,
-        items: prev.items.filter((item) => item.id !== row.id),
-      }));
+      if (response.success) {
+        toaster("success", "TY Loan rolled back successfully");
+        fetchdata();
+      } else {
+        toaster("error", response.message);
+      }
     } catch (error) {
-      toaster("error", error.response?.data?.message || "Rollback failed");
+      toaster("error", error.response?.data?.message || error.message);
+    } finally {
+      setRollbackDialog(false);
     }
   };
 
@@ -301,7 +337,7 @@ const PendingSurvey = () => {
             variant="destructive"
             className="bg-red-600 text-white hover:bg-red-700"
             size="sm"
-            onClick={() => handleRollback(row)}
+            onClick={() => handleRollback(row.id, row.description)}
           >
             Rollback
           </Button>
@@ -663,6 +699,61 @@ const PendingSurvey = () => {
                 Submit
               </SpinnerButton>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
+        <DialogContent className="w-[420px] p-6">
+          <DialogTitle>
+            Rollback:{" "}
+            <span className="text-sm">{rollbackItemDesc || "Item"}</span>
+          </DialogTitle>
+
+          <div className="mt-4">
+            <p className="mb-3 text-sm text-gray-700">
+              Are you sure you want to rollback this TY Loan?
+            </p>
+
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="yes"
+                  checked={rollbackChoice === "yes"}
+                  onChange={() => setRollbackChoice("yes")}
+                />
+                Yes
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="no"
+                  checked={rollbackChoice === "no"}
+                  onChange={() => setRollbackChoice("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => setRollbackDialog(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white hover:bg-primary/85 cursor-pointer"
+              onClick={confirmRollback}
+            >
+              Confirm
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

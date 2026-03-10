@@ -946,12 +946,33 @@ async function revertSurvey(req, res) {
     );
 
     if (!boxLogs.length) {
-      await connection.rollback();
-      return new ApiErrorResponse(
-        400,
-        {},
-        "No box transaction records found",
-      ).send(res);
+      // No box logs exist → just restore OBS quantity
+      const restoreQty = Number(
+        record.survey_qty || record.repairable_qty || 0,
+      );
+
+      const previousOBS = Number(item.obs_held || 0);
+      const newOBS = previousOBS + restoreQty;
+
+      await connection.query(
+        `UPDATE ${tableName}
+     SET obs_held = ?
+     WHERE id = ?`,
+        [newOBS, itemId],
+      );
+
+      await connection.query(
+        `UPDATE ${sourceTable}
+     SET status = 'reversed'
+     WHERE id = ?`,
+        [survey_id],
+      );
+
+      await connection.commit();
+
+      return new ApiResponse(200, {}, "Transaction reverted successfully").send(
+        res,
+      );
     }
 
     /** =====================================================
