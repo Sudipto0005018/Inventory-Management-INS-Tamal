@@ -100,6 +100,14 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
   ];
+
+
+  const [rollbackDialog, setRollbackDialog] = useState(false);
+  const [rollbackChoice, setRollbackChoice] = useState("yes");
+  const [rollbackRow, setRollbackRow] = useState(null);
+  const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
+
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,36 +134,77 @@ const PendingDemand = () => {
   });
   const [selectedRow, setSelectedRow] = useState({});
 
-  const handleRollback = async (row) => {
-    const confirm = window.confirm(
-      "Are you sure you want to rollback this transaction?",
-    );
-    if (!confirm) return;
+  // const handleRollback = async (row) => {
+  //   const confirm = window.confirm(
+  //     "Are you sure you want to rollback this transaction?",
+  //   );
+  //   if (!confirm) return;
+
+  //   try {
+  //     // Case 1️⃣ : Manual Withdrawl (C / LP → Demand)
+  //     if (row.transaction_id?.startsWith("PI-")) {
+  //       await apiService.post("/survey/reverse", {
+  //         survey_id: row.id,
+  //       });
+  //     }
+
+  //     // Case 2️⃣ : Survey → Demand (Pending Survey Flow)
+  //     else {
+  //       await apiService.post("/demand/reverse", {
+  //         demand_id: row.id,
+  //       });
+  //     }
+
+  //     toaster("success", "Rollback successful");
+
+  //     // remove row instantly
+  //     setFetchedData((prev) => ({
+  //       ...prev,
+  //       items: prev.items.filter((item) => item.id !== row.id),
+  //     }));
+  //   } catch (error) {
+  //     toaster("error", error.response?.data?.message || "Rollback failed");
+  //   }
+  // };
+
+
+  const handleRollback = (row) => {
+    setRollbackRow(row);
+    setRollbackItemDesc(row.description);
+    setRollbackChoice("yes");
+    setRollbackDialog(true);
+  };
+
+  const confirmRollback = async () => {
+    if (rollbackChoice !== "yes") {
+      setRollbackDialog(false);
+      return;
+    }
 
     try {
       // Case 1️⃣ : Manual Withdrawl (C / LP → Demand)
-      if (row.transaction_id?.startsWith("PI-")) {
+      if (rollbackRow?.transaction_id?.startsWith("PI-")) {
         await apiService.post("/survey/reverse", {
-          survey_id: row.id,
+          survey_id: rollbackRow.id,
         });
       }
-
       // Case 2️⃣ : Survey → Demand (Pending Survey Flow)
       else {
         await apiService.post("/demand/reverse", {
-          demand_id: row.id,
+          demand_id: rollbackRow.id,
         });
       }
 
       toaster("success", "Rollback successful");
 
-      // remove row instantly
       setFetchedData((prev) => ({
         ...prev,
-        items: prev.items.filter((item) => item.id !== row.id),
+        items: prev.items.filter((item) => item.id !== rollbackRow.id),
       }));
     } catch (error) {
       toaster("error", error.response?.data?.message || "Rollback failed");
+    } finally {
+      setRollbackDialog(false);
     }
   };
 
@@ -490,6 +539,61 @@ const PendingDemand = () => {
                 </SpinnerButton>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
+        <DialogContent className="w-[420px] p-6">
+          <DialogTitle>
+            Rollback:{" "}
+            <span className="text-sm">{rollbackItemDesc || "Item"}</span>
+          </DialogTitle>
+
+          <div className="mt-4">
+            <p className="mb-3 text-sm text-gray-700">
+              Are you sure you want to rollback this transaction?
+            </p>
+
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="yes"
+                  checked={rollbackChoice === "yes"}
+                  onChange={() => setRollbackChoice("yes")}
+                />
+                Yes
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="no"
+                  checked={rollbackChoice === "no"}
+                  onChange={() => setRollbackChoice("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => setRollbackDialog(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white hover:bg-primary/85 cursor-pointer"
+              onClick={confirmRollback}
+            >
+              Confirm
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
