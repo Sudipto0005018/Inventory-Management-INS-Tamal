@@ -101,11 +101,17 @@ const PendingDemand = () => {
     },
   ];
 
-
+//demand rollback states
   const [rollbackDialog, setRollbackDialog] = useState(false);
   const [rollbackChoice, setRollbackChoice] = useState("yes");
   const [rollbackRow, setRollbackRow] = useState(null);
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
+
+  //add demand states
+  const [addDemandItems, setAddDemandItems] = useState([]);
+  const [selectedDemandItem, setSelectedDemandItem] = useState(null);
+  const [itemType, setItemType] = useState("");
 
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -131,6 +137,7 @@ const PendingDemand = () => {
   const [isOpen, setIsOpen] = useState({
     demand: false,
     demand_date: false,
+    addDemand: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -347,6 +354,13 @@ const PendingDemand = () => {
             maxCount={6}
           />
         </div>
+
+        <Button
+          className="cursor-pointer hover:bg-primary/85 flex items-center gap-1"
+          onClick={() => setIsOpen((prev) => ({ ...prev, addDemand: true }))}
+        >
+          + Add Demand
+        </Button>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}
@@ -593,6 +607,109 @@ const PendingDemand = () => {
               onClick={confirmRollback}
             >
               Confirm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* add demand dialog */}
+      <Dialog
+        open={isOpen.addDemand}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addDemand: open }))
+        }
+      >
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Add Demand Item</DialogTitle>
+
+          {/* ITEM TYPE */}
+          <div className="mt-4">
+            <Label>Item Type</Label>
+
+            <select
+              className="w-full border rounded p-2 mt-1"
+              value={itemType}
+              onChange={async (e) => {
+                const type = e.target.value;
+                setItemType(type);
+
+                if (!type) return;
+
+                const response = await apiService.get(
+                  type === "spare" ? "/spares" : "/tools",
+                  {
+                    params: {
+                      limit: 100,
+                      // category: "PR",
+                    },
+                  },
+                );
+
+                setAddDemandItems(response.data.items);
+              }}
+            >
+              <option value="">Select Type</option>
+              <option value="spare">Spares</option>
+              <option value="tool">Tools</option>
+            </select>
+          </div>
+
+          {/* ITEM LIST */}
+          {addDemandItems.length > 0 && (
+            <div className="mt-4">
+              <Label>Select Item</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                onChange={(e) => {
+                  const item = addDemandItems.find(
+                    (i) => i.id == e.target.value,
+                  );
+                  setSelectedDemandItem(item);
+                }}
+              >
+                <option>Select Item</option>
+
+                {addDemandItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.description} ({item.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="destructive"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, addDemand: false }))
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white"
+              onClick={async () => {
+                if (!selectedDemandItem) {
+                  return toaster("error", "Please select item");
+                }
+
+                await apiService.post("/demand/manual-add", {
+                  spare_id: itemType === "spare" ? selectedDemandItem.id : null,
+                  tool_id: itemType === "tool" ? selectedDemandItem.id : null,
+                });
+
+                toaster("success", "Demand item added");
+
+                setIsOpen((prev) => ({ ...prev, addDemand: false }));
+
+                fetchdata();
+              }}
+            >
+              Submit
             </Button>
           </div>
         </DialogContent>

@@ -11,6 +11,7 @@ const {
   rejectObsAuth,
   getCriticalTools,
   getLowStockTools,
+  getAddSurveyTools,
 } = require("../controllers/tools.controller");
 const {
   authMiddleware,
@@ -28,5 +29,6 @@ router.get("/", authMiddleware, getTools);
 router.get("/critical", authMiddleware, getCriticalTools);
 router.delete("/:id", authMiddleware, deleteTool);
 router.get("/low-stock", getLowStockTools);
+router.get("/surveyAdd", authMiddleware, getAddSurveyTools);
 
 module.exports = router;

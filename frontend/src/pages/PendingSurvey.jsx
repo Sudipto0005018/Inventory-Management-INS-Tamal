@@ -88,10 +88,17 @@ const PendingSurvey = () => {
     { value: "survey_quantity", label: "Surveyed Qty" },
   ];
 
+  //rollback states
   const [rollbackDialog, setRollbackDialog] = useState(false);
   const [rollbackChoice, setRollbackChoice] = useState("yes");
   const [rollbackIssueId, setRollbackIssueId] = useState(null);
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
+
+  //add survey states
+  const [itemType, setItemType] = useState("");
+  const [itemsList, setItemsList] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   //for survey-stockin
   const [repairStatus, setRepairStatus] = useState(null);
@@ -121,6 +128,7 @@ const PendingSurvey = () => {
   const [isOpen, setIsOpen] = useState({
     survey: false,
     survey_calender: false,
+    addSurvey: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -375,6 +383,13 @@ const PendingSurvey = () => {
             maxCount={6}
           />
         </div>
+        <Button
+          className="cursor-pointer hover:bg-primary/85 flex items-center gap-1"
+          onClick={() => setIsOpen((prev) => ({ ...prev, addSurvey: true }))}
+        >
+          <Plus className="size-4" />
+          Add Survey
+        </Button>
         <SpinnerButton
           className="cursor-pointer hover:bg-primary/85"
           onClick={handleSearch}
@@ -753,6 +768,106 @@ const PendingSurvey = () => {
               onClick={confirmRollback}
             >
               Confirm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* add syrvey dialog */}
+
+      <Dialog
+        open={isOpen.addSurvey}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addSurvey: open }))
+        }
+      >
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Add Survey Item</DialogTitle>
+
+          {/* ITEM TYPE */}
+          <div className="mt-4">
+            <Label>Item Type</Label>
+
+            <select
+              className="w-full border rounded p-2 mt-1"
+              value={itemType}
+              onChange={async (e) => {
+                const type = e.target.value;
+                setItemType(type);
+
+                if (!type) return;
+
+                const response = await apiService.get(
+                  type === "spare" ? "/spares/surveyAdd" : "/tools/surveyAdd",
+                  {
+                    params: {
+                      limit: 100,
+                      category: "PR",
+                    },
+                  },
+                );
+
+                setItemsList(response.data.items);
+              }}
+            >
+              <option value="">Select Type</option>
+              <option value="spare">Spares</option>
+              <option value="tool">Tools</option>
+            </select>
+          </div>
+
+          {/* ITEM LIST */}
+          {itemsList.length > 0 && (
+            <div className="mt-4">
+              <Label>Select Item</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                onChange={(e) => {
+                  const item = itemsList.find((i) => i.id == e.target.value);
+                  setSelectedItem(item);
+                }}
+              >
+                <option>Select Item</option>
+                {itemsList.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.description} ({item.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="destructive"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, addSurvey: false }))
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white"
+              onClick={async () => {
+                if (!selectedItem) {
+                  return toaster("error", "Please select item");
+                }
+
+                await apiService.post("/survey/manual-add", {
+                  spare_id: itemType === "spare" ? selectedItem.id : null,
+                  tool_id: itemType === "tool" ? selectedItem.id : null,
+                });
+
+                toaster("success", "Survey item added");
+
+                setIsOpen((prev) => ({ ...prev, addSurvey: false }));
+                fetchdata();
+              }}
+            >
+              Submit
             </Button>
           </div>
         </DialogContent>

@@ -147,6 +147,135 @@ async function getTools(req, res) {
   }
 }
 
+async function getAddSurveyTools(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = (req.query?.search || "").trim();
+  let searchFieldsRaw = req.query?.searchFields || "";
+  let searchFields = [];
+
+  if (searchFieldsRaw) {
+    try {
+      if (searchFieldsRaw.startsWith("[")) {
+        searchFields = JSON.parse(searchFieldsRaw);
+      } else {
+        searchFields = searchFieldsRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    } catch (e) {
+      searchFields = [];
+    }
+  }
+
+  const validFields = searchFields.length
+    ? searchFields.filter((f) => ALLOWED_TOOL_SEARCH_FIELDS.includes(f))
+    : [
+        "description",
+        "equipment_system",
+        "denos",
+        "indian_pattern",
+        "item_code",
+        "category",
+        "substitute_name",
+      ];
+
+  const offset = (page - 1) * limit;
+  const department = req.department;
+
+  try {
+    let whereClause = "WHERE 1=1";
+    let params = [];
+
+    if (search) {
+      // Split by comma OR space
+      const searchWords = search
+        .split(/[,;\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of validFields) {
+          // Numeric field detection (add more if needed)
+          if (
+            [
+              "price_unit",
+              "obs_authorised",
+              "obs_maintained",
+              "obs_held",
+            ].includes(field) &&
+            !isNaN(word)
+          ) {
+            params.push(Number(word));
+            fieldFragments.push(`${field} = ?`);
+          } else {
+            params.push(`%${word}%`);
+            fieldFragments.push(`${field} LIKE ?`);
+          }
+        }
+
+        // One word must match at least one field (OR)
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match (AND)
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
+    }
+    const categoryFilter = req.query.category;
+
+    if (categoryFilter === "PR") {
+      whereClause += ` AND category IN ('P','R')`;
+    }
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM tools ${whereClause}`,
+      params,
+    );
+    const totalTools = totalCount[0].count;
+
+    if (totalTools === 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+            search ? "No matching tools found" : "No tools found",
+          ),
+        );
+    }
+
+    const query = `
+      SELECT * FROM tools ${whereClause}
+      ORDER BY description ASC
+      LIMIT ? OFFSET ?;
+    `;
+    const [rows] = await pool.query(query, [...params, limit, offset]);
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: totalTools,
+          totalPages: Math.ceil(totalTools / limit),
+          currentPage: page,
+        },
+        "Tools retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.log("Error while getting tools: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 const createTool = async (req, res) => {
   const {
     description,
@@ -883,4 +1012,5 @@ module.exports = {
   rejectObsAuth,
   getCriticalTools,
   getLowStockTools,
+  getAddSurveyTools,
 };

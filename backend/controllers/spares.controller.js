@@ -153,6 +153,138 @@ async function getSpares(req, res) {
   }
 }
 
+async function getAddSurveySpares(req, res) {
+  const page = parseInt(req.query?.page) || 1;
+  const limit = parseInt(req.query?.limit) || 10;
+  const search = (req.query?.search || "").trim();
+  // new: comma-separated or JSON array of fields
+  let searchFieldsRaw = req.query?.searchFields || "";
+  let searchFields = [];
+
+  if (searchFieldsRaw) {
+    try {
+      if (searchFieldsRaw.startsWith("[")) {
+        searchFields = JSON.parse(searchFieldsRaw);
+      } else {
+        searchFields = searchFieldsRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    } catch (e) {
+      searchFields = [];
+    }
+  }
+
+  // sanitize/validate fields, fallback to default fields when none provided
+  const validFields = searchFields.length
+    ? searchFields.filter((f) => ALLOWED_SEARCH_FIELDS.includes(f))
+    : [
+        "description",
+        "equipment_system",
+        "denos",
+        "indian_pattern",
+        "item_code",
+        "category",
+        "substitute_name",
+      ];
+
+  const offset = (page - 1) * limit;
+  const department = req.department;
+
+  try {
+    // base where
+    let whereClause = "WHERE 1=1";
+    let params = [];
+
+    if (search) {
+      // Split search by comma OR space
+      const searchWords = search
+        .split(/[,;\s]+/)
+        .map((w) => w.trim())
+        .filter(Boolean);
+
+      let wordConditions = [];
+
+      for (const word of searchWords) {
+        let fieldFragments = [];
+
+        for (const field of validFields) {
+          // Numeric fields detection
+          if (
+            [
+              "obs_authorised",
+              "obs_maintained",
+              "obs_held",
+              "price_unit",
+            ].includes(field) &&
+            !isNaN(word)
+          ) {
+            params.push(Number(word));
+            fieldFragments.push(`${field} = ?`);
+          } else {
+            params.push(`%${word}%`);
+            fieldFragments.push(`${field} LIKE ?`);
+          }
+        }
+
+        // Each word must match at least one field (OR)
+        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+      }
+
+      // All words must match (AND)
+      whereClause += ` AND (${wordConditions.join(" AND ")})`;
+    }
+    const categoryFilter = req.query.category;
+
+    if (categoryFilter === "PR") {
+      whereClause += ` AND category IN ('P','R')`;
+    }
+    const [totalCount] = await pool.query(
+      `SELECT COUNT(*) as count FROM spares ${whereClause}`,
+      params,
+    );
+    const totalSpares = totalCount[0].count;
+
+    if (totalSpares === 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+            search ? "No matching spares found" : "No spare found",
+          ),
+        );
+    }
+
+    const query = `
+      SELECT *, 'spare' AS source FROM spares
+      ${whereClause}
+      ORDER BY description ASC
+      LIMIT ? OFFSET ?;
+    `;
+    const [rows] = await pool.query(query, [...params, limit, offset]);
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems: totalSpares,
+          totalPages: Math.ceil(totalSpares / limit),
+          currentPage: page,
+        },
+        "Spares retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.log("Error while getting spares: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 const createSpare = async (req, res) => {
   const {
     description,
@@ -2085,4 +2217,5 @@ module.exports = {
   generateQRCode,
   generateExcel,
   getLowStockSpares,
+  getAddSurveySpares,
 };

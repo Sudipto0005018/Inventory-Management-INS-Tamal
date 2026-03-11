@@ -1057,9 +1057,74 @@ async function revertSurvey(req, res) {
   }
 }
 
+
+async function manualAddSurvey(req, res) {
+  const { spare_id, tool_id } = req.body;
+
+  const { id: created_by } = req.user;
+
+  try {
+    const transactionId = "ADD_SUR-" + Date.now();
+
+    let item;
+
+    if (spare_id) {
+      const [[row]] = await pool.query(
+        `SELECT description, indian_pattern, category FROM spares WHERE id=?`,
+        [spare_id],
+      );
+      item = row;
+    }
+
+    if (tool_id) {
+      const [[row]] = await pool.query(
+        `SELECT description, indian_pattern, category FROM tools WHERE id=?`,
+        [tool_id],
+      );
+      item = row;
+    }
+
+    await pool.query(
+      `INSERT INTO survey (
+        transaction_id,
+        spare_id,
+        tool_id,
+        issue_to,
+        withdrawl_qty,
+        box_no,
+        service_no,
+        name,
+        created_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        transactionId,
+        spare_id || null,
+        tool_id || null,
+        "MANUAL",
+        0,
+        JSON.stringify([]),
+        "MANUAL",
+        "MANUAL",
+        created_by,
+      ],
+    );
+
+    res
+      .status(201)
+      .json(new ApiResponse(201, {}, "Survey item added successfully"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   createSurvey,
   getSurveys,
   getLogSurveys,
   revertSurvey,
+  manualAddSurvey,
 };
