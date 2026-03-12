@@ -182,7 +182,7 @@ const PendingTempLoan = ({ type = "" }) => {
        });
 
        if (response.success) {
-         toaster("success", "TY Loan rolled back successfully");
+         toaster("success", "Document Issue rolled back successfully");
          fetchdata();
        } else {
          toaster("error", response.message);

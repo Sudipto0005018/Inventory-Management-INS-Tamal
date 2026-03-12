@@ -152,34 +152,35 @@ const Procurement = () => {
     setRollbackDialog(true);
   };
 
- const confirmRollback = async () => {
-   if (rollbackChoice !== "yes") {
-     setRollbackDialog(false);
-     return;
-   }
+  const confirmRollback = async () => {
+    if (rollbackChoice !== "yes") {
+      setRollbackDialog(false);
+      return;
+    }
+    console.log("Rollback row:", rollbackRow);
+    console.log("Pending Issue ID:", rollbackRow.pending_issue_id);
+    try {
+      const response = await apiService.put(
+        `/issue/reverse/${rollbackRow.issue_id}`,
+      );
 
-   try {
-     const response = await apiService.post(
-       `/issue/reverse/${rollbackRow.id}`,
-     );
+      if (response.success) {
+        toaster("success", "Procurement rolled back successfully");
 
-     if (response.success) {
-       toaster("success", "Pending issue rolled back successfully");
-
-       // remove row from table instantly
-       setFetchedData((prev) => ({
-         ...prev,
-         items: prev.items.filter((item) => item.id !== rollbackRow.id),
-       }));
-     } else {
-       toaster("error", response.message);
-     }
-   } catch (error) {
-     toaster("error", error.response?.data?.message || "Rollback failed");
-   } finally {
-     setRollbackDialog(false);
-   }
- };
+        // remove row from table instantly
+        setFetchedData((prev) => ({
+          ...prev,
+          items: prev.items.filter((item) => item.id !== rollbackRow.id),
+        }));
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      toaster("error", error.response?.data?.message || "Rollback failed");
+    } finally {
+      setRollbackDialog(false);
+    }
+  };
 
   const fetchdata = async (page = currentPage) => {
     try {
@@ -961,10 +962,6 @@ const Procurement = () => {
         </DialogContent>
       </Dialog>
 
-
-
-
-
       {/* procurement rollback dialog */}
       <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
         <DialogContent className="w-[420px] p-6">
@@ -1022,6 +1019,6 @@ const Procurement = () => {
       </Dialog>
     </>
   );
-};;
+};
 
 export default Procurement;

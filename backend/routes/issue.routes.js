@@ -12,5 +12,5 @@ const {
 router.put("/pending-issue/:id", authMiddleware, updatePendingIssue);
 router.get("/pending-issue", authMiddleware, getPendingIssue);
 router.get("/logs", authMiddleware, getPendingLogs);
-router.put("/reverse", authMiddleware, reversePendingIssue);
+router.put("/reverse/:id", authMiddleware, reversePendingIssue);
 module.exports = router;

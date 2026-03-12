@@ -622,7 +622,13 @@ const PendingDemand = () => {
           setIsOpen((prev) => ({ ...prev, addDemand: open }))
         }
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          showCloseButton
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          className="max-w-lg"
+        >
           <DialogTitle>Add Demand Item</DialogTitle>
 
           {/* ITEM TYPE */}

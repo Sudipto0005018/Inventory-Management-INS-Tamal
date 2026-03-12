@@ -90,7 +90,6 @@ const PermanentPendings = () => {
   const [rollbackRow, setRollbackRow] = useState(null);
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
 
-
   const [generateQR, setGenerateQR] = useState("no");
   const [openQRDialog, setOpenQRDialog] = useState(false);
 
@@ -136,26 +135,27 @@ const PermanentPendings = () => {
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
 
-   const handleRollback = (row) => {
-     setRollbackRow(row);
-     setRollbackItemDesc(row.description);
-     setRollbackChoice("yes");
-     setRollbackDialog(true);
-   };
+  const handleRollback = (row) => {
+    setRollbackRow(row);
+    setRollbackItemDesc(row.description);
+    setRollbackChoice("yes");
+    setRollbackDialog(true);
+  };
 
   const confirmRollback = async () => {
     if (rollbackChoice !== "yes") {
       setRollbackDialog(false);
       return;
     }
-
+    console.log("Rollback row:", rollbackRow);
+    console.log("Issue ID:", rollbackRow.issue_id);
     try {
-      const response = await apiService.post(
-        `/issue/reverse/${rollbackRow.id}`,
+      const response = await apiService.put(
+        `/issue/reverse/${rollbackRow.issued_id}`,
       );
 
       if (response.success) {
-        toaster("success", response.message || "Rollback successful");
+        toaster("success", "Stock-update rolled back successfully");
 
         // remove row instantly from table
         setFetchedData((prev) => ({
@@ -418,7 +418,7 @@ const PermanentPendings = () => {
           </Button>
         ),
         rollback:
-          user.role === "officer" ? (
+          user.role === "officer"? (
             <Button
               variant="destructive"
               className="bg-red-600 text-white hover:bg-red-700"
@@ -822,6 +822,6 @@ const PermanentPendings = () => {
       </Dialog>
     </>
   );
-};;
+};
 
 export default PermanentPendings;

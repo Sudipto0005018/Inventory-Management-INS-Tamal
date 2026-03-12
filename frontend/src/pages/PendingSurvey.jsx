@@ -782,7 +782,13 @@ const PendingSurvey = () => {
           setIsOpen((prev) => ({ ...prev, addSurvey: open }))
         }
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          showCloseButton
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          className="max-w-lg"
+        >
           <DialogTitle>Add Survey Item</DialogTitle>
 
           {/* ITEM TYPE */}
@@ -877,12 +883,12 @@ const PendingSurvey = () => {
                   return toaster("error", "Please enter Withdrawal Qty");
                 }
 
-                 if (withdrawlQty <= 0) {
-                   return toaster(
-                     "error",
-                     "Withdrawal Qty must be greater than 0",
-                   );
-                 }
+                if (withdrawlQty <= 0) {
+                  return toaster(
+                    "error",
+                    "Withdrawal Qty must be greater than 0",
+                  );
+                }
 
                 await apiService.post("/survey/manual-add", {
                   spare_id: itemType === "spare" ? selectedItem.id : null,
