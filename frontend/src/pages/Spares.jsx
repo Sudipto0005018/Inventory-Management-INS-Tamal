@@ -1266,10 +1266,16 @@ const Spares = ({ type = "" }) => {
       };
     });
 
+    const incDecQty =
+      obsDialog.action === "increase"
+        ? Number(obsDialog.quantity)
+        : -Number(obsDialog.quantity);
+
     const payload = {
       spare_id: selectedRow.id,
       obs_authorised: finalValue,
-      obs_increase_qty: obsDialog.quantity,
+      obs_increase_qty: incDecQty,
+      // obs_increase_qty: obsDialog.quantity,
       box_no: JSON.stringify(updatedBox),
       quoteAuthority: obsDialog.quoteAuthority,
       obs_maintained: newObsMaintained,
@@ -1287,7 +1293,7 @@ const Spares = ({ type = "" }) => {
         : null,
       mo_demand_no: obsDialog.moDemandNo?.trim() || null,
       mo_demand_date: obsDialog.moDemandDate
-        ? getISTTimestamp(obsDialog.requisitionDate)
+        ? getISTTimestamp(obsDialog.moDemandDate)
         : null,
     };
     console.log("payload==>", payload);
@@ -4216,6 +4222,7 @@ const Spares = ({ type = "" }) => {
                     (sum, box) => sum + Number(box.qn || 0),
                     0,
                   );
+          
                   // Calculate final value
                   const finalValue =
                     obsDialog.action === "increase"

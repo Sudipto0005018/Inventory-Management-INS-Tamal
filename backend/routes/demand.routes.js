@@ -22,7 +22,7 @@ router.post("/create-pending-issue", authMiddleware, createPendingIssue);
 router.get("/pending-issue", authMiddleware, getPendingIssue);
 router.put("/pending-issue/:id", authMiddleware, updatePendingIssue);
 router.post("/reverse", authMiddleware, revertDemand);
-router.post("/reverse", authMiddleware, revertPendingIssue);
+router.post("/pending-issue/reverse", authMiddleware, revertPendingIssue);
 router.post("/repair-stock", authMiddleware, createRepairStock);
 router.post("/manual-add", authMiddleware, manualAddDemand);
 

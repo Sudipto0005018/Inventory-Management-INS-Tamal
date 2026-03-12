@@ -326,8 +326,13 @@ const PendingSpecial = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
 
-      // Qty increased from spares
-      quantity: row.obs_increase_qty || "--",
+      // Qty increased from spares/tools
+      quantity:
+        row.obs_increase_qty !== null && row.obs_increase_qty !== undefined
+          ? row.obs_increase_qty > 0
+            ? `+${row.obs_increase_qty}`
+            : row.obs_increase_qty
+          : "--",
       created_at: getTimeDate(row.created_at),
       // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",

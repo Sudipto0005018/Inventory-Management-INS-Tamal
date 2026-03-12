@@ -112,6 +112,7 @@ const PendingDemand = () => {
   const [addDemandItems, setAddDemandItems] = useState([]);
   const [selectedDemandItem, setSelectedDemandItem] = useState(null);
   const [itemType, setItemType] = useState("");
+  const [surveyQty, setSurveyQty] = useState("");
 
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -138,6 +139,8 @@ const PendingDemand = () => {
     demand: false,
     demand_date: false,
     addDemand: false,
+    addSpare: false,
+    addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -655,7 +658,7 @@ const PendingDemand = () => {
           </div>
 
           {/* ITEM LIST */}
-          {addDemandItems.length > 0 && (
+          {/* {addDemandItems.length > 0 && (
             <div className="mt-4">
               <Label>Select Item</Label>
 
@@ -666,6 +669,30 @@ const PendingDemand = () => {
                     (i) => i.id == e.target.value,
                   );
                   setSelectedDemandItem(item);
+                }} */}
+          {itemType && (
+            <div className="mt-4">
+              <Label>Select Item</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  if (value === "custom") {
+                    if (itemType === "spare") {
+                      setIsOpen((prev) => ({ ...prev, addSpare: true }));
+                    }
+
+                    if (itemType === "tool") {
+                      setIsOpen((prev) => ({ ...prev, addTool: true }));
+                    }
+
+                    return;
+                  }
+
+                  const item = addDemandItems.find((i) => i.id == value);
+                  setSelectedDemandItem(item);
                 }}
               >
                 <option>Select Item</option>
@@ -675,9 +702,25 @@ const PendingDemand = () => {
                     {item.description} ({item.category})
                   </option>
                 ))}
+                <option value="custom">➕ Add New {itemType}</option>
               </select>
             </div>
           )}
+
+          {/* SURVEY QTY */}
+          <div className="mt-4">
+            <Label>
+              Surveyed / Utilised Qty <span className="text-red-500">*</span>
+            </Label>
+
+            <Input
+              type="number"
+              min="1"
+              placeholder="Enter quantity"
+              value={surveyQty}
+              onChange={(e) => setSurveyQty(e.target.value)}
+            />
+          </div>
 
           {/* ACTION BUTTONS */}
           <div className="flex justify-end gap-3 mt-6">
@@ -697,12 +740,21 @@ const PendingDemand = () => {
                   return toaster("error", "Please select item");
                 }
 
+                if (!surveyQty || Number(surveyQty) <= 0) {
+                  return toaster("error", "Survey Qty must be greater than 0");
+                }
+
                 await apiService.post("/demand/manual-add", {
                   spare_id: itemType === "spare" ? selectedDemandItem.id : null,
                   tool_id: itemType === "tool" ? selectedDemandItem.id : null,
+                  survey_qty: Number(surveyQty),
                 });
 
                 toaster("success", "Demand item added");
+
+                setSurveyQty("");
+                setSelectedDemandItem(null);
+                setItemType("");
 
                 setIsOpen((prev) => ({ ...prev, addDemand: false }));
 
@@ -710,6 +762,54 @@ const PendingDemand = () => {
               }}
             >
               Submit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD SPARE */}
+
+      <Dialog
+        open={isOpen.addSpare}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addSpare: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Spare</DialogTitle>
+
+          <p>Reuse your existing Add Spare form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, addSpare: false }))
+              }
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD TOOL */}
+
+      <Dialog
+        open={isOpen.addTool}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addTool: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Tool</DialogTitle>
+
+          <p>Reuse your existing Add Tool form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen((prev) => ({ ...prev, addTool: false }))}
+            >
+              Close
             </Button>
           </div>
         </DialogContent>

@@ -38,7 +38,7 @@ const PendingSpecial = () => {
       header: (
         <span>
           Qty
-          <br /> Inc/Dec
+          <br /> Inc/ Dec
         </span>
       ),
     },

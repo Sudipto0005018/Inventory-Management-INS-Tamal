@@ -470,8 +470,112 @@ async function getPendingLogs(req, res) {
   }
 }
 
+
+async function reversePendingIssue(req, res) {
+  const { id } = req.params;
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    /* =====================================================
+       GET ISSUE
+    ===================================================== */
+    const [rows] = await connection.query(
+      `SELECT * FROM pending_issue WHERE id = ?`,
+      [id],
+    );
+
+    if (!rows.length) {
+      await connection.rollback();
+      return new ApiErrorResponse(404, {}, "Pending issue not found").send(res);
+    }
+
+    const issue = rows[0];
+
+    /* =====================================================
+       GET RELATED PROCUREMENT
+    ===================================================== */
+    const [procRows] = await connection.query(
+      `SELECT id, nac_qty 
+       FROM procurement 
+       WHERE issue_id = ? AND status != 'reversed'`,
+      [id],
+    );
+
+    let rollbackQty = 0;
+
+    for (const row of procRows) {
+      rollbackQty += Number(row.nac_qty || 0);
+
+      await connection.query(
+        `UPDATE procurement
+         SET status = 'reversed'
+         WHERE id = ?`,
+        [row.id],
+      );
+    }
+
+    /* =====================================================
+       GET RELATED STOCK UPDATE
+    ===================================================== */
+    const [stockRows] = await connection.query(
+      `SELECT id, stocked_in_qty 
+       FROM stock_update
+       WHERE issued_id = ? AND status != 'reversed'`,
+      [id],
+    );
+
+    for (const row of stockRows) {
+      rollbackQty += Number(row.stocked_in_qty || 0);
+
+      await connection.query(
+        `UPDATE stock_update
+         SET status = 'reversed'
+         WHERE id = ?`,
+        [row.id],
+      );
+    }
+
+    /* =====================================================
+       RESTORE PENDING ISSUE QUANTITY
+    ===================================================== */
+
+    const previousStocked = Number(issue.stocked_nac_qty || 0);
+    const newStocked = Math.max(previousStocked - rollbackQty, 0);
+
+    let newStatus = "pending";
+
+    if (newStocked > 0 && newStocked < issue.demand_quantity) {
+      newStatus = "partial";
+    }
+
+    await connection.query(
+      `UPDATE pending_issue
+       SET stocked_nac_qty = ?, status = ?
+       WHERE id = ?`,
+      [newStocked, newStatus, id],
+    );
+
+    await connection.commit();
+
+    return new ApiResponse(
+      200,
+      { restored_qty: rollbackQty },
+      "Pending issue reversed successfully",
+    ).send(res);
+  } catch (error) {
+    await connection.rollback();
+    console.error(error);
+    return new ApiErrorResponse(500, {}, error.message).send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   updatePendingIssue,
   getPendingIssue,
   getPendingLogs,
+  reversePendingIssue,
 };

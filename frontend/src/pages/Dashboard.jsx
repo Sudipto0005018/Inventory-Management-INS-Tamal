@@ -54,17 +54,15 @@ export default function Dashboard() {
 
   // h-screen
   return (
-    <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-5">
-      {" "}
-      {/* Header with Gradient */}
+    <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-blue-100 from-gray-50 to-gray-100 p-3 mt-[-20px] md:p-5">
+      {/* bg-gradient-to-br */} {/* Header with Gradient */}
       <div className="mb-3 text-center">
         <div className="flex flex-col items-center">
           <div className="">
             <h1 className="text-base md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               Dashboard Overview
             </h1>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-2 justify-center">
-              <span className="w-1 h-0.5 bg-blue-500 rounded-full"></span>
+            <p className="text-xs text-gray-500 mt-1 font-semibold flex items-center gap-2 justify-center">
               Complete Inventory Management Summary
             </p>
           </div>

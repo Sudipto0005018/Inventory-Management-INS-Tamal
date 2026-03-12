@@ -6,10 +6,11 @@ const {
   updatePendingIssue,
   getPendingIssue,
   getPendingLogs,
+  reversePendingIssue,
 } = require("../controllers/issue.controller");
 
 router.put("/pending-issue/:id", authMiddleware, updatePendingIssue);
 router.get("/pending-issue", authMiddleware, getPendingIssue);
 router.get("/logs", authMiddleware, getPendingLogs);
-
+router.put("/reverse", authMiddleware, reversePendingIssue);
 module.exports = router;

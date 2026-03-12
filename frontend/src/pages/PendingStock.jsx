@@ -56,6 +56,9 @@ const PermanentPendings = () => {
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
       : []),
+    ...(user.role === "officer"
+      ? [{ key: "rollback", header: "Rollback" }]
+      : []),
     // { key: "processed", header: "Proceed" },
   ]);
 
@@ -80,6 +83,13 @@ const PermanentPendings = () => {
     { value: "qty_received", label: "Received Qty" },
     { value: "created_at", label: "Created On" },
   ];
+
+  //stock-update rollback states
+  const [rollbackDialog, setRollbackDialog] = useState(false);
+  const [rollbackChoice, setRollbackChoice] = useState("yes");
+  const [rollbackRow, setRollbackRow] = useState(null);
+  const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
 
   const [generateQR, setGenerateQR] = useState("no");
   const [openQRDialog, setOpenQRDialog] = useState(false);
@@ -125,6 +135,42 @@ const PermanentPendings = () => {
     receive_date: new Date(),
   });
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
+
+   const handleRollback = (row) => {
+     setRollbackRow(row);
+     setRollbackItemDesc(row.description);
+     setRollbackChoice("yes");
+     setRollbackDialog(true);
+   };
+
+  const confirmRollback = async () => {
+    if (rollbackChoice !== "yes") {
+      setRollbackDialog(false);
+      return;
+    }
+
+    try {
+      const response = await apiService.post(
+        `/issue/reverse/${rollbackRow.id}`,
+      );
+
+      if (response.success) {
+        toaster("success", response.message || "Rollback successful");
+
+        // remove row instantly from table
+        setFetchedData((prev) => ({
+          ...prev,
+          items: prev.items.filter((item) => item.id !== rollbackRow.id),
+        }));
+      } else {
+        toaster("error", response.message);
+      }
+    } catch (error) {
+      toaster("error", error.response?.data?.message || "Rollback failed");
+    } finally {
+      setRollbackDialog(false);
+    }
+  };
 
   const fetchdata = async (page = currentPage) => {
     try {
@@ -371,6 +417,17 @@ const PermanentPendings = () => {
             <FaChevronRight />
           </Button>
         ),
+        rollback:
+          user.role === "officer" ? (
+            <Button
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-700"
+              size="sm"
+              onClick={() => handleRollback(row)}
+            >
+              Rollback
+            </Button>
+          ) : null,
       }));
     setTableData(t);
   }, [fetchedData]);
@@ -707,8 +764,64 @@ const PermanentPendings = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* stock-update rollback dialog */}
+      <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
+        <DialogContent className="w-[420px] p-6">
+          <DialogTitle>
+            Rollback:{" "}
+            <span className="text-sm">{rollbackItemDesc || "Item"}</span>
+          </DialogTitle>
+
+          <div className="mt-4">
+            <p className="mb-3 text-sm text-gray-700">
+              Are you sure you want to rollback this transaction?
+            </p>
+
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="yes"
+                  checked={rollbackChoice === "yes"}
+                  onChange={() => setRollbackChoice("yes")}
+                />
+                Yes
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="no"
+                  checked={rollbackChoice === "no"}
+                  onChange={() => setRollbackChoice("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => setRollbackDialog(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white hover:bg-primary/85 cursor-pointer"
+              onClick={confirmRollback}
+            >
+              Confirm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
-};
+};;
 
 export default PermanentPendings;

@@ -926,10 +926,16 @@ LIMIT ? OFFSET ?`,
 
 
 async function manualAddDemand(req, res) {
-  const { spare_id, tool_id } = req.body;
+  const { spare_id, tool_id, survey_qty } = req.body;
   const { id: created_by } = req.user;
 
   try {
+    if (!survey_qty || survey_qty <= 0) {
+      return res.status(400).json({
+        message: "Survey quantity must be greater than 0",
+      });
+    }
+
     const transactionId = "ADD_DM-" + Date.now();
 
     let item;
@@ -970,7 +976,7 @@ async function manualAddDemand(req, res) {
         tool_id || null,
         "MANUAL",
         transactionId,
-        0,
+        survey_qty,
         "MANUAL",
         new Date(),
         created_by,

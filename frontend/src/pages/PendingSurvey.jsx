@@ -99,6 +99,7 @@ const PendingSurvey = () => {
   const [itemType, setItemType] = useState("");
   const [itemsList, setItemsList] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [withdrawlQty, setWithdrawlQty] = useState("");
 
   //for survey-stockin
   const [repairStatus, setRepairStatus] = useState(null);
@@ -838,6 +839,22 @@ const PendingSurvey = () => {
             </div>
           )}
 
+          {/* WITHDRAWAL QTY */}
+          {selectedItem && (
+            <div className="mt-4">
+              <Label>
+                Withdrawal Qty <span className="text-red-500">*</span>
+              </Label>
+
+              <Input
+                type="number"
+                placeholder="Enter Withdrawal Qty"
+                value={withdrawlQty}
+                onChange={(e) => setWithdrawlQty(e.target.value)}
+              />
+            </div>
+          )}
+
           {/* ACTION BUTTONS */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
@@ -856,12 +873,29 @@ const PendingSurvey = () => {
                   return toaster("error", "Please select item");
                 }
 
+                if (!withdrawlQty) {
+                  return toaster("error", "Please enter Withdrawal Qty");
+                }
+
+                 if (withdrawlQty <= 0) {
+                   return toaster(
+                     "error",
+                     "Withdrawal Qty must be greater than 0",
+                   );
+                 }
+
                 await apiService.post("/survey/manual-add", {
                   spare_id: itemType === "spare" ? selectedItem.id : null,
                   tool_id: itemType === "tool" ? selectedItem.id : null,
+                  withdrawl_qty: withdrawlQty,
                 });
 
                 toaster("success", "Survey item added");
+
+                setWithdrawlQty("");
+                setSelectedItem(null);
+                setItemsList([]);
+                setItemType("");
 
                 setIsOpen((prev) => ({ ...prev, addSurvey: false }));
                 fetchdata();

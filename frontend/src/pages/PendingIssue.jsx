@@ -56,6 +56,14 @@ const PermanentPendings = () => {
 
     { value: "created_at", label: "Created On" },
   ];
+
+  //pending-issue rollback states
+ const [rollbackDialog, setRollbackDialog] = useState(false);
+ const [rollbackChoice, setRollbackChoice] = useState("yes");
+ const [rollbackIssueId, setRollbackIssueId] = useState(null);
+ const [rollbackItemDesc, setRollbackItemDesc] = useState("");
+
+
   const [selectedValues, setSelectedValues] = useState([]);
 
   const handleSearch = () => {
@@ -186,17 +194,47 @@ const PermanentPendings = () => {
     gate_pass_calender: new Date(),
   });
 
-  const handleRollback = async (row) => {
-    const confirm = window.confirm(
-      "Are you sure you want to rollback this Pending Issue?",
-    );
+  // const handleRollback = async (row) => {
+  //   const confirm = window.confirm(
+  //     "Are you sure you want to rollback this Pending Issue?",
+  //   );
 
-    if (!confirm) return;
+  //   if (!confirm) return;
+
+  //   try {
+  //     const response = await apiService.post("/demand/pending-issue/reverse", {
+  //       pending_issue_id: row.id,
+  //     });
+  //     console.log("reverse demand res", response);
+  //     if (response.success) {
+  //       toaster("success", "Pending Issue rolled back successfully");
+  //       fetchData();
+  //     } else {
+  //       toaster("error", response.message);
+  //     }
+  //   } catch (error) {
+  //     toaster("error", error.response?.data?.message || error.message);
+  //   }
+  // };
+
+
+  
+  const handleRollback = (issueId, description) => {
+    setRollbackIssueId(issueId);
+    setRollbackItemDesc(description);
+    setRollbackChoice("yes");
+    setRollbackDialog(true);
+  };
+
+  const confirmRollback = async () => {
+    if (rollbackChoice !== "yes") {
+      setRollbackDialog(false);
+      return;
+    }
 
     try {
-      console.log("reverse deman res", response);
-      const response = await apiService.post("/demand/reverse", {
-        pending_issue_id: row.id,
+      const response = await apiService.post("/demand/pending-issue/reverse", {
+        pending_issue_id: rollbackIssueId,
       });
 
       if (response.success) {
@@ -207,6 +245,8 @@ const PermanentPendings = () => {
       }
     } catch (error) {
       toaster("error", error.response?.data?.message || error.message);
+    } finally {
+      setRollbackDialog(false);
     }
   };
 
@@ -281,7 +321,7 @@ const PermanentPendings = () => {
               variant="destructive"
               className="bg-red-600 text-white hover:bg-red-700"
               size="sm"
-              onClick={() => handleRollback(row)}
+              onClick={() => handleRollback(row.id, row.description)}
             >
               Rollback
             </Button>
@@ -697,6 +737,60 @@ const PermanentPendings = () => {
         setOpen={setIsQrOpen}
         row={selectedRow}
       />
+      <Dialog open={rollbackDialog} onOpenChange={setRollbackDialog}>
+        <DialogContent className="w-[420px] p-6">
+          <DialogTitle>
+            Rollback:{" "}
+            <span className="text-sm">{rollbackItemDesc || "Item"}</span>
+          </DialogTitle>
+
+          <div className="mt-4">
+            <p className="mb-3 text-sm text-gray-700">
+              Are you sure you want to rollback this Pending Issue?
+            </p>
+
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="yes"
+                  checked={rollbackChoice === "yes"}
+                  onChange={() => setRollbackChoice("yes")}
+                />
+                Yes
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="rollbackChoice"
+                  value="no"
+                  checked={rollbackChoice === "no"}
+                  onChange={() => setRollbackChoice("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => setRollbackDialog(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white hover:bg-primary/85 cursor-pointer"
+              onClick={confirmRollback}
+            >
+              Confirm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

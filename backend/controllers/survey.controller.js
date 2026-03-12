@@ -1059,7 +1059,7 @@ async function revertSurvey(req, res) {
 
 
 async function manualAddSurvey(req, res) {
-  const { spare_id, tool_id } = req.body;
+  const { spare_id, tool_id, withdrawl_qty } = req.body;
 
   const { id: created_by } = req.user;
 
@@ -1084,6 +1084,12 @@ async function manualAddSurvey(req, res) {
       item = row;
     }
 
+    if (!withdrawl_qty || withdrawl_qty <= 0) {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Withdrawal quantity required"));
+    }
+
     await pool.query(
       `INSERT INTO survey (
         transaction_id,
@@ -1102,7 +1108,7 @@ async function manualAddSurvey(req, res) {
         spare_id || null,
         tool_id || null,
         "MANUAL",
-        0,
+        withdrawl_qty, // ✅ use value from frontend
         JSON.stringify([]),
         "MANUAL",
         "MANUAL",

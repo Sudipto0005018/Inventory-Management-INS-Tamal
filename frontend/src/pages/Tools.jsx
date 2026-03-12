@@ -1254,10 +1254,16 @@ const Tools = ({ type = "" }) => {
       };
     });
 
+    const incDecQty =
+      obsDialog.action === "increase"
+        ? Number(obsDialog.quantity)
+        : -Number(obsDialog.quantity);
+
     const payload = {
       tool_id: selectedRow.id,
       obs_authorised: finalValue,
-      obs_increase_qty: obsDialog.quantity,
+      obs_increase_qty: incDecQty,
+      // obs_increase_qty: obsDialog.quantity,
       box_no: JSON.stringify(updatedBox),
       quoteAuthority: obsDialog.quoteAuthority,
       obs_maintained: newObsMaintained,
@@ -1275,7 +1281,7 @@ const Tools = ({ type = "" }) => {
         : null,
       mo_demand_no: obsDialog.moDemandNo?.trim() || null,
       mo_demand_date: obsDialog.moDemandDate
-        ? getISTTimestamp(obsDialog.requisitionDate)
+        ? getISTTimestamp(obsDialog.moDemandDate)
         : null,
     };
     console.log("payload==>", payload);

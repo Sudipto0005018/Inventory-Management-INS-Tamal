@@ -969,7 +969,7 @@ const PendingTempLoan = ({ type = "" }) => {
 
           <div className="mt-4">
             <p className="mb-3 text-sm text-gray-700">
-              Are you sure you want to rollback this TY Loan?
+              Are you sure you want to rollback this Document Issue?
             </p>
 
             <div className="flex gap-6 mt-2">
