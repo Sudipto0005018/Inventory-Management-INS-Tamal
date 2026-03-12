@@ -51,6 +51,7 @@ const Header = ({ onSidebarOpen }) => {
       "/temp-loan/complete": "ty",
       "/temporary/completed": "temp",
       "/documents/completed": "docIssue",
+      "/logs/nac": "nac",
     }),
     [],
   );
@@ -66,6 +67,7 @@ const Header = ({ onSidebarOpen }) => {
     "/logs/procurement",
     "/logs/stock-update",
     "/logs/special-demand",
+    "/logs/nac",
   ]);
 
   const { user, setUser, setLoading, setConfig } = useContext(Context);
@@ -352,14 +354,14 @@ const Header = ({ onSidebarOpen }) => {
             </tr>
           </table>
           <div className="flex w-full items-center justify-end gap-3">
-            <Button
+            <Button variant="destructive"
               onClick={() =>
                 setIsOpen((prev) => ({ ...prev, dateRange: false }))
               }
             >
               Cancel
             </Button>
-            <Button onClick={handleExportExcel}>OK</Button>
+            <Button onClick={handleExportExcel}>Submit</Button>
           </div>
         </DialogContent>
       </Dialog>

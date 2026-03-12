@@ -104,6 +104,7 @@ async function getDemands(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     survey_qty: ["d.survey_qty"],
     survey_date: ["d.survey_date"],
+    survey_voucher_no: ["d.survey_voucher_no"],
   };
 
   const connection = await pool.getConnection();
