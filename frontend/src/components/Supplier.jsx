@@ -190,7 +190,9 @@ const SupplierFirm = ({
               placeholder="Supplier Name"
               value={value.supplier}
               disabled={!isFieldEnabled("supplier")}
-              onChange={(e) => setValue({ ...value, supplier: e.target.value })}
+              onChange={(e) =>
+                setValue({ ...value, supplier: e.target.value.toUpperCase() })
+              }
             />
             {renderEditIcon("supplier")}
           </div>
@@ -202,7 +204,9 @@ const SupplierFirm = ({
               placeholder="Address"
               value={value.address}
               disabled={!isFieldEnabled("address")}
-              onChange={(e) => setValue({ ...value, address: e.target.value })}
+              onChange={(e) =>
+                setValue({ ...value, address: e.target.value.toUpperCase() })
+              }
             />
             {renderEditIcon("address")}
           </div>
@@ -218,7 +222,7 @@ const SupplierFirm = ({
                   disabled={!isFieldEnabled(`contact-${i}`)}
                   onChange={(e) => {
                     const contacts = [...value.contacts];
-                    contacts[i] = e.target.value;
+                    contacts[i] = e.target.value.toUpperCase();
                     setValue({ ...value, contacts });
                   }}
                 />
@@ -302,7 +306,7 @@ const SupplierFirm = ({
                     disabled={!isFieldEnabled(`person-${i}-name`)}
                     onChange={(e) => {
                       const persons = [...value.persons];
-                      persons[i].name = e.target.value;
+                      persons[i].name = e.target.value.toUpperCase();
                       setValue({ ...value, persons });
                     }}
                   />
@@ -317,7 +321,7 @@ const SupplierFirm = ({
                     disabled={!isFieldEnabled(`person-${i}-designation`)}
                     onChange={(e) => {
                       const persons = [...value.persons];
-                      persons[i].designation = e.target.value;
+                      persons[i].designation = e.target.value.toUpperCase();
                       setValue({ ...value, persons });
                     }}
                   />
@@ -327,6 +331,7 @@ const SupplierFirm = ({
                 {/* Phone */}
                 <div className="flex items-center">
                   <Input
+                    type="number"
                     placeholder="Phone"
                     value={p.phone}
                     disabled={!isFieldEnabled(`person-${i}-phone`)}

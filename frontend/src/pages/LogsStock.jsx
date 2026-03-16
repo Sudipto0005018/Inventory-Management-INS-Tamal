@@ -40,7 +40,7 @@ const PermanentPendings = () => {
     { key: "mo_no", header: "MO Gate Pass No." },
     { key: "mo_date", header: "MO Date" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Created On" },
+    { key: "created_at", header: "Date of Return" },
   ]);
 
   const options = [
@@ -63,7 +63,7 @@ const PermanentPendings = () => {
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Created On" },
+    { value: "created_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

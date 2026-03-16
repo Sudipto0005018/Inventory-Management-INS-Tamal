@@ -68,7 +68,6 @@ const NACLogs = () => {
       // { value: "validity", label: "Validity" },
       { value: "rate_unit", label: "Rate/ Unit" },
       // { value: "qty_received", label: "Qty Received" },
-      // { value: "created_at", label: "Created On" },
     ];
 
   const [selectedValues, setSelectedValues] = useState([]);

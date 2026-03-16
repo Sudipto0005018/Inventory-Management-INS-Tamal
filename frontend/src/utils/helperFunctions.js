@@ -135,5 +135,40 @@ export function getTimeDate(dat = new Date()) {
   const min = String(date.getMinutes()).padStart(2, "0");
   const sec = String(date.getSeconds()).padStart(2, "0");
 
+  return `${d}-${m}-${y}`;
+}
+
+
+export function getTimeDatess(dat = new Date()) {
+  if (!dat) return "";
+
+  const date = new Date(dat);
+  if (isNaN(date.getTime())) return "";
+
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
+  /* ---------- DATE ---------- */
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = months[date.getMonth()];
+  const y = String(date.getFullYear()).slice(-2);
+
+  /* ---------- TIME ---------- */
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const sec = String(date.getSeconds()).padStart(2, "0");
+
   return `${d}-${m}-${y},  (${h}:${min}:${sec})`;
 }

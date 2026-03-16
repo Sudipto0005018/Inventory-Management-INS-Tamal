@@ -40,7 +40,7 @@ const Procurement = () => {
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Created On" },
+    { key: "created_at", header: "Date of Return" },
   ]);
 
   const options = [
@@ -65,7 +65,7 @@ const Procurement = () => {
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Created On" },
+    { value: "created_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

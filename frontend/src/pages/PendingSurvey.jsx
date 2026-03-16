@@ -33,12 +33,13 @@ import {
 } from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
 import Chip from "../components/Chip";
+import { useNavigate } from "react-router";
 // substitute in pattern name (non men)
 // oem/vendor details (non men)
 // local terminology (non men)
 const PendingSurvey = () => {
-  const { config, user, officer, surveyReason, fetchSurveyReason } =
-    useContext(Context);
+  const { config, user, surveyReason, fetchSurveyReason } = useContext(Context);
+  const navigate = useNavigate();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -93,7 +94,6 @@ const PendingSurvey = () => {
   const [rollbackChoice, setRollbackChoice] = useState("yes");
   const [rollbackIssueId, setRollbackIssueId] = useState(null);
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
-
 
   //add survey states
   const [itemType, setItemType] = useState("");
@@ -824,7 +824,7 @@ const PendingSurvey = () => {
           </div>
 
           {/* ITEM LIST */}
-          {itemsList.length > 0 && (
+          {/* {itemsList.length > 0 && (
             <div className="mt-4">
               <Label>Select Item</Label>
 
@@ -843,18 +843,55 @@ const PendingSurvey = () => {
                 ))}
               </select>
             </div>
+          )} */}
+
+          {itemType && (
+            <div className="mt-4">
+              <Label>Select Item</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  if (value === "custom") {
+                    if (itemType === "spare") {
+                      setIsOpen((prev) => ({ ...prev, addSpare: true }));
+                    }
+
+                    if (itemType === "tool") {
+                      setIsOpen((prev) => ({ ...prev, addTool: true }));
+                    }
+
+                    return;
+                  }
+
+                  const item = itemsList.find((i) => i.id == value);
+                  setSelectedItem(item);
+                }}
+              >
+                <option>Select Item</option>
+
+                {itemsList.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.description} ({item.category})
+                  </option>
+                ))}
+                <option value="custom">➕ Add New {itemType}</option>
+              </select>
+            </div>
           )}
 
           {/* WITHDRAWAL QTY */}
           {selectedItem && (
             <div className="mt-4">
               <Label>
-                Withdrawal Qty <span className="text-red-500">*</span>
+                Qty to be surveyed <span className="text-red-500">*</span>
               </Label>
 
               <Input
                 type="number"
-                placeholder="Enter Withdrawal Qty"
+                placeholder="Enter Survey Qty"
                 value={withdrawlQty}
                 onChange={(e) => setWithdrawlQty(e.target.value)}
               />
@@ -908,6 +945,66 @@ const PendingSurvey = () => {
               }}
             >
               Submit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD SPARE */}
+
+      <Dialog
+        open={isOpen.addSpare}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addSpare: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Spare</DialogTitle>
+
+          <p>Reuse your existing Add Spare form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addSpare: false }));
+                navigate("/spares", {
+                  state: {
+                    add_spare: true,
+                  },
+                });
+              }}
+            >
+              Open
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD TOOL */}
+
+      <Dialog
+        open={isOpen.addTool}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addTool: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Tool</DialogTitle>
+
+          <p>Reuse your existing Add Tool form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addTool: false }));
+                navigate("/tools", {
+                  state: {
+                    add_tool: true,
+                  },
+                });
+              }}
+            >
+              Open
             </Button>
           </div>
         </DialogContent>

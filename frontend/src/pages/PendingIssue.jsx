@@ -53,8 +53,6 @@ const PermanentPendings = () => {
 
     { value: "demand_quantity", label: "Demanded Qty" },
     { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
-
-    { value: "created_at", label: "Created On" },
   ];
 
   //pending-issue rollback states

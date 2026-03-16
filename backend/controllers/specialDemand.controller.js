@@ -1027,6 +1027,7 @@ async function manualAddSpecialDemand(req, res) {
     spare_id,
     tool_id,
     obs_authorised,
+    obs_increase_qty,
     special_demand_type,
 
     internal_demand_no,
@@ -1040,6 +1041,9 @@ async function manualAddSpecialDemand(req, res) {
   } = req.body;
 
   const { id: created_by, name } = req.user;
+
+  const modifiedObsAuthorised =
+    Number(obs_authorised) + Number(obs_increase_qty || 0);
 
   try {
     if (!obs_authorised || obs_authorised <= 0) {
@@ -1076,6 +1080,12 @@ async function manualAddSpecialDemand(req, res) {
       });
     }
 
+    if (obs_increase_qty < 0) {
+      return res.status(400).json({
+        message: "Qty Inc/Dec cannot be less than 0",
+      });
+    }
+
     await pool.query(
       `INSERT INTO special_demand (
     spare_id,
@@ -1100,8 +1110,8 @@ async function manualAddSpecialDemand(req, res) {
       [
         spare_id || null,
         tool_id || null,
-        obs_authorised,
-        0,
+        modifiedObsAuthorised,
+        obs_increase_qty || 0,
         special_demand_type,
 
         internal_demand_no || null,

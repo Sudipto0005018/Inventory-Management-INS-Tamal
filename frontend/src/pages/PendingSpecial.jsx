@@ -134,13 +134,13 @@ const PendingSpecial = () => {
     // { value: "created_at", label: "Created On" },
   ];
 
-
   //add special demand states
   const [addItems, setAddItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [itemType, setItemType] = useState("");
   const [obsAuthorised, setObsAuthorised] = useState("");
   const [specialType, setSpecialType] = useState("");
+  const [qtyChange, setQtyChange] = useState("");
 
   const [date, setDate] = useState(new Date());
   const [selectedValues, setSelectedValues] = useState([]);
@@ -340,12 +340,17 @@ const PendingSpecial = () => {
       quantity:
         row.obs_increase_qty !== null && row.obs_increase_qty !== undefined
           ? row.obs_increase_qty > 0
-            ? `+${row.obs_increase_qty}`
+            ? `${row.obs_increase_qty}`
             : row.obs_increase_qty
           : "--",
       created_at: getTimeDate(row.created_at),
       // Final expected OBS qty
       modified_obs: row.obs_authorised || "--",
+
+      // modified_obs:
+      //   row.obs_increase_qty && row.obs_increase_qty > 0
+      //     ? row.obs_authorised + row.obs_increase_qty
+      //     : row.obs_authorised || "--",
 
       demandno: row.internal_demand_no || "--",
       demanddate: row.internal_demand_date
@@ -752,6 +757,10 @@ const PendingSpecial = () => {
                   onChange={(e) => {
                     const item = addItems.find((i) => i.id == e.target.value);
                     setSelectedItem(item);
+
+                    if (item) {
+                      setObsAuthorised(item.obs_authorised || "");
+                    }
                   }}
                 >
                   <option>Select Item</option>
@@ -775,6 +784,23 @@ const PendingSpecial = () => {
                 placeholder="Enter OBS authorised"
                 value={obsAuthorised}
                 onChange={(e) => setObsAuthorised(e.target.value)}
+              />
+            </div>
+
+            {/* QTY INC/DEC */}
+            <div className="mt-4">
+              <Label>Qty Inc / Dec</Label>
+
+              <Input
+                type="number"
+                min="0"
+                placeholder="Enter qty increase"
+                value={qtyChange}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (value < 0) return;
+                  setQtyChange(value);
+                }}
               />
             </div>
 
@@ -917,10 +943,15 @@ const PendingSpecial = () => {
                 if (!specialType)
                   return toaster("error", "Select special demand type");
 
+                if (qtyChange < 0) {
+                  return toaster("error", "Qty Inc/Dec cannot be less than 0");
+                }
+
                 await apiService.post("/specialDemand/manual-add", {
                   spare_id: itemType === "spare" ? selectedItem.id : null,
                   tool_id: itemType === "tool" ? selectedItem.id : null,
                   obs_authorised: Number(obsAuthorised),
+                  obs_increase_qty: Number(qtyChange),
                   special_demand_type: specialType,
 
                   internal_demand_no: inputs.internal_demand_no,

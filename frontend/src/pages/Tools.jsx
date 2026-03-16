@@ -55,7 +55,7 @@ const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "IN Part No.", value: "indian_pattern" },
   { label: "Equipment / System", value: "equipment_system" },
-  { label: "Denos", value: "denos" },
+  { label: "Denos.", value: "denos" },
   { label: "Category", value: "category" },
   { label: "OBS Authorised", value: "obs_authorised" },
   { label: "OBS Maintained", value: "obs_maintained" },
@@ -81,6 +81,7 @@ const Tools = ({ type = "" }) => {
     user,
     admin,
   } = useContext(Context);
+  const location = useLocation();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description", width: "max-w-[80px]" },
     {
@@ -103,7 +104,7 @@ const Tools = ({ type = "" }) => {
       width: "max-w-[60px]",
     },
     { key: "category", header: "Category", width: "max-w-[60px]" },
-    { key: "denos", header: "Denos", width: "max-w-[60px]" },
+    { key: "denos", header: "Denos.", width: "max-w-[60px]" },
 
     {
       key: "obs_authorised",
@@ -497,7 +498,11 @@ const Tools = ({ type = "" }) => {
     fetchSuppliers();
     fetchOems();
     fetchPersonnelOptions();
-  }, []);
+    const data = location.state;
+    if (data?.add_tool) {
+      setIsOpen({ ...isOpen, addSpare: true });
+    }
+  }, [location.state]);
 
   // const handleSearch = async (e) => {
   //   const searchTerm = inputs.search.trim();
@@ -1549,9 +1554,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Denos<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Denos.</Label>
                     <Input
                       type="text"
                       name="denos"
@@ -1599,9 +1602,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      B & D Authorised<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">B & D Authorised</Label>
                     <Input
                       type="text"
                       name="b_d_authorised"
@@ -1611,9 +1612,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="mb-2">Category</Label>
                     <select
                       name="category"
                       value={selectedRow.category || ""}
@@ -1634,9 +1633,7 @@ const Tools = ({ type = "" }) => {
                 {/* Row 3 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Item Code<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Item Code</Label>
                     <Input
                       type="text"
                       name="item_code"
@@ -1647,7 +1644,7 @@ const Tools = ({ type = "" }) => {
                   {/* IN Part No */}
                   <div>
                     <Label className="ms-2 mb-1">
-                      <i>IN</i> Part No.<span className="text-red-500">*</span>
+                      <i>IN</i> Part No.
                     </Label>
                     <Input
                       type="text"
@@ -1660,7 +1657,6 @@ const Tools = ({ type = "" }) => {
                   <div>
                     <Label className="ms-2 mb-1">
                       Substitute <i>IN</i> Part No.
-                      <span className="text-red-500">*</span>
                     </Label>
                     <DynamicInputList
                       id="substitute_name"
@@ -1674,9 +1670,7 @@ const Tools = ({ type = "" }) => {
 
                   {/* Local Terminology */}
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Local Terminology<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Local Terminology</Label>
                     <DynamicInputList
                       id="local_terminology"
                       data={inputs.local_terminology}
@@ -1696,9 +1690,7 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <div>
-                      <Label className="ms-2 mb-1">
-                        Critical Tool<span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="ms-2 mb-1">Critical Tool</Label>
                       <RadioGroup
                         value={inputs.critical_tool}
                         onValueChange={(value) =>
@@ -1777,9 +1769,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Sub Component<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Sub Component</Label>
                     <Input
                       type="text"
                       name="sub_component"
@@ -1789,9 +1779,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Price/Unit Cost</Label>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -2011,7 +1999,7 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label>
-                      Denos<span className="text-red-500">*</span>
+                      Denos.<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
                       name="denos"
@@ -2549,7 +2537,7 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label>
-                      Denos<span className="text-red-500">*</span>
+                      Denos.<span className="text-red-500">*</span>
                     </Label>
                     <Input name="denos" value={selectedRow.denos} readOnly />
                   </div>

@@ -81,7 +81,6 @@ const PermanentPendings = () => {
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Created On" },
   ];
 
   //stock-update rollback states

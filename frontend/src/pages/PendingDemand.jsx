@@ -31,9 +31,11 @@ import {
   getFormatedDate,
 } from "../utils/helperFunctions";
 import Spinner from "../components/Spinner";
+import { useNavigate } from "react-router";
 
 const PendingDemand = () => {
   const { config, user, officer } = useContext(Context);
+    const navigate = useNavigate();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -140,7 +142,6 @@ const PendingDemand = () => {
     demand_date: false,
     addDemand: false,
     addSpare: false,
-    addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -716,7 +717,7 @@ const PendingDemand = () => {
           {/* SURVEY QTY */}
           <div className="mt-4">
             <Label>
-              Surveyed / Utilised Qty <span className="text-red-500">*</span>
+              Qty to be demanded<span className="text-red-500">*</span>
             </Label>
 
             <Input
@@ -788,11 +789,16 @@ const PendingDemand = () => {
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, addSpare: false }))
-              }
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addSpare: false }));
+                navigate("/spares", {
+                  state: {
+                    add_spare: true,
+                  },
+                });
+              }}
             >
-              Close
+             Open
             </Button>
           </div>
         </DialogContent>
@@ -813,9 +819,16 @@ const PendingDemand = () => {
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
-              onClick={() => setIsOpen((prev) => ({ ...prev, addTool: false }))}
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addTool: false }));
+                navigate("/tools", {
+                  state: {
+                    add_tool: true,
+                  },
+                });
+              }}
             >
-              Close
+              Open
             </Button>
           </div>
         </DialogContent>

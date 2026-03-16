@@ -54,7 +54,7 @@ const PendingDemand = () => {
     //   width: "max-w-[100px]",
     // },
     // { key: "survey_date", header: "Surveyed Date", width: "min-w-[40px]" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
+    { key: "created_at", header: "Date of Return", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -109,7 +109,7 @@ const PendingDemand = () => {
     // },
     {
       value: "created_at",
-      label: "Created On",
+      label: "Date of Return",
       width: "min-w-[40px]",
     },
   ];

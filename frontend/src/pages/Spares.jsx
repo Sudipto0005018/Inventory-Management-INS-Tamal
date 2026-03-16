@@ -55,7 +55,7 @@ const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "IN Part No.", value: "indian_pattern" },
   { label: "Equipment / System", value: "equipment_system" },
-  { label: "Denos", value: "denos" },
+  { label: "Denos.", value: "denos" },
   { label: "Category", value: "category" },
   { label: "OBS Authorised", value: "obs_authorised" },
   { label: "OBS Maintained", value: "obs_maintained" },
@@ -81,6 +81,7 @@ const Spares = ({ type = "" }) => {
     user,
     admin,
   } = useContext(Context);
+  const location = useLocation();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description", width: "max-w-[50px]" },
     {
@@ -103,7 +104,7 @@ const Spares = ({ type = "" }) => {
       width: "max-w-[20px]",
     },
     { key: "category", header: "Category", width: "max-w-[60px]" },
-    { key: "denos", header: "Denos", width: "max-w-[60px]" },
+    { key: "denos", header: "Denos.", width: "max-w-[60px]" },
 
     {
       key: "obs_authorised",
@@ -148,9 +149,6 @@ const Spares = ({ type = "" }) => {
     parsedBox: [],
     finalValue: null,
   });
-
-  //state for BoxNoConfirmObs
-  const [boxRows, setBoxRows] = useState([]);
 
   const [obsDialog, setObsDialog] = useState({
     open: false,
@@ -511,7 +509,11 @@ const Spares = ({ type = "" }) => {
     fetchSuppliers();
     fetchOems();
     fetchPersonnelOptions();
-  }, []);
+    const data = location.state;
+    if (data?.add_spare) {
+      setIsOpen({ ...isOpen, addSpare: true });
+    }
+  }, [location.state]);
 
   // const handleSearch = async (e) => {
   //   const searchTerm = inputs.search.trim();
@@ -1560,9 +1562,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Denos<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Denos.</Label>
                     <Input
                       type="text"
                       name="denos"
@@ -1610,9 +1610,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      B & D Authorised<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">B & D Authorised</Label>
                     <Input
                       type="text"
                       name="b_d_authorised"
@@ -1622,9 +1620,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="mb-2">
-                      Category <span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="mb-2">Category</Label>
                     <select
                       name="category"
                       value={selectedRow.category || ""}
@@ -1645,9 +1641,7 @@ const Spares = ({ type = "" }) => {
                 {/* Row 3 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Item Code<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Item Code</Label>
                     <Input
                       type="text"
                       name="item_code"
@@ -1658,7 +1652,7 @@ const Spares = ({ type = "" }) => {
                   {/* IN Part No */}
                   <div>
                     <Label className="ms-2 mb-1">
-                      <i>IN</i> Part No.<span className="text-red-500">*</span>
+                      <i>IN</i> Part No.
                     </Label>
                     <Input
                       type="text"
@@ -1671,7 +1665,6 @@ const Spares = ({ type = "" }) => {
                   <div>
                     <Label className="ms-2 mb-1">
                       Substitute <i>IN</i> Part No.
-                      <span className="text-red-500">*</span>
                     </Label>
                     <DynamicInputList
                       id="substitute_name"
@@ -1685,9 +1678,7 @@ const Spares = ({ type = "" }) => {
 
                   {/* Local Terminology */}
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Local Terminology<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Local Terminology</Label>
                     <DynamicInputList
                       id="local_terminology"
                       data={inputs.local_terminology}
@@ -1707,9 +1698,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <div>
-                      <Label className="ms-2 mb-1">
-                        Critical Spare<span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="ms-2 mb-1">Critical Spare</Label>
                       <RadioGroup
                         value={inputs.critical_spare}
                         onValueChange={(value) =>
@@ -1788,9 +1777,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Sub Component<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Sub Component</Label>
                     <Input
                       type="text"
                       name="sub_component"
@@ -1800,9 +1787,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
-                    </Label>
+                    <Label className="ms-2 mb-1">Price/Unit Cost</Label>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -2024,7 +2009,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label>
-                      Denos<span className="text-red-500">*</span>
+                      Denos.<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
                       name="denos"
@@ -2565,7 +2550,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label>
-                      Denos<span className="text-red-500">*</span>
+                      Denos.<span className="text-red-500">*</span>
                     </Label>
                     <Input name="denos" value={selectedRow.denos} readOnly />
                   </div>
@@ -3945,12 +3930,13 @@ const Spares = ({ type = "" }) => {
                     value={
                       selectedRow.box_no ? JSON.parse(selectedRow.box_no) : []
                     }
-                    onChange={(value) =>
+                    onChange={(value) => {
                       setSelectedRow((prev) => ({
                         ...prev,
                         box_no: JSON.stringify(value),
-                      }))
-                    }
+                      }));
+                      console.log(value);
+                    }}
                     isLooseSpare={isLooseSpare}
                     action={obsDialog.action}
                   />
@@ -4199,7 +4185,6 @@ const Spares = ({ type = "" }) => {
                     toaster("error", "Invalid Box No data");
                     return;
                   }
-
                   const updatedBoxes = parsedBox.map((box) => {
                     const incDec = Number(box.incDecQty || 0);
                     const base = Number(box.baseQn ?? box.qn ?? 0);
@@ -4222,14 +4207,20 @@ const Spares = ({ type = "" }) => {
                     (sum, box) => sum + Number(box.qn || 0),
                     0,
                   );
-          
+
                   // Calculate final value
                   const finalValue =
                     obsDialog.action === "increase"
                       ? Number(originalObsAuthorised) +
                         Number(obsDialog.quantity)
                       : Number(originalObsAuthorised) -
-                        Number(obsDialog.quantity);
+                      Number(obsDialog.quantity);
+                  
+                  
+                  console.log("totalBoxQty", totalBoxQty);
+                  console.log("finalValue", finalValue);
+                  console.log("originalObsAuthorised", originalObsAuthorised);
+                  console.log("obsDialog", obsDialog);
 
                   if (totalBoxQty !== finalValue) {
                     toaster(
@@ -4244,7 +4235,7 @@ const Spares = ({ type = "" }) => {
                     parsedBox: updatedBoxes,
                     finalValue,
                   });
-                  return; // 🚨 Stop execution here
+                  return; 
                 }}
               >
                 Submit

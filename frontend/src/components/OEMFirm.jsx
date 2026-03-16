@@ -191,7 +191,9 @@ const OEMFirm = ({
               placeholder="OEM Name"
               value={value.vendor}
               disabled={!isFieldEnabled("vendor") || !editable}
-              onChange={(e) => setValue({ ...value, vendor: e.target.value })}
+              onChange={(e) =>
+                setValue({ ...value, vendor: e.target.value.toUpperCase() })
+              }
             />
             {renderEditIcon("vendor")}
           </div>
@@ -203,7 +205,9 @@ const OEMFirm = ({
               placeholder="Address"
               value={value.address}
               disabled={!isFieldEnabled("address") || !editable}
-              onChange={(e) => setValue({ ...value, address: e.target.value })}
+              onChange={(e) =>
+                setValue({ ...value, address: e.target.value.toUpperCase() })
+              }
             />
             {renderEditIcon("address")}
           </div>
@@ -219,7 +223,7 @@ const OEMFirm = ({
                   disabled={!isFieldEnabled(`contact-${i}`)}
                   onChange={(e) => {
                     const contacts = [...value.contacts];
-                    contacts[i] = e.target.value;
+                    contacts[i] = e.target.value.toUpperCase();
                     setValue({ ...value, contacts });
                   }}
                 />
@@ -304,7 +308,7 @@ const OEMFirm = ({
                     disabled={!isFieldEnabled(`person-${i}-name`)}
                     onChange={(e) => {
                       const persons = [...value.persons];
-                      persons[i].name = e.target.value;
+                      persons[i].name = e.target.value.toUpperCase();
                       setValue({ ...value, persons });
                     }}
                   />
@@ -319,7 +323,7 @@ const OEMFirm = ({
                     disabled={!isFieldEnabled(`person-${i}-designation`)}
                     onChange={(e) => {
                       const persons = [...value.persons];
-                      persons[i].designation = e.target.value;
+                      persons[i].designation = e.target.value.toUpperCase();
                       setValue({ ...value, persons });
                     }}
                   />
@@ -330,6 +334,7 @@ const OEMFirm = ({
                 <div className="flex items-center">
                   <Input
                     placeholder="Phone"
+                    type="number"
                     value={p.phone}
                     disabled={!isFieldEnabled(`person-${i}-phone`)}
                     onChange={(e) => {

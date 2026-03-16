@@ -49,7 +49,7 @@ const PendingSpecial = () => {
     { key: "modemand", header: "MO Demand No." },
     { key: "modate", header: "MO Demand Date" },
     // { key: "status", header: "Status" },
-    { key: "created_at", header: "Created On" },
+    // { key: "created_at", header: "Date of Return" },
   ]);
 
   const options = [
@@ -65,7 +65,7 @@ const PendingSpecial = () => {
     { value: "requisition_date", label: "Requisition Date." },
     { value: "mo_demand_no", label: "MO Demand No." },
     { value: "mo_demand_date", label: "MO Demand Date" },
-    // { value: "created_at", label: "Created On" },
+    // { value: "created_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
