@@ -105,7 +105,7 @@ async function createSurvey(req, res) {
           issue_to,
           transactionId,
           withdrawl_qty,
-          service_no,
+          null,
           withdrawl_date,
           getSQLTimestamp(),
           created_by,

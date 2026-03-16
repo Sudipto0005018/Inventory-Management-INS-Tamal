@@ -34,7 +34,7 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category", width: "min-w-[40px]" },
-    { key: "denos", header: "Denos", width: "min-w-[40px]" },
+    { key: "denos", header: "Denos.", width: "min-w-[40px]" },
     { key: "demand_quantity", header: "Qty Demanded", width: "min-w-[40px]" },
     { key: "quote_authority", header: "Authority", width: "min-w-[40px]" },
     { key: "qty_received", header: "Qty Received", width: "min-w-[40px]" },
@@ -43,17 +43,17 @@ const PendingDemand = () => {
       header: "MO Gate Pass No.",
       width: "min-w-[40px]",
     },
-    {
-      key: "survey_voucher_no",
-      header: "Survey Voucher No.",
-      width: "min-w-[40px]",
-    },
-    {
-      key: "survey_qty",
-      header: "Surveyed / Utilised Qty",
-      width: "max-w-[100px]",
-    },
-    { key: "survey_date", header: "Surveyed Date", width: "min-w-[40px]" },
+    // {
+    //   key: "survey_voucher_no",
+    //   header: "Survey Voucher No.",
+    //   width: "min-w-[40px]",
+    // },
+    // {
+    //   key: "survey_qty",
+    //   header: "Surveyed / Utilised Qty",
+    //   width: "max-w-[100px]",
+    // },
+    // { key: "survey_date", header: "Surveyed Date", width: "min-w-[40px]" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
 
@@ -71,7 +71,7 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
-    { value: "denos", label: "Denos", width: "min-w-[40px]" },
+    { value: "denos", label: "Denos.", width: "min-w-[40px]" },
     {
       value: "demand_quantity",
       label: "Qty Demanded",
@@ -92,21 +92,21 @@ const PendingDemand = () => {
       label: "MO Gate Pass No.",
       width: "min-w-[40px]",
     },
-    {
-      value: "survey_voucher_no",
-      label: "Survey Voucher No.",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "survey_qty",
-      label: "Surveyed / Utilised Qty",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "survey_date",
-      label: "Surveyed Date",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   value: "survey_voucher_no",
+    //   label: "Survey Voucher No.",
+    //   width: "min-w-[40px]",
+    // },
+    // {
+    //   value: "survey_qty",
+    //   label: "Surveyed / Utilised Qty",
+    //   width: "min-w-[40px]",
+    // },
+    // {
+    //   value: "survey_date",
+    //   label: "Surveyed Date",
+    //   width: "min-w-[40px]",
+    // },
     {
       value: "created_at",
       label: "Created On",

@@ -110,6 +110,7 @@ const PendingSpecial = () => {
         </span>
       ),
     },
+    { key: "special_demand_type", header: "Type" },
     { key: "status", header: "Status" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
@@ -132,6 +133,14 @@ const PendingSpecial = () => {
     { value: "mo_demand_date", label: "MO Demand Date" },
     // { value: "created_at", label: "Created On" },
   ];
+
+
+  //add special demand states
+  const [addItems, setAddItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [itemType, setItemType] = useState("");
+  const [obsAuthorised, setObsAuthorised] = useState("");
+  const [specialType, setSpecialType] = useState("");
 
   const [date, setDate] = useState(new Date());
   const [selectedValues, setSelectedValues] = useState([]);
@@ -158,6 +167,7 @@ const PendingSpecial = () => {
     requisition_calender: false,
     gate_pass_calender: false,
     inventory: false,
+    addSpecial: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -349,11 +359,13 @@ const PendingSpecial = () => {
 
       modemand: row.mo_demand_no || "--",
       modate: row.mo_demand_date ? getFormatedDate(row.mo_demand_date) : "--",
+      special_demand_type: row.special_demand_type || "--",
 
       status: getSpecialDemandStatus(row),
 
       processed: (
         <Button
+          disabled={row.obs_increase_qty < 0}
           size="icon"
           className="bg-white text-black shadow-md border"
           onClick={() => {
@@ -418,6 +430,14 @@ const PendingSpecial = () => {
               maxCount={7}
             />
           </div>
+
+          <Button
+            className="cursor-pointer hover:bg-primary/85 flex items-center gap-1"
+            onClick={() => setIsOpen((prev) => ({ ...prev, addSpecial: true }))}
+          >
+            + Add Special Demand
+          </Button>
+
           <SpinnerButton
             className="cursor-pointer hover:bg-primary/85"
             onClick={handleSearch}
@@ -675,6 +695,258 @@ const PendingSpecial = () => {
                 Submit
               </SpinnerButton>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isOpen.addSpecial}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addSpecial: open }))
+        }
+      >
+        <DialogContent
+          showCloseButton
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          unbounded
+          className="w-[65vw] max-w-[950px] max-h-[90vh] overflow-y-scroll"
+        >
+          <DialogTitle>Add Special Demand</DialogTitle>
+          <div className="grid grid-cols-4 gap-4">
+            {/* ITEM TYPE */}
+            <div className="mt-4">
+              <Label>Item Type</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                value={itemType}
+                onChange={async (e) => {
+                  const type = e.target.value;
+                  setItemType(type);
+
+                  if (!type) return;
+
+                  const response = await apiService.get(
+                    type === "spare" ? "/spares" : "/tools",
+                    { params: { limit: 100 } },
+                  );
+
+                  setAddItems(response.data.items);
+                }}
+              >
+                <option value="">Select Type</option>
+                <option value="spare">Spares</option>
+                <option value="tool">Tools</option>
+              </select>
+            </div>
+
+            {/* ITEM LIST */}
+            {itemType && (
+              <div className="mt-4">
+                <Label>Select Item</Label>
+
+                <select
+                  className="w-full border rounded p-2 mt-1"
+                  onChange={(e) => {
+                    const item = addItems.find((i) => i.id == e.target.value);
+                    setSelectedItem(item);
+                  }}
+                >
+                  <option>Select Item</option>
+
+                  {addItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.description} ({item.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* OBS AUTHORISED */}
+            <div className="mt-4">
+              <Label>OBS Authorised</Label>
+
+              <Input
+                type="number"
+                min="1"
+                placeholder="Enter OBS authorised"
+                value={obsAuthorised}
+                onChange={(e) => setObsAuthorised(e.target.value)}
+              />
+            </div>
+
+            {/* SPECIAL DEMAND TYPE */}
+            <div className="mt-4">
+              <Label>Special Demand Type</Label>
+
+              <select
+                className="w-full border rounded p-2 mt-1"
+                value={specialType}
+                onChange={(e) => setSpecialType(e.target.value)}
+              >
+                <option value="">Select Type</option>
+                <option value="PTS">PTS</option>
+                <option value="OPDEM">OPDEM</option>
+                <option value="STORDEM">STORDEM</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-4 w-full">
+            {/* Demand No */}
+            <div className="w-full">
+              <Label htmlFor="internal_demand_no" className="ms-2 mb-2 mt-4">
+                Internal Demand No. <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                id="internal_demand_no"
+                value={inputs.internal_demand_no}
+                placeholder="Internal Demand No."
+                onChange={(e) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    internal_demand_no: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </div>
+            <div className="w-full mt-3">
+              <FormattedDatePicker
+                className="w-[400px]"
+                label="Internal Demand Date *"
+                value={inputs.internal_demand_date}
+                onChange={(date) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    internal_demand_date: date,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 w-full">
+            {/* Requisition No */}
+            <div className="w-full">
+              <Label htmlFor="requisition_no" className="ms-2 mb-2 mt-5">
+                Requisition No. <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                id="requisition_no"
+                value={inputs.requisition_no}
+                placeholder="Requisition No."
+                onChange={(e) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    requisition_no: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </div>
+            <div className="w-full mt-4">
+              <FormattedDatePicker
+                className="w-[400px]"
+                label="Requisition Date *"
+                value={inputs.requisition_date}
+                onChange={(date) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    requisition_date: date,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 w-full">
+            {/* MO Demand No */}
+            <div className="w-full">
+              <Label htmlFor="nmo_demand_no" className="ms-2 mb-2 mt-7">
+                MO Demand No. <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                id="mo_demand_no"
+                value={inputs.mo_demand_no}
+                placeholder="MO Demand No."
+                onChange={(e) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    mo_demand_no: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </div>
+            <div className="w-full mt-6">
+              <FormattedDatePicker
+                className="w-[400px]"
+                label="MO Demand Date *"
+                value={inputs.mo_demand_date}
+                onChange={(date) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    mo_demand_date: date,
+                  }))
+                }
+              />
+            </div>
+          </div>
+          {/* BUTTONS */}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="destructive"
+              onClick={() =>
+                setIsOpen((prev) => ({ ...prev, addSpecial: false }))
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="text-white"
+              onClick={async () => {
+                if (!selectedItem) return toaster("error", "Select item");
+
+                if (!obsAuthorised || obsAuthorised <= 0)
+                  return toaster("error", "Invalid OBS authorised");
+
+                if (!specialType)
+                  return toaster("error", "Select special demand type");
+
+                await apiService.post("/specialDemand/manual-add", {
+                  spare_id: itemType === "spare" ? selectedItem.id : null,
+                  tool_id: itemType === "tool" ? selectedItem.id : null,
+                  obs_authorised: Number(obsAuthorised),
+                  special_demand_type: specialType,
+
+                  internal_demand_no: inputs.internal_demand_no,
+                  internal_demand_date: inputs.internal_demand_date,
+
+                  requisition_no: inputs.requisition_no,
+                  requisition_date: inputs.requisition_date,
+
+                  mo_demand_no: inputs.mo_demand_no,
+                  mo_demand_date: inputs.mo_demand_date,
+                });
+
+                toaster("success", "Special demand added");
+
+                setObsAuthorised("");
+                setSpecialType("");
+                setItemType("");
+                setSelectedItem(null);
+
+                setIsOpen((prev) => ({ ...prev, addSpecial: false }));
+
+                fetchdata();
+              }}
+            >
+              Submit
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

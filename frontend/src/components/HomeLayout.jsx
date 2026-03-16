@@ -38,7 +38,7 @@ const HomeLayout = () => {
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
       {/* Main Content */}
-      <div className="flex-1 relative bg-[#bbe0ff] overflow-hidden">
+      <div className="flex-1 relative bg-[#c5cffa] overflow-hidden">
         {/* Background Image */}
         {/* <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none z-0">
           <img src="/abc.svg" alt="Background" className="h-[90%] w-auto" />

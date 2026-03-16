@@ -22,7 +22,7 @@ const NACLogs = () => {
   const { config, user } = useContext(Context);
     const columns = useMemo(() => [
       { key: "demand_no", header: "Demand No." },
-      { key: "demand_date", header: "Demand Date" },
+      // { key: "demand_date", header: "Demand Date" },
       { key: "nac_no", header: "NAC No." },
       { key: "nac_date", header: "NAC Date" },
       { key: "description", header: "Item Description" },
@@ -36,19 +36,19 @@ const NACLogs = () => {
         width: "min-w-[40px]",
       },
       { key: "category", header: "Category" },
-      { key: "denos", header: "Denos" },
+      { key: "denos", header: "Denos." },
 
-      { key: "demand_quantity", header: "Demanded Qty" },
-      { key: "nac_qty", header: "NAC / Ordered Qty" },
+      // { key: "demand_quantity", header: "Demanded Qty" },
+      { key: "nac_qty", header: "Qty NAC" },
 
-      { key: "validity", header: "Validity" },
+      // { key: "validity", header: "Validity" },
       { key: "rate_unit", header: "Rate/ Unit" },
-      { key: "qty_received", header: "Qty Received" },
+      // { key: "qty_received", header: "Qty Received" },
     ]);
 
     const options = [
       { value: "demand_no", label: "Demand No." },
-      { value: "demand_date", label: "Demand date" },
+      // { value: "demand_date", label: "Demand date" },
       { value: "nac_no", label: "NAC No." },
       { value: "nac_date", label: "NAC Date" },
       { value: "description", label: "Item Description" },
@@ -62,13 +62,13 @@ const NACLogs = () => {
         width: "min-w-[40px]",
       },
       { value: "category", label: "Category" },
-      { value: "denos", label: "Denos" },
-      { value: "demand_quantity", label: "Demanded Qty" },
-      { value: "nac_qty", label: "NAC / Ordered Qty" },
-      { value: "validity", label: "Validity" },
+      { value: "denos", label: "Denos." },
+      // { value: "demand_quantity", label: "Demanded Qty" },
+      { value: "nac_qty", label: "Qty NAC" },
+      // { value: "validity", label: "Validity" },
       { value: "rate_unit", label: "Rate/ Unit" },
-      { value: "qty_received", label: "Qty Received" },
-      { value: "created_at", label: "Created On" },
+      // { value: "qty_received", label: "Qty Received" },
+      // { value: "created_at", label: "Created On" },
     ];
 
   const [selectedValues, setSelectedValues] = useState([]);

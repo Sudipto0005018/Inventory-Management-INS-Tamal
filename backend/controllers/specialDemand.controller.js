@@ -2,6 +2,11 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
+const formatDate = (date) => {
+  if (!date) return null;
+  return new Date(date).toISOString().split("T")[0];
+};
+
 async function createSpecialDemand(req, res) {
   const { id: userId, name } = req.user;
 
@@ -162,12 +167,21 @@ async function getSpecialDemandList(req, res) {
   };
 
   /* ---------------- BASE WHERE ---------------- */
+  // let whereClause = `
+  //   WHERE
+  //     (sd.internal_demand_no IS NULL
+  //     OR sd.requisition_no IS NULL
+  //     OR sd.mo_demand_no IS NULL)
+  // `;
+
   let whereClause = `
-    WHERE 
-      (sd.internal_demand_no IS NULL 
-      OR sd.requisition_no IS NULL 
-      OR sd.mo_demand_no IS NULL)
-  `;
+WHERE NOT (
+  sd.internal_demand_no IS NOT NULL
+  AND sd.requisition_no IS NOT NULL
+  AND sd.mo_demand_no IS NOT NULL
+)
+`;
+  // let whereClause = `WHERE 1=1`;
   let searchParams = [];
 
   /* ---------------- SEARCH WHERE ---------------- */
@@ -292,6 +306,7 @@ async function getSpecialDemandList(req, res) {
 
         sd.obs_authorised,
         sd.obs_increase_qty,
+        sd.special_demand_type,
 
         sd.internal_demand_no,
         sd.internal_demand_date,
@@ -1007,6 +1022,112 @@ async function getD787List(req, res) {
   }
 }
 
+async function manualAddSpecialDemand(req, res) {
+  const {
+    spare_id,
+    tool_id,
+    obs_authorised,
+    special_demand_type,
+
+    internal_demand_no,
+    internal_demand_date,
+
+    requisition_no,
+    requisition_date,
+
+    mo_demand_no,
+    mo_demand_date,
+  } = req.body;
+
+  const { id: created_by, name } = req.user;
+
+  try {
+    if (!obs_authorised || obs_authorised <= 0) {
+      return res.status(400).json({
+        message: "OBS authorised must be greater than 0",
+      });
+    }
+
+    if (!special_demand_type) {
+      return res.status(400).json({
+        message: "Special demand type is required",
+      });
+    }
+
+    let item;
+
+    if (spare_id) {
+      const [[row]] = await pool.query(`SELECT id FROM spares WHERE id=?`, [
+        spare_id,
+      ]);
+      item = row;
+    }
+
+    if (tool_id) {
+      const [[row]] = await pool.query(`SELECT id FROM tools WHERE id=?`, [
+        tool_id,
+      ]);
+      item = row;
+    }
+
+    if (!item) {
+      return res.status(404).json({
+        message: "Item not found",
+      });
+    }
+
+    await pool.query(
+      `INSERT INTO special_demand (
+    spare_id,
+    tool_id,
+    obs_authorised,
+    obs_increase_qty,
+    special_demand_type,
+
+    internal_demand_no,
+    internal_demand_date,
+
+    requisition_no,
+    requisition_date,
+
+    mo_demand_no,
+    mo_demand_date,
+
+    created_by,
+    created_by_name
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        spare_id || null,
+        tool_id || null,
+        obs_authorised,
+        0,
+        special_demand_type,
+
+        internal_demand_no || null,
+        internal_demand_date ? formatDate(internal_demand_date) : null,
+        requisition_no || null,
+        requisition_date ? formatDate(requisition_date) : null,
+        mo_demand_no || null,
+        mo_demand_date ? formatDate(mo_demand_date) : null,
+
+        created_by,
+        name,
+      ],
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Special demand added successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   createSpecialDemand,
   getSpecialDemandList,
@@ -1014,4 +1135,5 @@ module.exports = {
   getLogsSpecialDemand,
   createD787Original,
   getD787List,
+  manualAddSpecialDemand,
 };

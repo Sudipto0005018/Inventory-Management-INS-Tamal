@@ -36,8 +36,8 @@ const PendingTempLoan = () => {
       header: "Type",
       width: "min-w-[40px]",
     },
-    { key: "denos", header: "Denos" },
-    { key: "category", header: "Category" },
+    { key: "denos", header: "Denos." },
+    // { key: "category", header: "Category" },
     { key: "qty_withdrawn", header: "Qty Issued" },
     { key: "concurred_by", header: "Concurred By" },
     { key: "unit", header: "Unit Name" },
@@ -45,7 +45,7 @@ const PendingTempLoan = () => {
     { key: "service_no", header: "Service No." },
     { key: "phone", header: "Phone No." },
     { key: "qty_received", header: "Qty Returned" },
-    { key: "loan_duration", header: "Loan Duration (days)" },
+    // { key: "loan_duration", header: "Loan Duration (days)" },
     // { key: "submission_date", header: "Expected Return Date" },
     { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
@@ -62,8 +62,8 @@ const PendingTempLoan = () => {
         </span>
       ),
     },
-    { value: "denos", label: "Denos" },
-    { value: "category", label: "Category" },
+    { value: "denos", label: "Denos." },
+    // { value: "category", label: "Category" },
     { value: "qty_withdrawn", label: "Qty Issued" },
     { value: "concurred_by", label: "Concurred By" },
     { value: "unit", label: "Unit Name" },
@@ -71,7 +71,7 @@ const PendingTempLoan = () => {
     { value: "service_no", label: "Service No." },
     { value: "phone", label: "Phone No." },
     { value: "qty_received", label: "Qty Returned" },
-    { value: "loan_duration", label: "Loan Duration" },
+    // { value: "loan_duration", label: "Loan Duration" },
     { value: "created_at", label: "Created On" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);

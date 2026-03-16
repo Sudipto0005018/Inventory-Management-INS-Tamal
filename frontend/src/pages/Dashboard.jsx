@@ -54,7 +54,7 @@ export default function Dashboard() {
 
   // h-screen
   return (
-    <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-blue-100 from-gray-50 to-gray-100 p-3 mt-[-20px] md:p-5">
+    <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-[#c5cffa] from-gray-50 to-gray-100 p-3 mt-[-20px] md:p-5">
       {/* bg-gradient-to-br */} {/* Header with Gradient */}
       <div className="mb-3 text-center">
         <div className="flex flex-col items-center">
