@@ -175,7 +175,7 @@ const PendingSurvey = () => {
       });
 
       if (response.success) {
-        toaster("success", "TY Loan rolled back successfully");
+        toaster("success", "Survey rolled back successfully");
         fetchdata();
       } else {
         toaster("error", response.message);
@@ -735,7 +735,7 @@ const PendingSurvey = () => {
 
           <div className="mt-4">
             <p className="mb-3 text-sm text-gray-700">
-              Are you sure you want to rollback this TY Loan?
+              Are you sure you want to rollback this Survey?
             </p>
 
             <div className="flex gap-6 mt-2">
