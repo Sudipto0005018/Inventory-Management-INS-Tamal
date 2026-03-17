@@ -315,43 +315,50 @@ const PendingSurvey = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    const t = fetchedData.items.map((row) => ({
-      ...row,
-      survey_quantity: row.survey_quantity || "0",
-      issue_date: getFormatedDate(row.issue_date),
-      withdrawl_date_str: getFormatedDate(row.withdrawl_date),
-      created_at: getTimeDate(row.created_at),
-      status:
-        row.status?.toLowerCase() == "pending" ? (
-          <Chip text="Pending" varient="info" />
-        ) : (
-          <Chip text="Completed" varient="success" />
-        ),
-      processed: (
-        // row.status?.toLowerCase() == "pending" ? (
-        <Button
-          size="icon"
-          className="bg-white text-black shadow-md border hover:bg-gray-100"
-          onClick={() => {
-            setSelectedRow(row);
-            setIsOpen((prev) => ({ ...prev, survey: true }));
-          }}
-        >
-          <FaChevronRight />
-        </Button>
-      ),
-      rollback:
-        user.role === "officer" ? (
+    const t = fetchedData.items.map((row) => {
+      console.log("SOURCE TYPE:", row.source_type, row);
+
+      return {
+        ...row,
+        survey_quantity: row.survey_quantity || "0",
+        issue_date: getFormatedDate(row.issue_date),
+        withdrawl_date_str: getFormatedDate(row.withdrawl_date),
+        created_at: getTimeDate(row.created_at),
+        status:
+          row.status?.toLowerCase() == "pending" ? (
+            <Chip text="Pending" varient="info" />
+          ) : (
+            <Chip text="Completed" varient="success" />
+          ),
+        processed: (
           <Button
-            variant="destructive"
-            className="bg-red-600 text-white hover:bg-red-700"
-            size="sm"
-            onClick={() => handleRollback(row.id, row.description)}
+            size="icon"
+            disabled={row.issue_to?.toLowerCase() === "special_demand"}
+            className={`bg-white text-black shadow-md border hover:bg-gray-100
+      ${row.source_type?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
+            onClick={() => {
+             if (row.issue_to?.toLowerCase() === "special_demand") return;
+
+              setSelectedRow(row);
+              setIsOpen((prev) => ({ ...prev, survey: true }));
+            }}
           >
-            Rollback
+            <FaChevronRight />
           </Button>
-        ) : null,
-    }));
+        ),
+        rollback:
+          user.role === "officer" ? (
+            <Button
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-700"
+              size="sm"
+              onClick={() => handleRollback(row.id, row.description)}
+            >
+              Rollback
+            </Button>
+          ) : null,
+      };
+    });
     setTableData(t);
   }, [fetchedData]);
 

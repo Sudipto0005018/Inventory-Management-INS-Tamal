@@ -55,7 +55,7 @@ function BoxNoInputs({
   // const canAddRow = lastRow && lastRow.no && lastRow.qn && lastRow.location;
 
   const lastRow = value.length > 0 ? value[value.length - 1] : null;
-  const canAddRow = lastRow && lastRow.no && lastRow.qn && lastRow.qnMain;
+  const canAddRow = lastRow && lastRow.no && lastRow.qn;
 
   return (
     <div className="w-full p-2 border rounded-md">

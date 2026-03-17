@@ -622,31 +622,25 @@ const Spares = ({ type = "" }) => {
       // Validate boxNo exists and parseable
       if (hasBoxes) {
         for (let i = 0; i < boxes.length; i++) {
-          const { no, location, qtyHeld, qn, qnMain } = boxes[i];
+          const { no, location, qn } = boxes[i];
 
-          if (!no?.trim()) {
-            toaster("error", `Box No is required in row ${i + 1}`);
-            return;
-          }
+          // If authorised qty is entered, box no and location must be provided
+          if (qn !== "" && qn !== null && !isNaN(qn)) {
+            if (!no || !no.trim()) {
+              toaster(
+                "error",
+                `Box No is required when Authorised Qty is entered (row ${i + 1})`,
+              );
+              return;
+            }
 
-          if (qn === "" || qn === null || isNaN(qn)) {
-            toaster("error", `Authorised Qty is required in row ${i + 1}`);
-            return;
-          }
-
-          if (qtyHeld === "" || qtyHeld === null || isNaN(qtyHeld)) {
-            toaster("error", `Qty Held is required in row ${i + 1}`);
-            return;
-          }
-
-          if (qnMain === "" || qnMain === null || isNaN(qnMain)) {
-            toaster("error", `Qty Maintained is required in row ${i + 1}`);
-            return;
-          }
-
-          if (!location?.trim()) {
-            toaster("error", `Location is required in row ${i + 1}`);
-            return;
+            if (!location || !location.trim()) {
+              toaster(
+                "error",
+                `Location is required when Authorised Qty is entered (row ${i + 1})`,
+              );
+              return;
+            }
           }
         }
 
@@ -656,20 +650,20 @@ const Spares = ({ type = "" }) => {
           const qty1 = boxes[i].qtyHeld;
           const qty2 = boxes[i].qnMain;
 
-          if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
-            toaster("error", "Invalid Authorised Qty");
-            return;
-          }
+          // if (isNaN(parseInt(qty)) || parseInt(qty) < 0) {
+          //   toaster("error", "Invalid Authorised Qty");
+          //   return;
+          // }
 
-          if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
-            toaster("error", "Invalid Held Qty");
-            return;
-          }
+          // if (isNaN(parseInt(qty1)) || parseInt(qty1) < 0) {
+          //   toaster("error", "Invalid Held Qty");
+          //   return;
+          // }
 
-          if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
-            toaster("error", "Invalid Maintained Qty");
-            return;
-          }
+          // if (isNaN(parseInt(qty2)) || parseInt(qty2) < 0) {
+          //   toaster("error", "Invalid Maintained Qty");
+          //   return;
+          // }
 
           s += Number(qty || 0);
           s1 += Number(qty1 || 0);
@@ -680,17 +674,20 @@ const Spares = ({ type = "" }) => {
         const obsMaintained = Number(inputs.obs_maintained);
         const obsHeld = Number(inputs.obs_held);
 
-        if (s !== obsAuthorised) {
+        // Check only if OBS Authorised is entered
+        if (inputs.obs_authorised && s !== obsAuthorised) {
           toaster("error", "Authorised Qty not matched with OBS Authorised");
           return;
         }
 
-        if (s2 !== obsMaintained) {
+        // Check only if OBS Maintained is entered
+        if (inputs.obs_maintained && s2 !== obsMaintained) {
           toaster("error", "Maintained Qty not matched with OBS Maintained");
           return;
         }
 
-        if (s1 !== obsHeld) {
+        // Check only if OBS Held is entered
+        if (inputs.obs_held && s1 !== obsHeld) {
           toaster("error", "Qty Held not matched with OBS Held");
           return;
         }
@@ -4214,9 +4211,8 @@ const Spares = ({ type = "" }) => {
                       ? Number(originalObsAuthorised) +
                         Number(obsDialog.quantity)
                       : Number(originalObsAuthorised) -
-                      Number(obsDialog.quantity);
-                  
-                  
+                        Number(obsDialog.quantity);
+
                   console.log("totalBoxQty", totalBoxQty);
                   console.log("finalValue", finalValue);
                   console.log("originalObsAuthorised", originalObsAuthorised);
@@ -4235,7 +4231,7 @@ const Spares = ({ type = "" }) => {
                     parsedBox: updatedBoxes,
                     finalValue,
                   });
-                  return; 
+                  return;
                 }}
               >
                 Submit

@@ -520,6 +520,7 @@ async function getSurveys(req, res) {
     const [rows] = await connection.query(
       `SELECT 
                 s.*,
+                pi.source_type,
                 COALESCE(sp.description, t.description) as description,
                 COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
                 COALESCE(sp.category, t.category) as category,
@@ -527,6 +528,7 @@ async function getSurveys(req, res) {
              FROM survey s
              LEFT JOIN spares sp ON s.spare_id = sp.id
              LEFT JOIN tools t ON s.tool_id = t.id
+             LEFT JOIN pending_issue pi ON s.transaction_id = pi.transaction_id
              ${finalWhereClause} 
              ORDER BY s.id DESC
              LIMIT ? OFFSET ?`,

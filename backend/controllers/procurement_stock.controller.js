@@ -660,6 +660,44 @@ async function updateStock(req, res) {
       [transactionId, previousOBS, newOBS],
     );
 
+    /* =====================================================
+   🔟 CHECK IF SOURCE IS SPECIAL DEMAND
+===================================================== */
+
+    const [[pendingIssue]] = await connection.query(
+      `SELECT source_type FROM pending_issue WHERE transaction_id = ?`,
+      [demandTransactionId],
+    );
+
+    if (pendingIssue && pendingIssue.source_type === "special_demand") {
+      await connection.query(
+        `INSERT INTO survey (
+        transaction_id,
+        spare_id,
+        tool_id,
+        issue_to,
+        withdrawl_qty,
+        survey_quantity,
+        box_no,
+        service_no,
+        name,
+        created_by
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          transactionId,
+          row.spare_id || null,
+          row.tool_id || null,
+          "special_demand",
+          receiveNow,
+          receiveNow,
+          JSON.stringify(box_no || []),
+          "SD_RETURN",
+          "Special Demand Return",
+          userId,
+        ],
+      );
+    }
     await connection.commit();
 
     res.json({
@@ -912,6 +950,44 @@ async function updateProcurement(req, res) {
       `,
       [transactionId, previousOBS, newOBS],
     );
+    
+    /* =====================================================
+   🔟 CHECK IF SOURCE IS SPECIAL DEMAND
+   ===================================================== */
+    const [[pendingIssue]] = await connection.query(
+      `SELECT source_type FROM pending_issue WHERE transaction_id = ?`,
+      [demandTransactionId],
+    );
+
+    if (pendingIssue && pendingIssue.source_type === "special_demand") {
+      await connection.query(
+        `INSERT INTO survey (
+        transaction_id,
+        spare_id,
+        tool_id,
+        issue_to,
+        withdrawl_qty,
+        survey_quantity,
+        box_no,
+        service_no,
+        name,
+        created_by
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          transactionId,
+          row2.spare_id || null,
+          row2.tool_id || null,
+          "special_demand",
+          receiveNow,
+          receiveNow,
+          JSON.stringify(box_no || []),
+          "SD_RETURN",
+          "Special Demand Return",
+          userId,
+        ],
+      );
+    }
 
     await connection.commit();
 
@@ -1389,23 +1465,23 @@ async function getLogsNAC(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
- const columnMap = {
-   description: ["sp.description", "t.description"],
-   category: ["sp.category", "t.category"],
-   indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
-   denos: ["sp.denos", "t.denos"],
+  const columnMap = {
+    description: ["sp.description", "t.description"],
+    category: ["sp.category", "t.category"],
+    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    denos: ["sp.denos", "t.denos"],
 
-   demand_no: ["pi.demand_no", "pi.mo_no"],
-   demand_quantity: ["pi.demand_quantity"],
+    demand_no: ["pi.demand_no", "pi.mo_no"],
+    demand_quantity: ["pi.demand_quantity"],
 
-   nac_qty: ["p.nac_qty"],
-   nac_no: ["p.nac_no"],
-   nac_date: ["p.nac_date"],
-   validity: ["p.validity"],
-   rate_unit: ["p.rate_unit"],
-   created_at: ["p.created_at"],
-   qty_received: ["p.qty_received"],
- };
+    nac_qty: ["p.nac_qty"],
+    nac_no: ["p.nac_no"],
+    nac_date: ["p.nac_date"],
+    validity: ["p.validity"],
+    rate_unit: ["p.rate_unit"],
+    created_at: ["p.created_at"],
+    qty_received: ["p.qty_received"],
+  };
 
   const connection = await pool.getConnection();
 

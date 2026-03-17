@@ -375,98 +375,99 @@ WHERE NOT (
   }
 }
 
-async function updateSpecialDemand(req, res) {
-  const {
-    id,
-    internal_demand_no,
-    internal_demand_date,
-    requisition_no,
-    requisition_date,
-    mo_demand_no,
-    mo_demand_date,
-  } = req.body;
+// old logic
+// async function updateSpecialDemand(req, res) {
+//   const {
+//     id,
+//     internal_demand_no,
+//     internal_demand_date,
+//     requisition_no,
+//     requisition_date,
+//     mo_demand_no,
+//     mo_demand_date,
+//   } = req.body;
 
-  const { id: userId } = req.user;
+//   const { id: userId } = req.user;
 
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      message: "Special Demand item ID is required for an update.",
-    });
-  }
-  const connection = await pool.getConnection();
-  try {
-    const allDemandFieldsFilled =
-      internal_demand_no &&
-      internal_demand_date &&
-      requisition_no &&
-      requisition_date &&
-      mo_demand_no &&
-      mo_demand_date;
-    if (allDemandFieldsFilled) {
-      const getSpecialDemandQuery = "SELECT * FROM special_demand WHERE id = ?";
-      const [specialDemandRows] = await connection.query(
-        getSpecialDemandQuery,
-        [id],
-      );
+//   if (!id) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Special Demand item ID is required for an update.",
+//     });
+//   }
+//   const connection = await pool.getConnection();
+//   try {
+//     const allDemandFieldsFilled =
+//       internal_demand_no &&
+//       internal_demand_date &&
+//       requisition_no &&
+//       requisition_date &&
+//       mo_demand_no &&
+//       mo_demand_date;
+//     if (allDemandFieldsFilled) {
+//       const getSpecialDemandQuery = "SELECT * FROM special_demand WHERE id = ?";
+//       const [specialDemandRows] = await connection.query(
+//         getSpecialDemandQuery,
+//         [id],
+//       );
 
-      if (!specialDemandRows.length) {
-        return res.status(404).json({
-          success: false,
-          message: "Special Demand not found",
-        });
-      }
-      const specialDemand = specialDemandRows[0];
+//       if (!specialDemandRows.length) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Special Demand not found",
+//         });
+//       }
+//       const specialDemand = specialDemandRows[0];
 
-      const pendingIssueQuery = `
-              INSERT INTO pending_issue (
-                spare_id, tool_id, demand_no, demand_date, demand_quantity,
-                requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id, source_type
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, ?)
-            `;
+//       const pendingIssueQuery = `
+//               INSERT INTO pending_issue (
+//                 spare_id, tool_id, demand_no, demand_date, demand_quantity,
+//                 requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id, source_type
+//               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, ?)
+//             `;
 
-      await connection.query(pendingIssueQuery, [
-        specialDemand.spare_id || null,
-        specialDemand.tool_id || null,
-        internal_demand_no,
-        internal_demand_date,
-        specialDemand.obs_increase_qty,
-        requisition_no,
-        requisition_date,
-        mo_demand_no,
-        mo_demand_date,
-        userId,
-        "SD-" + Date.now(),
-        "special_demand",
-      ]);
-    }
-    const query = `
-              UPDATE special_demand SET
-                internal_demand_no = ?, internal_demand_date = ?,
-                requisition_no = ?, requisition_date = ?,
-                mo_demand_no = ?, mo_demand_date = ?
-              WHERE id = ?
-            `;
-    await connection.query(query, [
-      internal_demand_no || null,
-      internal_demand_date || null,
-      requisition_no || null,
-      requisition_date || null,
-      mo_demand_no || null,
-      mo_demand_date || null,
-      id,
-    ]);
+//       await connection.query(pendingIssueQuery, [
+//         specialDemand.spare_id || null,
+//         specialDemand.tool_id || null,
+//         internal_demand_no,
+//         internal_demand_date,
+//         specialDemand.obs_increase_qty,
+//         requisition_no,
+//         requisition_date,
+//         mo_demand_no,
+//         mo_demand_date,
+//         userId,
+//         "SD-" + Date.now(),
+//         "special_demand",
+//       ]);
+//     }
+//     const query = `
+//               UPDATE special_demand SET
+//                 internal_demand_no = ?, internal_demand_date = ?,
+//                 requisition_no = ?, requisition_date = ?,
+//                 mo_demand_no = ?, mo_demand_date = ?
+//               WHERE id = ?
+//             `;
+//     await connection.query(query, [
+//       internal_demand_no || null,
+//       internal_demand_date || null,
+//       requisition_no || null,
+//       requisition_date || null,
+//       mo_demand_no || null,
+//       mo_demand_date || null,
+//       id,
+//     ]);
 
-    await connection.commit();
-    res.status(200).json({ success: true, message: "Updated successfully" });
-  } catch (error) {
-    await connection.rollback();
-    console.log("UPDATE SPECIAL DEMAND ERROR =>", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  } finally {
-    connection.release();
-  }
-}
+//     await connection.commit();
+//     res.status(200).json({ success: true, message: "Updated successfully" });
+//   } catch (error) {
+//     await connection.rollback();
+//     console.log("UPDATE SPECIAL DEMAND ERROR =>", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   } finally {
+//     connection.release();
+//   }
+// }
 
 async function getLogsSpecialDemand(req, res) {
   const page = parseInt(req.query?.page) || 1;
@@ -1022,6 +1023,101 @@ async function getD787List(req, res) {
   }
 }
 
+// new logic
+async function updateSpecialDemand(req, res) {
+  const {
+    id,
+    internal_demand_no,
+    internal_demand_date,
+    requisition_no,
+    requisition_date,
+    mo_demand_no,
+    mo_demand_date,
+  } = req.body;
+
+  const { id: userId } = req.user;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "Special Demand item ID is required for an update.",
+    });
+  }
+  const connection = await pool.getConnection();
+  try {
+    const allDemandFieldsFilled =
+      internal_demand_no &&
+      internal_demand_date &&
+      requisition_no &&
+      requisition_date &&
+      mo_demand_no &&
+      mo_demand_date;
+    if (allDemandFieldsFilled) {
+      const getSpecialDemandQuery = "SELECT * FROM special_demand WHERE id = ?";
+      const [specialDemandRows] = await connection.query(
+        getSpecialDemandQuery,
+        [id],
+      );
+
+      if (!specialDemandRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Special Demand not found",
+        });
+      }
+      const specialDemand = specialDemandRows[0];
+
+      const pendingIssueQuery = `
+              INSERT INTO pending_issue (
+                spare_id, tool_id, demand_no, demand_date, demand_quantity,
+                requisition_no, requisition_date, mo_no, mo_date, created_by, created_at, status, transaction_id, source_type
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, ?)
+            `;
+
+      const transactionId = "SD-" + id;
+      await connection.query(pendingIssueQuery, [
+        specialDemand.spare_id || null,
+        specialDemand.tool_id || null,
+        internal_demand_no,
+        internal_demand_date,
+        specialDemand.obs_increase_qty,
+        requisition_no,
+        requisition_date,
+        mo_demand_no,
+        mo_demand_date,
+        userId,
+        transactionId,
+        "special_demand",
+      ]);
+    }
+    const query = `
+              UPDATE special_demand SET
+                internal_demand_no = ?, internal_demand_date = ?,
+                requisition_no = ?, requisition_date = ?,
+                mo_demand_no = ?, mo_demand_date = ?
+              WHERE id = ?
+            `;
+    await connection.query(query, [
+      internal_demand_no || null,
+      internal_demand_date || null,
+      requisition_no || null,
+      requisition_date || null,
+      mo_demand_no || null,
+      mo_demand_date || null,
+      id,
+    ]);
+
+    await connection.commit();
+    res.status(200).json({ success: true, message: "Updated successfully" });
+  } catch (error) {
+    await connection.rollback();
+    console.log("UPDATE SPECIAL DEMAND ERROR =>", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  } finally {
+    connection.release();
+  }
+}
+
 async function manualAddSpecialDemand(req, res) {
   const {
     spare_id,
@@ -1147,3 +1243,5 @@ module.exports = {
   getD787List,
   manualAddSpecialDemand,
 };
+
+

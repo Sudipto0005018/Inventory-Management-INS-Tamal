@@ -25,9 +25,11 @@ import {
 } from "../utils/helperFunctions";
 import BoxNoInputs from "../components/BoxNoInputsTwo";
 import { MultiSelect } from "../components/ui/multi-select";
+import { useNavigate } from "react-router";
 
 const PendingSpecial = () => {
   const { config, user } = useContext(Context);
+    const navigate = useNavigate();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -168,6 +170,9 @@ const PendingSpecial = () => {
     gate_pass_calender: false,
     inventory: false,
     addSpecial: false,
+
+    addSpare: false,
+    addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
 
@@ -755,7 +760,22 @@ const PendingSpecial = () => {
                 <select
                   className="w-full border rounded p-2 mt-1"
                   onChange={(e) => {
-                    const item = addItems.find((i) => i.id == e.target.value);
+                    const value = e.target.value;
+
+                    // OPEN ADD SPARE / TOOL DIALOG
+                    if (value === "custom") {
+                      if (itemType === "spare") {
+                        setIsOpen((prev) => ({ ...prev, addSpare: true }));
+                      }
+
+                      if (itemType === "tool") {
+                        setIsOpen((prev) => ({ ...prev, addTool: true }));
+                      }
+
+                      return;
+                    }
+
+                    const item = addItems.find((i) => i.id == value);
                     setSelectedItem(item);
 
                     if (item) {
@@ -763,13 +783,16 @@ const PendingSpecial = () => {
                     }
                   }}
                 >
-                  <option>Select Item</option>
+                  <option value="">Select Item</option>
 
                   {addItems.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.description} ({item.category})
                     </option>
                   ))}
+
+                  {/* ADD NEW OPTION */}
+                  <option value="custom">➕ Add New {itemType}</option>
                 </select>
               </div>
             )}
@@ -977,6 +1000,66 @@ const PendingSpecial = () => {
               }}
             >
               Submit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD SPARE */}
+
+      <Dialog
+        open={isOpen.addSpare}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addSpare: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Spare</DialogTitle>
+
+          <p>Reuse your existing Add Spare form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addSpare: false }));
+                navigate("/spares", {
+                  state: {
+                    add_spare: true,
+                  },
+                });
+              }}
+            >
+              Open
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADD TOOL */}
+
+      <Dialog
+        open={isOpen.addTool}
+        onOpenChange={(open) =>
+          setIsOpen((prev) => ({ ...prev, addTool: open }))
+        }
+      >
+        <DialogContent>
+          <DialogTitle>Add Tool</DialogTitle>
+
+          <p>Reuse your existing Add Tool form here.</p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOpen((prev) => ({ ...prev, addTool: false }));
+                navigate("/tools", {
+                  state: {
+                    add_tool: true,
+                  },
+                });
+              }}
+            >
+              Open
             </Button>
           </div>
         </DialogContent>
