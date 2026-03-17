@@ -647,7 +647,7 @@ const Tools = ({ type = "" }) => {
             if (!no || !no.trim()) {
               toaster(
                 "error",
-                `Box No is required when Authorised Qty is entered (row ${i + 1})`,
+                `Box No is required when Authorised Qty is entered in row ${i + 1}`,
               );
               return;
             }
@@ -655,7 +655,7 @@ const Tools = ({ type = "" }) => {
             if (!location || !location.trim()) {
               toaster(
                 "error",
-                `Location is required when Authorised Qty is entered (row ${i + 1})`,
+                `Location is required when Authorised Qty is entered in row ${i + 1}`,
               );
               return;
             }

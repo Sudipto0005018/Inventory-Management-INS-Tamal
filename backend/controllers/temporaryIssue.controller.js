@@ -987,9 +987,9 @@ async function getLogsTemporary(req, res) {
      name: ["til.individual_name"],
      service_no: ["til.service_no"],
      qty_received: ["til.qty_received"],
-    //  utilised_qty: ["til.utilised_qty"],
+     //  utilised_qty: ["til.utilised_qty"],
      loan_duration: ["til.loan_duration"],
-     created_at: ["til.created_at"],
+     approved_at: ["til.approved_at"],
    };
 
     const validCols = cols.map((c) => c.trim()).filter((col) => columnMap[col]);

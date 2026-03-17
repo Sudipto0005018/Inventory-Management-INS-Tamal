@@ -40,7 +40,7 @@ const PermanentPendings = () => {
     { key: "mo_no", header: "MO Gate Pass No." },
     { key: "mo_date", header: "MO Date" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Date of Return" },
+    { key: "approved_at", header: "Date of Return" },
   ]);
 
   const options = [
@@ -63,7 +63,7 @@ const PermanentPendings = () => {
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Date of Return" },
+    { value: "approved_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -175,7 +175,7 @@ const PermanentPendings = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       survey_quantity: row.survey_quantity || "0",
-      created_at: getTimeDate(row.created_at),
+      approved_at: getTimeDate(row.approved_at),
       item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
       demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
       qty_received:

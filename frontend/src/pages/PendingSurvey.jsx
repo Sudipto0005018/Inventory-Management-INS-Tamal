@@ -968,7 +968,7 @@ const PendingSurvey = () => {
         <DialogContent>
           <DialogTitle>Add Spare</DialogTitle>
 
-          <p>Reuse your existing Add Spare form here.</p>
+          <p>Redirecting to Add Spare form</p>
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
@@ -998,7 +998,7 @@ const PendingSurvey = () => {
         <DialogContent>
           <DialogTitle>Add Tool</DialogTitle>
 
-          <p>Reuse your existing Add Tool form here.</p>
+          <p>Redirecting to Add Tool form</p>
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"

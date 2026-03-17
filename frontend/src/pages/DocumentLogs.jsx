@@ -31,7 +31,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
-    { key: "created_at", header: "Date of Return", width: "min-w-[40px]" },
+    { key: "approved_at", header: "Date of Return", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -80,7 +80,7 @@ const PendingTempLoan = () => {
       width: "min-w-[40px]",
     },
     {
-      value: "created_at",
+      value: "approved_at",
       label: "Date of Return",
       width: "min-w-[40px]",
     },
@@ -272,7 +272,7 @@ const PendingTempLoan = () => {
               addDate(row.issue_date, parseInt(row.loan_duration || 0)),
             )
           : "-",
-        created_at: getTimeDate(row.created_at),
+        approved_at: getTimeDate(row.approved_at),
         received_quantity: row.qty_received ?? 0,
 
         status:

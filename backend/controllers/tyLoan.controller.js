@@ -904,7 +904,7 @@ async function getLogsTy(req, res) {
 
       issue_date: ["ty.issue_date"],
       loan_duration: ["ty.loan_duration"],
-      created_at: ["ty.created_at"],
+      approved_at: ["ty.approved_at"],
 
       created_by_name: ["u1.name"],
       approved_by_name: ["u2.name"],

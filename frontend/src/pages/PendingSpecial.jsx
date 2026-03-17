@@ -727,7 +727,9 @@ const PendingSpecial = () => {
           <div className="grid grid-cols-4 gap-4">
             {/* ITEM TYPE */}
             <div className="mt-4">
-              <Label>Item Type</Label>
+              <Label>
+                Item Type<span className="text-red-500">*</span>
+              </Label>
 
               <select
                 className="w-full border rounded p-2 mt-1"
@@ -755,7 +757,9 @@ const PendingSpecial = () => {
             {/* ITEM LIST */}
             {itemType && (
               <div className="mt-4">
-                <Label>Select Item</Label>
+                <Label>
+                  Select Item<span className="text-red-500">*</span>
+                </Label>
 
                 <select
                   className="w-full border rounded p-2 mt-1"
@@ -799,7 +803,9 @@ const PendingSpecial = () => {
 
             {/* OBS AUTHORISED */}
             <div className="mt-4">
-              <Label>OBS Authorised</Label>
+              <Label>
+                OBS Authorised<span className="text-red-500">*</span>
+              </Label>
 
               <Input
                 type="number"
@@ -812,7 +818,9 @@ const PendingSpecial = () => {
 
             {/* QTY INC/DEC */}
             <div className="mt-4">
-              <Label>Qty Inc / Dec</Label>
+              <Label>
+                Qty Increase<span className="text-red-500">*</span>
+              </Label>
 
               <Input
                 type="number"
@@ -829,7 +837,9 @@ const PendingSpecial = () => {
 
             {/* SPECIAL DEMAND TYPE */}
             <div className="mt-4">
-              <Label>Special Demand Type</Label>
+              <Label>
+                Special Demand Type <span className="text-red-500">*</span>
+              </Label>
 
               <select
                 className="w-full border rounded p-2 mt-1"
@@ -847,7 +857,7 @@ const PendingSpecial = () => {
             {/* Demand No */}
             <div className="w-full">
               <Label htmlFor="internal_demand_no" className="ms-2 mb-2 mt-4">
-                Internal Demand No. <span className="text-red-500">*</span>
+                Internal Demand No.
               </Label>
               <Input
                 type="text"
@@ -865,7 +875,7 @@ const PendingSpecial = () => {
             <div className="w-full mt-3">
               <FormattedDatePicker
                 className="w-[400px]"
-                label="Internal Demand Date *"
+                label="Internal Demand Date"
                 value={inputs.internal_demand_date}
                 onChange={(date) =>
                   setInputs((prev) => ({
@@ -881,7 +891,7 @@ const PendingSpecial = () => {
             {/* Requisition No */}
             <div className="w-full">
               <Label htmlFor="requisition_no" className="ms-2 mb-2 mt-5">
-                Requisition No. <span className="text-red-500">*</span>
+                Requisition No.
               </Label>
               <Input
                 type="text"
@@ -899,7 +909,7 @@ const PendingSpecial = () => {
             <div className="w-full mt-4">
               <FormattedDatePicker
                 className="w-[400px]"
-                label="Requisition Date *"
+                label="Requisition Date"
                 value={inputs.requisition_date}
                 onChange={(date) =>
                   setInputs((prev) => ({
@@ -915,7 +925,7 @@ const PendingSpecial = () => {
             {/* MO Demand No */}
             <div className="w-full">
               <Label htmlFor="nmo_demand_no" className="ms-2 mb-2 mt-7">
-                MO Demand No. <span className="text-red-500">*</span>
+                MO Demand No.
               </Label>
               <Input
                 type="text"
@@ -933,7 +943,7 @@ const PendingSpecial = () => {
             <div className="w-full mt-6">
               <FormattedDatePicker
                 className="w-[400px]"
-                label="MO Demand Date *"
+                label="MO Demand Date"
                 value={inputs.mo_demand_date}
                 onChange={(date) =>
                   setInputs((prev) => ({

@@ -47,7 +47,7 @@ const PendingTempLoan = () => {
     { key: "qty_received", header: "Qty Returned" },
     // { key: "loan_duration", header: "Loan Duration (days)" },
     // { key: "submission_date", header: "Expected Return Date" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
+    { key: "approved_at", header: "Date of Return", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -72,7 +72,7 @@ const PendingTempLoan = () => {
     { value: "phone", label: "Phone No." },
     { value: "qty_received", label: "Qty Returned" },
     // { value: "loan_duration", label: "Loan Duration" },
-    { value: "created_at", label: "Created On" },
+    { value: "approved_at", label: "Date of Return" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");
@@ -167,7 +167,7 @@ const PendingTempLoan = () => {
       return {
         ...row,
 
-        created_at: getTimeDate(row.created_at),
+        approved_at: getTimeDate(row.approved_at),
 
         item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
 

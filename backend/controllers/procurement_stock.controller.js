@@ -1034,7 +1034,7 @@ async function getLogsProcurement(req, res) {
     nac_date: ["p.nac_date"],
     validity: ["p.validity"],
     rate_unit: ["p.rate_unit"],
-    created_at: ["p.created_at"],
+    approved_at: ["p.approved_at"],
     qty_received: ["p.qty_received"],
   };
 
@@ -1182,7 +1182,7 @@ async function getLogsStockUpdate(req, res) {
     demand_quantity: ["pi.demand_quantity"],
     qty_received: ["s.qty_received"],
     stocked_in_qty: ["s.stocked_in_qty"],
-    created_at: ["s.created_at"],
+    approved_at: ["s.approved_at"],
   };
 
   const connection = await pool.getConnection();

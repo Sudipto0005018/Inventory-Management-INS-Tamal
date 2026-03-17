@@ -40,7 +40,7 @@ const Procurement = () => {
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "created_at", header: "Date of Return" },
+    { key: "approved_at", header: "Date of Return" },
   ]);
 
   const options = [
@@ -65,7 +65,7 @@ const Procurement = () => {
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "created_at", label: "Date of Return" },
+    { value: "approved_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -177,7 +177,7 @@ const Procurement = () => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       survey_quantity: row.survey_quantity || "0",
-      created_at: getTimeDate(row.created_at),
+      approved_at: getTimeDate(row.approved_at),
       item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
       demand_date: row.demand_date ? getFormatedDate(row.demand_date) : "-",
       nac_date: row.nac_date ? getFormatedDate(row.nac_date) : "-",

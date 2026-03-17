@@ -1212,7 +1212,7 @@ async function getDocLogs(req, res) {
       issue_to: "di.issue_to",
       issue_date: "di.issue_date",
       loan_duration: "di.loan_duration",
-      created_at: "di.created_at",
+      approved_at: "di.approved_at",
     };
 
     const fieldsToSearch =
