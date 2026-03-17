@@ -69,8 +69,13 @@ const PendingTempLoan = ({ type = "" }) => {
       width: "min-w-[40px]",
     },
     {
+      value: "issued_qty",
+      label: "Issued Qty",
+      width: "min-w-[40px]",
+    },
+    {
       value: "issue_to",
-      label: "Issue To",
+      label: "Issued to",
       width: "min-w-[40px]",
     },
     {
@@ -90,11 +95,6 @@ const PendingTempLoan = ({ type = "" }) => {
     {
       value: "loan_duration",
       label: "Loan Duration",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "created_at",
-      label: "Created On",
       width: "min-w-[40px]",
     },
   ];

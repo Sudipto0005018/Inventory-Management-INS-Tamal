@@ -31,7 +31,7 @@ const PendingTempLoan = () => {
     { key: "issue_date_formated", header: "Issued Date" },
     { key: "loan_duration", header: "Loan Duration (days)" },
     { key: "submission_date", header: "Expected Return Date" },
-    { key: "created_at", header: "Created On", width: "min-w-[40px]" },
+    { key: "created_at", header: "Date of Return", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -48,6 +48,11 @@ const PendingTempLoan = () => {
     {
       value: "equipment_system",
       label: "Equipment / System",
+      width: "min-w-[40px]",
+    },
+    {
+      value: "issued_qty",
+      label: "Issued Qty",
       width: "min-w-[40px]",
     },
     {
@@ -76,7 +81,7 @@ const PendingTempLoan = () => {
     },
     {
       value: "created_at",
-      label: "Created On",
+      label: "Date of Return",
       width: "min-w-[40px]",
     },
   ];

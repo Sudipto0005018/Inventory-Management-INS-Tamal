@@ -81,7 +81,6 @@ const PendingTempLoan = ({ type = "" }) => {
     { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
     { value: "qty_received", label: "Returned Qty" },
-    { value: "created_at", label: "Created On" },
   ];
 
   const [rollbackDialog, setRollbackDialog] = useState(false);
