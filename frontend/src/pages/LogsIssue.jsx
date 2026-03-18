@@ -43,7 +43,7 @@ const PermanentPendings = () => {
     { value: "demand_quantity", label: "Demanded Qty" },
     { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
 
-    { value: "created_at", label: "Date of Return" },
+    // { value: "created_at", label: "Date of Return" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
 
@@ -100,7 +100,7 @@ const PermanentPendings = () => {
       },
       { key: "demand_quantity", header: "Demanded Qty" },
       { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
-      { key: "created_at", header: "Date of Return" },
+      // { key: "created_at", header: "Date of Return" },
       // { key: "status_badge", header: "Status" },
     ],
     [],

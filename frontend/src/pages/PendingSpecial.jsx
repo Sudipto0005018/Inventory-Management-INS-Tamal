@@ -29,7 +29,7 @@ import { useNavigate } from "react-router";
 
 const PendingSpecial = () => {
   const { config, user } = useContext(Context);
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const columns = useMemo(() => [
     { key: "description", header: "Item Description" },
     {
@@ -227,6 +227,26 @@ const PendingSpecial = () => {
     setCurrentPage(1);
 
     fetchdata(1);
+  };
+
+  const resetAddSpecialForm = () => {
+    setItemType("");
+    setAddItems([]);
+    setSelectedItem(null);
+
+    setObsAuthorised("");
+    setSpecialType("");
+    setQtyChange("");
+
+    setInputs({
+      search: "",
+      internal_demand_no: "",
+      internal_demand_date: null,
+      requisition_no: "",
+      requisition_date: null,
+      mo_demand_no: "",
+      mo_demand_date: null,
+    });
   };
 
   const handleSubmitSpecialDemand = async () => {
@@ -443,7 +463,10 @@ const PendingSpecial = () => {
 
           <Button
             className="cursor-pointer hover:bg-primary/85 flex items-center gap-1"
-            onClick={() => setIsOpen((prev) => ({ ...prev, addSpecial: true }))}
+            onClick={() => {
+              resetAddSpecialForm();
+              setIsOpen((prev) => ({ ...prev, addSpecial: true }))
+            }}
           >
             + Add Special Demand
           </Button>
@@ -958,9 +981,10 @@ const PendingSpecial = () => {
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="destructive"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, addSpecial: false }))
-              }
+              onClick={() => {
+                resetAddSpecialForm();
+                setIsOpen((prev) => ({ ...prev, addSpecial: false }));
+              }}
             >
               Cancel
             </Button>
@@ -976,8 +1000,11 @@ const PendingSpecial = () => {
                 if (!specialType)
                   return toaster("error", "Select special demand type");
 
+                if (!qtyChange) {
+                  return toaster("error", "Qty Increase required");
+                }
                 if (qtyChange < 0) {
-                  return toaster("error", "Qty Inc/Dec cannot be less than 0");
+                  return toaster("error", "Qty Increase cannot be less than 0");
                 }
 
                 await apiService.post("/specialDemand/manual-add", {
@@ -999,10 +1026,11 @@ const PendingSpecial = () => {
 
                 toaster("success", "Special demand added");
 
-                setObsAuthorised("");
-                setSpecialType("");
-                setItemType("");
-                setSelectedItem(null);
+                resetAddSpecialForm();
+                // setObsAuthorised("");
+                // setSpecialType("");
+                // setItemType("");
+                // setSelectedItem(null);
 
                 setIsOpen((prev) => ({ ...prev, addSpecial: false }));
 
@@ -1019,9 +1047,10 @@ const PendingSpecial = () => {
 
       <Dialog
         open={isOpen.addSpare}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addSpare: open }))
-        }
+        onOpenChange={(open) => {
+          if (!open) resetAddSpecialForm();
+          setIsOpen((prev) => ({ ...prev, addSpare: open }));
+        }}
       >
         <DialogContent>
           <DialogTitle>Add Spare</DialogTitle>

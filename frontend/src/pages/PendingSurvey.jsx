@@ -310,6 +310,13 @@ const PendingSurvey = () => {
     }
   };
 
+  const resetAddSurveyDialog = () => {
+    setItemType("");
+    setItemsList([]);
+    setSelectedItem(null);
+    setWithdrawlQty("");
+  };
+
   useEffect(() => {
     fetchdata(currentPage, actualSearch, selectedValues);
   }, [currentPage]);
@@ -337,7 +344,7 @@ const PendingSurvey = () => {
             className={`bg-white text-black shadow-md border hover:bg-gray-100
       ${row.source_type?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
             onClick={() => {
-             if (row.issue_to?.toLowerCase() === "special_demand") return;
+              if (row.issue_to?.toLowerCase() === "special_demand") return;
 
               setSelectedRow(row);
               setIsOpen((prev) => ({ ...prev, survey: true }));
@@ -785,9 +792,10 @@ const PendingSurvey = () => {
 
       <Dialog
         open={isOpen.addSurvey}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addSurvey: open }))
-        }
+        onOpenChange={(open) => {
+          if (!open) resetAddSurveyDialog();
+          setIsOpen((prev) => ({ ...prev, addSurvey: open }));
+        }}
       >
         <DialogContent
           showCloseButton
@@ -909,9 +917,10 @@ const PendingSurvey = () => {
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="destructive"
-              onClick={() =>
-                setIsOpen((prev) => ({ ...prev, addSurvey: false }))
-              }
+              onClick={() => {
+                resetAddSurveyDialog();
+                setIsOpen((prev) => ({ ...prev, addSurvey: false }));
+              }}
             >
               Cancel
             </Button>

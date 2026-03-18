@@ -85,7 +85,10 @@ async function signIn(req, res) {
       .json(new ApiErrorResponse(400, {}, "All fields are required"));
   }
 
-  const txt = fs.readFileSync(path.join(__dirname, "..", "license.txt"));
+  const txt =
+    process.env.NODE_ENV == "production"
+      ? fs.readFileSync(path.join(__dirname, "license.txt"))
+      : fs.readFileSync(path.join(__dirname, "..", "license.txt"));
   const key = txt.toString();
   if (key.length != 64) {
     return new ApiErrorResponse(400, {}, "Invalid key").send(res);

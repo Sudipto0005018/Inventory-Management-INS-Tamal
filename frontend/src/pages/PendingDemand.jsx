@@ -296,6 +296,13 @@ const PendingDemand = () => {
     }
   };
 
+  const resetAddDemandDialog = () => {
+    setAddDemandItems([]);
+    setSelectedDemandItem(null);
+    setItemType("");
+    setSurveyQty("");
+  };
+
   useEffect(() => {
     fetchdata();
   }, [currentPage]);
@@ -619,9 +626,10 @@ const PendingDemand = () => {
       {/* add demand dialog */}
       <Dialog
         open={isOpen.addDemand}
-        onOpenChange={(open) =>
+        onOpenChange={(open) => {
+          if (!open) resetAddDemandDialog();
           setIsOpen((prev) => ({ ...prev, addDemand: open }))
-        }
+        }}
       >
         <DialogContent
           showCloseButton
@@ -733,9 +741,10 @@ const PendingDemand = () => {
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="destructive"
-              onClick={() =>
+              onClick={() => {
+                resetAddDemandDialog();
                 setIsOpen((prev) => ({ ...prev, addDemand: false }))
-              }
+              }}
             >
               Cancel
             </Button>

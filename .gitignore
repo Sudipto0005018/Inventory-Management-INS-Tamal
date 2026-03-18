@@ -2,3 +2,5 @@ node_modules
 backend/.env
 backend/build
 # backend/license.txt
+test
+backend/main*.js

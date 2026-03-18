@@ -36,13 +36,13 @@ const PendingDemand = () => {
     { key: "category", header: "Category", width: "min-w-[40px]" },
     { key: "denos", header: "Denos.", width: "min-w-[40px]" },
     { key: "demand_quantity", header: "Qty Demanded", width: "min-w-[40px]" },
-    { key: "quote_authority", header: "Authority", width: "min-w-[40px]" },
-    { key: "qty_received", header: "Qty Received", width: "min-w-[40px]" },
-    {
-      key: "mo_no",
-      header: "MO Gate Pass No.",
-      width: "min-w-[40px]",
-    },
+    // { key: "quote_authority", header: "Authority", width: "min-w-[40px]" },
+    // { key: "qty_received", header: "Qty Received", width: "min-w-[40px]" },
+    // {
+    //   key: "mo_no",
+    //   header: "MO Gate Pass No.",
+    //   width: "min-w-[40px]",
+    // },
     // {
     //   key: "survey_voucher_no",
     //   header: "Survey Voucher No.",
@@ -54,7 +54,7 @@ const PendingDemand = () => {
     //   width: "max-w-[100px]",
     // },
     // { key: "survey_date", header: "Surveyed Date", width: "min-w-[40px]" },
-    { key: "created_at", header: "Date of Return", width: "min-w-[40px]" },
+    // { key: "created_at", header: "Date of Return", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -77,21 +77,21 @@ const PendingDemand = () => {
       label: "Qty Demanded",
       width: "min-w-[40px]",
     },
-    {
-      value: "quote_authority",
-      label: "Authority",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "qty_received",
-      label: "Qty Received",
-      width: "min-w-[40px]",
-    },
-    {
-      value: "mo_no",
-      label: "MO Gate Pass No.",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   value: "quote_authority",
+    //   label: "Authority",
+    //   width: "min-w-[40px]",
+    // },
+    // {
+    //   value: "qty_received",
+    //   label: "Qty Received",
+    //   width: "min-w-[40px]",
+    // },
+    // {
+    //   value: "mo_no",
+    //   label: "MO Gate Pass No.",
+    //   width: "min-w-[40px]",
+    // },
     // {
     //   value: "survey_voucher_no",
     //   label: "Survey Voucher No.",
@@ -107,11 +107,11 @@ const PendingDemand = () => {
     //   label: "Surveyed Date",
     //   width: "min-w-[40px]",
     // },
-    {
-      value: "created_at",
-      label: "Date of Return",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   value: "created_at",
+    //   label: "Date of Return",
+    //   width: "min-w-[40px]",
+    // },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);

@@ -325,6 +325,27 @@ const Tools = ({ type = "" }) => {
     }
   };
 
+  const initialInputs = {
+    description: "",
+    equipment_system: "",
+    denos: "",
+    obs_authorised: "",
+    obs_maintained: "",
+    obs_held: "",
+    b_d_authorised: "",
+    item_code: "",
+    indian_pattern: "",
+    substitute_name: [],
+    local_terminology: [],
+    critical_tool: "no",
+    part_of: "no",
+    sub_component: "",
+    price_unit: "",
+    oem: "",
+    supplier: "",
+    remarks: "",
+  };
+
   const handleOptionWithdrawl = (e) => {
     const { name, value } = e.target;
 
@@ -1534,9 +1555,15 @@ const Tools = ({ type = "" }) => {
 
         <Dialog
           open={isOpen.addSpare}
-          onOpenChange={(set) =>
-            setIsOpen((prev) => ({ ...prev, addSpare: set }))
-          }
+          onOpenChange={(open) => {
+            if (!open) {
+              setInputs((prev) => ({
+                ...initialInputs,
+                search: prev.search,
+              }));
+            }
+            setIsOpen((prev) => ({ ...prev, addSpare: open }));
+          }}
         >
           <DialogContent
             className="w-[95%] max-h-[90%] overflow-y-auto"
@@ -1544,7 +1571,10 @@ const Tools = ({ type = "" }) => {
             // onPointerDownOutside={() => {}}
             onPointerDownOutside={(e) => e.preventDefault()}
             onCloseAutoFocus={() => {
-              setInputs({ search: inputs.search });
+                setInputs((prev) => ({
+                  ...initialInputs,
+                  search: prev.search, 
+                }));
               setBoxNo([
                 {
                   boxNumber: "",
@@ -1559,9 +1589,13 @@ const Tools = ({ type = "" }) => {
           >
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                setInputs((prev) => ({
+                  ...initialInputs,
+                  search: prev.search,
+                }));
                 setIsOpen((prev) => ({ ...prev, addSpare: false }))
-              }
+              }}
               className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
             >
               ✕
@@ -1969,9 +2003,14 @@ const Tools = ({ type = "" }) => {
             </div>
             <DialogFooter>
               <Button
-                onClick={() =>
+                onClick={() => {
+                  setInputs((prev) => ({
+                    ...prev,
+                    critical_tool: "no",
+                    part_of: "no",
+                  }));
                   setIsOpen((prev) => ({ ...prev, addSpare: false }))
-                }
+                }}
                 variant="outline"
                 className="cursor-pointer"
               >
