@@ -1103,21 +1103,24 @@ async function generateQRCode(req, res) {
     });
 
     let data = null;
+    let table;
     if (tool_id) {
       const [rows] = await pool.query(
         "SELECT description,indian_pattern,equipment_system, box_no FROM tools WHERE id = ?",
         [tool_id],
       );
       data = rows[0];
+      table = "T";
     } else {
       const [rows] = await pool.query(
         "SELECT description,indian_pattern,equipment_system, box_no FROM spares WHERE id = ?",
         [spare_id],
       );
       data = rows[0];
+      table = "S";
     }
     let location = "";
-
+    const tableId = table + "" + (tool_id ? tool_id : spare_id);
     if (data.box_no) {
       const boxes = JSON.parse(data.box_no);
 
@@ -1127,7 +1130,7 @@ async function generateQRCode(req, res) {
         location = selectedBox.location || "";
       }
     }
-    const qrText = `${data.description}|${data.indian_pattern}|${data.equipment_system}|${box_no}|${location}`;
+    const qrText = `${tableId}|${data.description}|${data.indian_pattern}|${data.equipment_system}|${box_no}|${location}`;
     const qrURL = await qr.toDataURL(qrText, { margin: 0, width: 120 });
     for (let i = 0; i < copy_count; i++) {
       if (i > 0) doc.addPage();

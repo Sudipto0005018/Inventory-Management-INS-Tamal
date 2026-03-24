@@ -7,9 +7,8 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const {
   syncInventoryCSV,
-  generateConfig,
   exportUsersToCSV,
-  exportInventoryToCSV,
+  exportItemToCSV,
 } = require("../utils/csvGeneration");
 
 const adbPath =
@@ -79,64 +78,67 @@ const sendSignalToDevice = async (deviceId, signalName) => {
 };
 
 const adbSync = async (deviceId) => {
-  const configPath = path.join(uploadDir, "config.txt");
+  const spareCsvPath = path.join(uploadDir, "spares_inventory.csv");
+
   try {
     await sendSignalToDevice(deviceId, "GENERATE_CSV");
-    await generateConfig();
+
     await exportUsersToCSV();
-    await exportInventoryToCSV();
-    await runAdb(["-s", deviceId, "push", configPath, destination + "."]);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await exportItemToCSV();
+
+    // Push user.csv
     await runAdb([
       "-s",
       deviceId,
       "push",
       path.join(uploadDir, "user.csv"),
-      destination + ".",
+      destination,
     ]);
-    await runAdb([
-      "-s",
-      deviceId,
-      "push",
-      path.join(uploadDir, "inventory.csv"),
-      destination + ".",
-    ]);
+
+    // Push spares_inventory.csv
+    await runAdb(["-s", deviceId, "push", spareCsvPath, destination]);
+
     await sendSignalToDevice(deviceId, "SYNC_USERS");
+
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    // Pull updated CSV from device
     await runAdb([
       "-s",
       deviceId,
       "pull",
-      destination + "inventory.csv",
-      path.join(uploadDir, "inventory.csv"),
+      destination + "spares_inventory.csv",
+      spareCsvPath,
     ]);
-    if (!fs.existsSync(path.join(uploadDir, "inventory.csv"))) {
+
+    if (!fs.existsSync(spareCsvPath)) {
       throw new Error("Sync Failed");
     }
+
     await syncInventoryCSV();
-    if (fs.existsSync(path.join(uploadDir, "inventory.csv"))) {
-      fs.unlinkSync(path.join(uploadDir, "inventory.csv"));
-    }
-    if (fs.existsSync(path.join(uploadDir, "user.csv"))) {
-      fs.unlinkSync(path.join(uploadDir, "user.csv"));
-    }
-    if (fs.existsSync(path.join(uploadDir, "config.txt"))) {
-      fs.unlinkSync(path.join(uploadDir, "config.txt"));
-    }
+
+    // Cleanup local files
+    [spareCsvPath, path.join(uploadDir, "user.csv")].forEach((file) => {
+      if (fs.existsSync(file)) {
+        fs.unlinkSync(file);
+      }
+    });
+
+    // Cleanup device file
     await runAdb([
       "-s",
       deviceId,
       "shell",
       "rm",
-      destination + "inventory.csv",
+      destination + "spares_inventory.csv",
     ]);
   } catch (error) {
-    console.error(
-      `Error generating CSV and pushing to device ${deviceId}:`,
-      error,
-    );
-    throw { error: "CSV Generation Failed", details: error };
+    console.error(`Error syncing device ${deviceId}:`, error);
+
+    throw {
+      error: "CSV Generation Failed",
+      details: error,
+    };
   }
 };
 
@@ -295,4 +297,5 @@ module.exports = {
   syncDevice,
   updateDevice,
   getDbUsbHandhelds,
+  adbSync
 };

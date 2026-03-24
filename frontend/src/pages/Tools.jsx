@@ -1571,10 +1571,10 @@ const Tools = ({ type = "" }) => {
             // onPointerDownOutside={() => {}}
             onPointerDownOutside={(e) => e.preventDefault()}
             onCloseAutoFocus={() => {
-                setInputs((prev) => ({
-                  ...initialInputs,
-                  search: prev.search, 
-                }));
+              setInputs((prev) => ({
+                ...initialInputs,
+                search: prev.search,
+              }));
               setBoxNo([
                 {
                   boxNumber: "",
@@ -1594,7 +1594,7 @@ const Tools = ({ type = "" }) => {
                   ...initialInputs,
                   search: prev.search,
                 }));
-                setIsOpen((prev) => ({ ...prev, addSpare: false }))
+                setIsOpen((prev) => ({ ...prev, addSpare: false }));
               }}
               className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
             >
@@ -2009,7 +2009,7 @@ const Tools = ({ type = "" }) => {
                     critical_tool: "no",
                     part_of: "no",
                   }));
-                  setIsOpen((prev) => ({ ...prev, addSpare: false }))
+                  setIsOpen((prev) => ({ ...prev, addSpare: false }));
                 }}
                 variant="outline"
                 className="cursor-pointer"
@@ -2850,27 +2850,7 @@ const Tools = ({ type = "" }) => {
                       readOnly
                     />
                   </div>
-                  {/* <Input
-                            type="file"
-                            id="image"
-                            accept="image/jpeg, image/png, image/webp"
-                            name="image"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setImage((prev) => ({
-                                    ...prev,
-                                    file: file,
-                                    preview: reader.result,
-                                  }));
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          /> */}
+              
                 </div>
 
                 <div className="w-full mt-6 grid grid-cols-2 gap-4">
@@ -2888,12 +2868,6 @@ const Tools = ({ type = "" }) => {
                             }
                           : null
                       }
-                      // onChange={(val) => {
-                      //   setSelectedRow((prev) => ({
-                      //     ...prev,
-                      //     oem: val.name,
-                      //   }));
-                      // }}
                       fetchOptions={fetchOemOptions}
                       fetchDetails={async (id) => {
                         if (!id) return null;
@@ -2905,7 +2879,6 @@ const Tools = ({ type = "" }) => {
                           return null;
                         }
                       }}
-                      // AddNewModal={OEMFirm}
                       onDelete={onDeleteOem}
                     />
                   </div>
@@ -2925,12 +2898,6 @@ const Tools = ({ type = "" }) => {
                             }
                           : null
                       }
-                      // onChange={(val) => {
-                      //   setSelectedRow((prev) => ({
-                      //     ...prev,
-                      //     supplier: val.name,
-                      //   }));
-                      // }}
                       fetchOptions={fetchSupplierOptions}
                       fetchDetails={fetchSupplierDetails}
                       // AddNewModal={SupplierFirm}

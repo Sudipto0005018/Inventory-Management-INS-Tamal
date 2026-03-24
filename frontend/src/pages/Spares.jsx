@@ -1515,13 +1515,13 @@ const Spares = ({ type = "" }) => {
         <Dialog
           open={isOpen.addSpare}
           onOpenChange={(open) => {
-             if (!open) {
-               setInputs((prev) => ({
-                 ...initialInputs,
-                 search: prev.search,
-               }));
-             }
-            setIsOpen((prev) => ({ ...prev, addSpare: open }))
+            if (!open) {
+              setInputs((prev) => ({
+                ...initialInputs,
+                search: prev.search,
+              }));
+            }
+            setIsOpen((prev) => ({ ...prev, addSpare: open }));
           }}
         >
           <DialogContent
@@ -1549,11 +1549,11 @@ const Spares = ({ type = "" }) => {
             <button
               type="button"
               onClick={() => {
-               setInputs((prev) => ({
-                 ...initialInputs,
-                 search: prev.search,
-               }));
-                setIsOpen((prev) => ({ ...prev, addSpare: false }))
+                setInputs((prev) => ({
+                  ...initialInputs,
+                  search: prev.search,
+                }));
+                setIsOpen((prev) => ({ ...prev, addSpare: false }));
               }}
               className="sticky top-0  ml-auto block z-20 rounded-sm bg-background opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
             >
@@ -1968,7 +1968,7 @@ const Spares = ({ type = "" }) => {
                     critical_spare: "no",
                     part_of: "no",
                   }));
-                  setIsOpen((prev) => ({ ...prev, addSpare: false }))
+                  setIsOpen((prev) => ({ ...prev, addSpare: false }));
                 }}
                 variant="outline"
                 className="cursor-pointer"
@@ -2461,40 +2461,40 @@ const Spares = ({ type = "" }) => {
                       Previous Vendors / Third Party Suppliers
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {selectedRow.old_supplier &&
-                        selectedRow.old_supplier.map((data, _) => {
-                          let supplier_id = supplierList.filter(
-                            (s) => s.name == data,
-                          );
-                          if (supplier_id) {
-                            supplier_id = supplier_id[0].id;
-                          }
+                      {selectedRow?.old_supplier?.map((data, index) => {
+                        const supplier = supplierList.find(
+                          (s) => s.name === data,
+                        );
 
-                          return (
-                            <HoverCard
-                              key={Math.random().toString()}
-                              openDelay={10}
-                              closeDelay={100}
-                            >
-                              <HoverCardTrigger asChild>
-                                <div className="bg-white px-2 py-1 rounded-full shadow border">
-                                  {data}
-                                </div>
-                              </HoverCardTrigger>
-                              <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                                <DefaultRenderDetail
-                                  details={{}}
-                                  isFromOldSuppliers={true}
-                                  fetchSupplier={async () => {
-                                    return fetchSupplierDetails(supplier_id);
-                                  }}
-                                  onEdit={() => {}}
-                                  onDelete={() => {}}
-                                />
-                              </HoverCardContent>
-                            </HoverCard>
-                          );
-                        })}
+                        const supplier_id = supplier?.id;
+
+                        return (
+                          <HoverCard
+                            key={index}
+                            openDelay={10}
+                            closeDelay={100}
+                          >
+                            <HoverCardTrigger asChild>
+                              <div className="bg-white px-2 py-1 rounded-full shadow border">
+                                {data}
+                              </div>
+                            </HoverCardTrigger>
+
+                            <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                              <DefaultRenderDetail
+                                details={{}}
+                                isFromOldSuppliers={true}
+                                fetchSupplier={async () => {
+                                  if (!supplier_id) return null; // 🔥 prevent crash
+                                  return fetchSupplierDetails(supplier_id);
+                                }}
+                                onEdit={() => {}}
+                                onDelete={() => {}}
+                              />
+                            </HoverCardContent>
+                          </HoverCard>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -2902,50 +2902,34 @@ const Spares = ({ type = "" }) => {
                     />
                   </div>
                 </div>
-                {selectedRow.old_supplier && (
-                  <div className=" mt-4 w-full ml-[50%]">
-                    <p className="text-sm ms-2 mb-2">
-                      Previous Vendors / Third Party Suppliers
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {selectedRow.old_supplier &&
-                        selectedRow.old_supplier.map((data, _) => {
-                          let supplier_id = supplierList.filter(
-                            (s) => s.name == data,
-                          );
-                          if (supplier_id) {
-                            supplier_id = supplier_id[0].id;
-                          }
+                {selectedRow?.old_supplier?.map((data, index) => {
+                  const supplier = supplierList.find((s) => s.name === data);
 
-                          return (
-                            <HoverCard
-                              key={Math.random().toString()}
-                              openDelay={10}
-                              closeDelay={100}
-                            >
-                              <HoverCardTrigger asChild>
-                                <div className="bg-white px-2 py-1 rounded-full shadow border">
-                                  {data}
-                                </div>
-                              </HoverCardTrigger>
-                              <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                                <DefaultRenderDetail
-                                  details={{}}
-                                  isFromOldSuppliers={true}
-                                  fetchSupplier={async () => {
-                                    return fetchSupplierDetails(supplier_id);
-                                  }}
-                                  onEdit={() => {}}
-                                  onDelete={() => {}}
-                                />
-                              </HoverCardContent>
-                            </HoverCard>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
+                  const supplier_id = supplier?.id;
 
+                  return (
+                    <HoverCard key={index} openDelay={10} closeDelay={100}>
+                      <HoverCardTrigger asChild>
+                        <div className="bg-white px-2 py-1 rounded-full shadow border">
+                          {data}
+                        </div>
+                      </HoverCardTrigger>
+
+                      <HoverCardContent className="flex w-64 flex-col gap-0.5">
+                        <DefaultRenderDetail
+                          details={{}}
+                          isFromOldSuppliers={true}
+                          fetchSupplier={async () => {
+                            if (!supplier_id) return null; // 🔥 prevent crash
+                            return fetchSupplierDetails(supplier_id);
+                          }}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                        />
+                      </HoverCardContent>
+                    </HoverCard>
+                  );
+                })}
                 <div className="w-full mt-6">
                   <Label className="ms-1 mb-1">Remarks</Label>
                   <Textarea
