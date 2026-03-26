@@ -47,7 +47,7 @@ const Original = () => {
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
-    { value: "equipment_system", label: "Equipment System" },
+    { value: "equipment_system", label: "Equipment / System" },
     { value: "category", label: "Category" },
     { value: "obs_authorised", label: "OBS Authorised" },
     // { value: "created_at", label: "Created On" },

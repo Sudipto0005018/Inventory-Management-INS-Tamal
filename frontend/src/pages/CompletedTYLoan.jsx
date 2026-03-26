@@ -72,7 +72,7 @@ const PendingTempLoan = () => {
     { value: "phone", label: "Phone No." },
     { value: "qty_received", label: "Qty Returned" },
     // { value: "loan_duration", label: "Loan Duration" },
-    { value: "approved_at", label: "Date of Return" },
+    // { value: "approved_at", label: "Date of Return" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");

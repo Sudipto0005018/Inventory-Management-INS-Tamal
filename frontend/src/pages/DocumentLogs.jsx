@@ -79,11 +79,11 @@ const PendingTempLoan = () => {
       label: "Loan Duration",
       width: "min-w-[40px]",
     },
-    {
-      value: "approved_at",
-      label: "Date of Return",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   value: "approved_at",
+    //   label: "Date of Return",
+    //   width: "min-w-[40px]",
+    // },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");

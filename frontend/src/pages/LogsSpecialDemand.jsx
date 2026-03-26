@@ -121,7 +121,7 @@ const PendingSpecial = () => {
     { value: "requisition_date", label: "Requisition Date." },
     { value: "mo_demand_no", label: "MO Demand No." },
     { value: "mo_demand_date", label: "MO Demand Date" },
-    { value: "created_at", label: "Date of Return" },
+    // { value: "created_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

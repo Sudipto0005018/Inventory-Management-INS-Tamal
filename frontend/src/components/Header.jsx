@@ -249,52 +249,70 @@ const Header = ({ onSidebarOpen }) => {
       </div>
 
       {user && (
-        <Popover
-          open={isOpen.popOver}
-          onOpenChange={(val) =>
-            setIsOpen((prev) => ({ ...prev, popOver: val }))
-          }
-        >
-          <PopoverTrigger>
-            <div className="flex items-center justify-center bg-primary/60 text-white rounded-full h-9 w-9 cursor-pointer">
-              <p className="pointer-events-none">{makeAvatarName(user.name)}</p>
-            </div>
-          </PopoverTrigger>
+        <div className="flex items-center gap-3">
+          {/* Export Button in Header */}
+          <Button
+            variant="primary"
+            className="flex items-center justify-center 
+             px-2 py-1 h-8 
+             rounded-lg 
+             border border-green-800 
+             text-green-700 
+             hover:bg-green-900 
+             hover:text-white
+             transition-all duration-200"
+            onClick={exportExcel}
+          >
+            <FaFileExcel className="size-[18px]" />
+          </Button>
+          <Popover
+            open={isOpen.popOver}
+            onOpenChange={(val) =>
+              setIsOpen((prev) => ({ ...prev, popOver: val }))
+            }
+          >
+            <PopoverTrigger>
+              <div className="flex items-center justify-center bg-primary/60 text-white rounded-full h-9 w-9 cursor-pointer">
+                <p className="pointer-events-none">
+                  {makeAvatarName(user.name)}
+                </p>
+              </div>
+            </PopoverTrigger>
 
-          <PopoverContent className="w-60 p-2">
-            <div className="flex flex-col gap-1">
-              {/* Export to Excel */}
-              <Button
+            <PopoverContent className="w-60 p-2">
+              <div className="flex flex-col gap-1">
+                {/* Export to Excel */}
+                {/* <Button
                 variant="ghost"
                 className="w-full justify-start text-black hover:bg-primary/10"
                 onClick={exportExcel}
               >
                 <FaFileExcel className="size-[15px]" /> Export to Excel
-              </Button>
+              </Button> */}
 
-              {/* User Manual */}
-              <Button
+                {/* User Manual */}
+                {/* <Button
                 variant="ghost"
                 className="w-full justify-start text-black hover:bg-primary/10"
                 onClick={handleUserManual}
               >
                 <FaBook className="size-[15px]" /> User Manual
-              </Button>
+              </Button> */}
 
-              <div className="border-t my-1" />
+                {/* <div className="border-t my-1" /> */}
 
-              {/* Logout */}
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
-                onClick={handleLogout}
-              >
-                <FiLogOut /> Logout
-              </Button>
-            </div>
-          </PopoverContent>
+                {/* Logout */}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={handleLogout}
+                >
+                  <FiLogOut /> Logout
+                </Button>
+              </div>
+            </PopoverContent>
 
-          {/* <PopoverContent className="w-80">
+            {/* <PopoverContent className="w-80">
             <Button
               variant="ghost"
               className="w-full text-left cursor-pointer hover:bg-primary/10 hover:text-black text-black"
@@ -303,7 +321,8 @@ const Header = ({ onSidebarOpen }) => {
               Logout
             </Button>
           </PopoverContent> */}
-        </Popover>
+          </Popover>
+        </div>
       )}
       <Dialog
         open={isOpen.dateRange}
@@ -354,7 +373,8 @@ const Header = ({ onSidebarOpen }) => {
             </tr>
           </table>
           <div className="flex w-full items-center justify-end gap-3">
-            <Button variant="destructive"
+            <Button
+              variant="destructive"
               onClick={() =>
                 setIsOpen((prev) => ({ ...prev, dateRange: false }))
               }

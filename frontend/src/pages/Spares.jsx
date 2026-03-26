@@ -170,6 +170,19 @@ const Spares = ({ type = "" }) => {
     quoteAuthority: "",
   });
 
+  const defaultObsDialog = {
+    open: false,
+    action: "increase",
+    quantity: "",
+    demandGenerated: "",
+    internalDemandNo: "",
+    internalDemandDate: null,
+    requisitionNo: "",
+    requisitionDate: null,
+    moDemandNo: "",
+    moDemandDate: null,
+    quoteAuthority: "",
+  };
   const [isLooseSpare, setIsLooseSpare] = useState(false);
   const [users, setUsers] = useState([
     { service_no: "", name: "", isNewUser: false },
@@ -270,6 +283,8 @@ const Spares = ({ type = "" }) => {
     loanPerson: null,
     options: [],
   });
+
+  const [obsAuthChange, setObsAuthChange] = useState({});
   //Demand no and Date
   const isInternalFilled =
     obsDialog.internalDemandNo && obsDialog.internalDemandDate;
@@ -336,7 +351,7 @@ const Spares = ({ type = "" }) => {
     indian_pattern: "",
     substitute_name: [],
     local_terminology: [],
-    critical_spare: "no", 
+    critical_spare: "no",
     part_of: "no",
     sub_component: "",
     price_unit: "",
@@ -1016,6 +1031,7 @@ const Spares = ({ type = "" }) => {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
+      await apiService.post("/specialDemand/special", obsAuthChange);
       if (response.success) {
         toaster("success", "Spare updated successfully");
         resetImageState(); // clear image payload
@@ -1258,33 +1274,60 @@ const Spares = ({ type = "" }) => {
     }
   }, [fetchedData]);
 
+  useEffect(() => {
+    if (obsDialog.open) {
+      const box = JSON.parse(selectedRow.box_no || "[]");
+
+      const resetBox = box.map((b) => ({
+        ...b,
+        incDecQty: "",
+      }));
+
+      setSelectedRow((prev) => ({
+        ...prev,
+        box_no: JSON.stringify(resetBox),
+      }));
+    }
+  }, [obsDialog.open]);
+
   const handleFinalSubmit = async (shouldUpdateMaintained) => {
     const { parsedBox, finalValue } = maintainConfirm;
 
-    const totalIncDec = parsedBox.reduce(
-      (sum, box) => sum + Number(box.incDecQty || 0),
-      0,
-    );
+    // const totalIncDec = parsedBox.reduce(
+    //   (sum, box) => sum + Number(box.incDecQty || 0),
+    //   0,
+    // );
 
-    const newObsMaintained = shouldUpdateMaintained
-      ? obsDialog.action === "increase"
-        ? Number(selectedRow.obs_maintained || 0) + totalIncDec
-        : Number(selectedRow.obs_maintained || 0) - totalIncDec
-      : Number(selectedRow.obs_maintained || 0);
+    // const newObsMaintained = shouldUpdateMaintained
+    //   ? obsDialog.action === "increase"
+    //     ? Number(selectedRow.obs_maintained || 0) + totalIncDec
+    //     : Number(selectedRow.obs_maintained || 0) - totalIncDec
+    //   : Number(selectedRow.obs_maintained || 0);
 
     let updatedBox = parsedBox.map((box) => {
       const incDec = Number(box.incDecQty || 0);
-      const baseMaintained = Number(box.baseMaintainedQty || box.qnMain || 0);
+      // const baseMaintained = Number(box.baseMaintainedQty || box.qnMain || 0);
+      const baseMaintained = Number(box.qnMain ?? 0); 
+
+      let updatedMaint = shouldUpdateMaintained
+        ? obsDialog.action === "increase"
+          ? baseMaintained + incDec
+          : baseMaintained - incDec
+        : baseMaintained;
+
+      if (updatedMaint < 0) updatedMaint = 0;
+
       return {
         ...box,
-        qnMain: shouldUpdateMaintained
-          ? obsDialog.action === "increase"
-            ? baseMaintained + incDec
-            : baseMaintained - incDec
-          : baseMaintained,
+        qnMain: updatedMaint,
       };
     });
 
+      const newObsMaintained = updatedBox.reduce(
+        (sum, box) => sum + Number(box.qnMain || 0),
+        0,
+    );
+    
     const incDecQty =
       obsDialog.action === "increase"
         ? Number(obsDialog.quantity)
@@ -1317,8 +1360,10 @@ const Spares = ({ type = "" }) => {
     };
     console.log("payload==>", payload);
 
-    await apiService.post("/specialDemand/special", payload);
-    await fetchdata();
+    setObsAuthChange(JSON.parse(JSON.stringify(payload)));
+
+    // await apiService.post("/specialDemand/special", payload);
+    // await fetchdata();
 
     // const updatedRow = tableData.find((row) => row.id === selectedRow.id);
 
@@ -4206,7 +4251,8 @@ const Spares = ({ type = "" }) => {
                   }
                   const updatedBoxes = parsedBox.map((box) => {
                     const incDec = Number(box.incDecQty || 0);
-                    const base = Number(box.baseQn ?? box.qn ?? 0);
+                    // const base = Number(box.baseQn ?? box.qn ?? 0);
+                    const base = Number(box.qn || 0);
 
                     let updatedQn =
                       obsDialog.action === "increase"
@@ -4235,6 +4281,52 @@ const Spares = ({ type = "" }) => {
                       : Number(originalObsAuthorised) -
                         Number(obsDialog.quantity);
 
+                    console.log("Logs Start");
+
+                    console.log(
+                      "originalObsAuthorised:",
+                      originalObsAuthorised,
+                    );
+                    console.log("obsDialog:", obsDialog);
+                    console.log("obsDialog.quantity:", obsDialog.quantity);
+                    console.log("obsDialog.action:", obsDialog.action);
+
+                    console.log(
+                      "selectedRow.obs_authorised (DB value):",
+                      selectedRow.obs_authorised,
+                    );
+
+                    console.log("parsedBox (RAW):", parsedBox);
+
+                    console.log("updatedBoxes (AFTER CALC):", updatedBoxes);
+
+                    updatedBoxes.forEach((box, index) => {
+                      console.log(`Box ${index}:`, {
+                        baseQn: box.baseQn,
+                        incDecQty: box.incDecQty,
+                        finalQn: box.qn,
+                      });
+                    });
+
+                    console.log("totalBoxQty:", totalBoxQty);
+
+                    console.log(
+                      "finalValue (EXPECTED AUTHORISED):",
+                      finalValue,
+                    );
+
+                    const baseTotal = parsedBox.reduce(
+                      (sum, box) => sum + Number(box.baseQn ?? box.qn ?? 0),
+                      0,
+                    );
+
+                    console.log("BASE TOTAL FROM BOX:", baseTotal);
+                    console.log(
+                      "OBS AUTHORISED FROM DB:",
+                      selectedRow.obs_authorised,
+                    );
+
+                  console.log("Logs End");
                   console.log("totalBoxQty", totalBoxQty);
                   console.log("finalValue", finalValue);
                   console.log("originalObsAuthorised", originalObsAuthorised);
@@ -4247,6 +4339,20 @@ const Spares = ({ type = "" }) => {
                     );
                     return;
                   }
+                  // Reset incDecQty
+                  const clearedBoxes = updatedBoxes.map((box) => ({
+                    ...box,
+                    incDecQty: "",
+                  }));
+
+                  setSelectedRow((prev) => ({
+                    ...prev,
+                    box_no: JSON.stringify(clearedBoxes),
+                  }));
+
+                  // Reset dialog state
+                  setObsDialog(defaultObsDialog);
+
                   // Instead of window.confirm
                   setMaintainConfirm({
                     open: true,

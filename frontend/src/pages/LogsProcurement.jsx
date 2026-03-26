@@ -65,7 +65,6 @@ const Procurement = () => {
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
     { value: "qty_received", label: "Received Qty" },
-    { value: "approved_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

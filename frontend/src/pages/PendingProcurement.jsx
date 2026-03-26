@@ -419,8 +419,11 @@ const Procurement = () => {
             size="icon"
             className="bg-white text-black shadow-md border hover:bg-gray-100"
             onClick={() => {
-              setSelectedRow(row);
-              console.log(row);
+              const temp = JSON.parse(JSON.stringify(row));
+              temp.oem = null;
+              temp.supplier = null;
+              setSelectedRow(temp);
+              // console.log(row);
 
               const parsedBoxNo = row.box_no ? JSON.parse(row.box_no) : [];
 

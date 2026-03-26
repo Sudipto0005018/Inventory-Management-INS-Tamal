@@ -38,7 +38,7 @@ const PermanentPendings = () => {
     { value: "denos", label: "Denos" },
     { value: "mo_no", label: "Demand No." },
 
-    { value: "demand_date", label: "Demand Date" },
+    // { value: "demand_date", label: "Demand Date" },
 
     { value: "demand_quantity", label: "Demanded Qty" },
     { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
