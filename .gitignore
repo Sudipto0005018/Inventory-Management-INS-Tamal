@@ -4,3 +4,4 @@ backend/build
 # backend/license.txt
 test
 backend/main*.js
+build

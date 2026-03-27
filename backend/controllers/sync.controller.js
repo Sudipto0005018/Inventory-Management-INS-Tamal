@@ -3,20 +3,29 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
+const csv = require("csv-parser");
+
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const {
-  syncInventoryCSV,
   exportUsersToCSV,
   exportItemToCSV,
+  exportConfigToCSV,
 } = require("../utils/csvGeneration");
 
 const adbPath =
   os.platform() == "win32"
-    ? path.join(__dirname, "..", "platform_tools", "adb.exe")
-    : path.join(__dirname, "..", "platform_tools", "adb");
+    ? process.env.NODE_ENV == "production"
+      ? path.join(__dirname, "platform_tools", "adb.exe")
+      : path.join(__dirname, "..", "platform_tools", "adb.exe")
+    : process.env.NODE_ENV == "production"
+      ? path.join(__dirname, "platform_tools", "adb")
+      : path.join(__dirname, "..", "platform_tools", "adb");
 
-const uploadDir = path.join(__dirname, "../uploads");
+const uploadDir =
+  process.env.NODE_ENV == "production"
+    ? path.join(__dirname, "uploads")
+    : path.join(__dirname, "../uploads");
 const destination = "/storage/emulated/0/Documents/";
 const pool = require("../utils/dbConnect");
 const { getISTString } = require("../utils/helperFunctions");
@@ -77,61 +86,30 @@ const sendSignalToDevice = async (deviceId, signalName) => {
   }
 };
 
-const adbSync = async (deviceId) => {
-  const spareCsvPath = path.join(uploadDir, "spares_inventory.csv");
-
+async function adbSync(deviceId) {
+  const sparesPath = path.join(uploadDir, "spare.csv");
+  const toolsPath = path.join(uploadDir, "tool.csv");
+  const configPath = path.join(uploadDir, "config.csv");
+  const userPath = path.join(uploadDir, "user.csv");
   try {
-    await sendSignalToDevice(deviceId, "GENERATE_CSV");
-
     await exportUsersToCSV();
-    await exportItemToCSV();
+    await exportConfigToCSV();
+    await sendSignalToDevice(deviceId, "GEN_CSVS");
+    await runAdb(["-s", deviceId, "push", userPath, destination + "."]);
+    await runAdb(["-s", deviceId, "push", configPath, destination + "."]);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await sendSignalToDevice(deviceId, "SYNC_USER_CONFIG");
+    await pullCSVs(deviceId);
+    await syncAssets("spares");
+    await syncAssets("tools");
+    //
 
-    // Push user.csv
-    await runAdb([
-      "-s",
-      deviceId,
-      "push",
-      path.join(uploadDir, "user.csv"),
-      destination,
-    ]);
-
-    // Push spares_inventory.csv
-    await runAdb(["-s", deviceId, "push", spareCsvPath, destination]);
-
-    await sendSignalToDevice(deviceId, "SYNC_USERS");
-
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Pull updated CSV from device
-    await runAdb([
-      "-s",
-      deviceId,
-      "pull",
-      destination + "spares_inventory.csv",
-      spareCsvPath,
-    ]);
-
-    if (!fs.existsSync(spareCsvPath)) {
-      throw new Error("Sync Failed");
-    }
-
-    await syncInventoryCSV();
-
-    // Cleanup local files
-    [spareCsvPath, path.join(uploadDir, "user.csv")].forEach((file) => {
-      if (fs.existsSync(file)) {
-        fs.unlinkSync(file);
-      }
-    });
-
-    // Cleanup device file
-    await runAdb([
-      "-s",
-      deviceId,
-      "shell",
-      "rm",
-      destination + "spares_inventory.csv",
-    ]);
+    await exportItemToCSV("spares");
+    await exportItemToCSV("tools");
+    await runAdb(["-s", deviceId, "push", sparesPath, destination + "."]);
+    await runAdb(["-s", deviceId, "push", toolsPath, destination + "."]);
+    await sendSignalToDevice(deviceId, "SYNC_SPARE_TOOL");
+    unlinkFiles([sparesPath, toolsPath, userPath, configPath]);
   } catch (error) {
     console.error(`Error syncing device ${deviceId}:`, error);
 
@@ -140,7 +118,96 @@ const adbSync = async (deviceId) => {
       details: error,
     };
   }
-};
+}
+
+async function pullCSVs(deviceId) {
+  const csvs = [
+    "spares",
+    "tools",
+    "demand",
+    "survey",
+    "temporary_issue_local",
+    "ty_loan",
+    "box_transaction",
+    "obs_audit",
+  ];
+
+  for await (const csv of csvs) {
+    await runAdb([
+      "-s",
+      deviceId,
+      "pull",
+      destination + csv + ".csv",
+      path.join(uploadDir, csv + ".csv"),
+    ]);
+  }
+}
+
+function unlinkFiles(files) {
+  for (const file of files) {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+    }
+  }
+}
+
+async function syncAssets(tableName) {
+  const filePath = path.join(uploadDir, `${tableName}.csv`);
+  const connection = await pool.getConnection();
+  let changedRowsCount = 0;
+  try {
+    await connection.beginTransaction();
+    const stream = fs.createReadStream(filePath).pipe(csv());
+    for await (const row of stream) {
+      let { table_id: id, box_no: csvBoxInput, obs_held } = row;
+      const incomingBoxes =
+        typeof csvBoxInput === "string" ? JSON.parse(csvBoxInput) : csvBoxInput;
+      const [rows] = await connection.query(
+        `SELECT box_no FROM ?? WHERE id = ?`,
+        [tableName, id],
+      );
+      if (rows.length === 0) continue;
+      let dbBox =
+        typeof rows[0].box_no === "string"
+          ? JSON.parse(rows[0].box_no)
+          : rows[0].box_no;
+      const incomingMap = new Map(incomingBoxes.map((b) => [b.no, b.qtyHeld]));
+
+      let hasChanged = false;
+      const updatedBox = dbBox.map((item) => {
+        if (incomingMap.has(item.no)) {
+          const newQty = incomingMap.get(item.no);
+          if (item.qtyHeld != newQty) {
+            // console.log(
+            //   `[CHANGE] ID: ${id} | Box: ${item.no} | Old Qty: ${item.qtyHeld} -> New Qty: ${newQty}`,
+            // );
+            hasChanged = true;
+            return { ...item, qtyHeld: newQty };
+          }
+        }
+        return item;
+      });
+      if (hasChanged) {
+        console.log(id, JSON.stringify(updatedBox));
+
+        // await connection.query(`UPDATE ?? SET box_no = ?, obs_held = ? WHERE id = ?`, [
+        //     tableName,
+        //     JSON.stringify(updatedBox),
+        //     obs_held,
+        //     id,
+        // ]);
+        changedRowsCount++;
+      }
+    }
+    // await connection.commit();
+    console.log(`Total records updated: ${changedRowsCount}`);
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
 
 async function getConnectedDevices(req, res) {
   try {
@@ -297,5 +364,6 @@ module.exports = {
   syncDevice,
   updateDevice,
   getDbUsbHandhelds,
-  adbSync
+  adbSync,
+  syncAssets,
 };

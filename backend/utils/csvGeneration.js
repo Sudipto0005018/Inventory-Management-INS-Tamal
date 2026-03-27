@@ -1,18 +1,18 @@
 const fs = require("fs");
 const path = require("path");
 
-const csv = require("csv-parser");
-
-const { convertArrayString } = require("./helperFunctions");
 const pool = require("./dbConnect");
 
+const uploadsDir =
+  process.env.NODE_ENV == "production"
+    ? path.join(__dirname, "uploads")
+    : path.join(__dirname, "../uploads");
 async function exportUsersToCSV() {
   try {
-    const uploadsDir = path.join(__dirname, "../uploads");
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
-    const csvFilePath = path.join(__dirname, "../uploads", "user.csv");
+    const csvFilePath = path.join(uploadsDir, "user.csv");
     const writeStream = fs.createWriteStream(csvFilePath);
     writeStream.write(
       "id,username,name,department,role,password,sync_status\n",
@@ -67,7 +67,6 @@ async function exportUsersToCSV() {
 
 async function exportItemToCSV(tableName) {
   try {
-    const uploadsDir = path.join(__dirname, "../uploads");
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -129,8 +128,6 @@ async function exportItemToCSV(tableName) {
 
 async function exportConfigToCSV() {
   try {
-    const uploadsDir = path.join(__dirname, "../uploads");
-
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -189,102 +186,12 @@ function escapeCsvValue(value) {
   return stringValue;
 }
 
-async function syncInventoryCSV() {
-  const connection = await pool.getConnection();
-  const filePath = path.join(__dirname, "../uploads", "inventory.csv");
-
-  try {
-    await connection.beginTransaction();
-
-    await new Promise((resolve, reject) => {
-      const stream = fs.createReadStream(filePath).pipe(csv());
-
-      stream.on("data", async (row) => {
-        stream.pause();
-
-        try {
-          const {
-            source,
-            description,
-            indian_pattern,
-            equipment_system,
-            obs_authorised,
-            obs_held,
-            box_no,
-          } = row;
-
-          const tableMap = {
-            spares: "spares",
-            tools: "tools",
-            doc_corner: "doc_corner",
-          };
-
-          const tableName = tableMap[source];
-          if (!tableName) {
-            stream.resume();
-            return;
-          }
-
-          const query = `
-                        INSERT INTO ${tableName}
-                        (description, indian_pattern, equipment_system, obs_authorised, obs_held, box_no)
-                        SELECT ?, ?, ?, ?, ?, ?
-                        FROM DUAL
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM ${tableName}
-                            WHERE description = ?
-                            AND indian_pattern = ?
-                            AND equipment_system = ?
-                        )
-                    `;
-
-          await connection.execute(query, [
-            description,
-            indian_pattern,
-            equipment_system,
-            obs_authorised,
-            obs_held,
-            box_no,
-            description,
-            indian_pattern,
-            equipment_system,
-          ]);
-
-          stream.resume();
-        } catch (err) {
-          reject(err);
-        }
-      });
-
-      stream.on("end", resolve);
-      stream.on("error", reject);
-    });
-
-    await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    console.error("Inventory Sync Error:", error);
-    throw error;
-  } finally {
-    connection.release();
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  }
-}
-
 module.exports = {
   exportUsersToCSV,
   escapeCsvValue,
-  syncInventoryCSV,
   exportItemToCSV,
   exportConfigToCSV,
 };
-
-// if (require.main === module) {
-//   exportItemToCSV("spares");
-// }
-
 
 if (require.main === module) {
   exportConfigToCSV();
