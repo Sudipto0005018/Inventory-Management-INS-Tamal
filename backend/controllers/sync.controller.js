@@ -102,6 +102,12 @@ async function adbSync(deviceId) {
     await pullCSVs(deviceId);
     await syncAssets("spares");
     await syncAssets("tools");
+    await syncSurvey();
+    await syncDemand();
+    await syncTemporaryIssue();
+    await syncTyLoan();
+    await syncBoxTransaction();
+    await syncObsAudit();
     //
 
     await exportItemToCSV("spares");
@@ -204,6 +210,768 @@ async function syncAssets(tableName) {
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+
+async function syncSurvey() {
+  const filePath = path.join(uploadDir, `survey.csv`);
+  const connection = await pool.getConnection();
+
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs.createReadStream(filePath).pipe(csv());
+
+    for await (const row of stream) {
+      let {
+        transaction_id,
+        spare_id,
+        tool_id,
+        issue_to,
+        withdrawl_qty,
+        withdrawl_date,
+        box_no,
+        service_no,
+        name,
+        created_by,
+        created_at,
+      } = row;
+
+      // Normalize values
+      spare_id = spare_id && spare_id !== "-1" ? parseInt(spare_id) : null;
+      tool_id = tool_id && tool_id !== "-1" ? parseInt(tool_id) : null;
+      withdrawl_qty = parseInt(withdrawl_qty || 0);
+
+      withdrawl_date =
+        withdrawl_date && withdrawl_date.trim() !== ""
+          ? withdrawl_date
+          : new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      // Parse JSON safely
+      let parsedBox = [];
+
+      if (box_no && typeof box_no === "string") {
+        try {
+          parsedBox = JSON.parse(box_no);
+        } catch (e) {
+          try {
+            const fixed = box_no
+              .replace(/(\w+):/g, '"$1":') 
+              .replace(/=/g, ":"); 
+
+            parsedBox = JSON.parse(fixed);
+            console.log(`Fixed malformed JSON: ${transaction_id}`);
+          } catch (err) {
+            console.log(`Invalid JSON for box_no: ${transaction_id}`);
+            console.log("Raw:", box_no);
+            parsedBox = [];
+          }
+        }
+      }
+
+      // Optional safety
+      if (!spare_id && !tool_id) {
+        console.log(`Skipping invalid survey row: ${transaction_id}`);
+        continue;
+      }
+
+
+      const [existing] = await connection.query(
+        `SELECT id FROM survey WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+
+      if (existing.length > 0) {
+        await connection.query(
+          `UPDATE survey 
+           SET spare_id = ?, tool_id = ?, issue_to = ?, 
+               withdrawl_qty = ?, withdrawl_date = ?, 
+               box_no = ?, service_no = ?, name = ?, 
+               created_by = ?, created_at = ?
+           WHERE transaction_id = ?`,
+          [
+            spare_id,
+            tool_id,
+            issue_to,
+            withdrawl_qty,
+            withdrawl_date,
+            JSON.stringify(parsedBox),
+            service_no,
+            name,
+            created_by,
+            created_at,
+            transaction_id,
+          ],
+        );
+
+        updated++;
+      } else {
+        await connection.query(
+          `INSERT INTO survey 
+           (transaction_id, spare_id, tool_id, issue_to, 
+            withdrawl_qty, withdrawl_date, box_no, 
+            service_no, name, created_by, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            transaction_id,
+            spare_id,
+            tool_id,
+            issue_to,
+            withdrawl_qty,
+            withdrawl_date,
+            JSON.stringify(parsedBox),
+            service_no,
+            name,
+            created_by,
+            created_at,
+          ],
+        );
+
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+
+    console.log(`Survey Sync → Inserted: ${inserted}, Updated: ${updated}`);
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Survey sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function syncDemand() {
+  const filePath = path.join(uploadDir, `demand.csv`);
+  const connection = await pool.getConnection();
+
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs.createReadStream(filePath).pipe(csv());
+
+    for await (const row of stream) {
+      let {
+        transaction_id,
+        spare_id,
+        tool_id,
+        survey_qty,
+        survey_voucher_no,
+        survey_date,
+        created_by,
+        created_at,
+      } = row;
+
+      spare_id = spare_id && spare_id !== "-1" ? spare_id : null;
+      tool_id = tool_id && tool_id !== "-1" ? tool_id : null;
+      survey_qty = parseInt(survey_qty || 0);
+
+      // spare_id = spare_id && spare_id !== "-1" ? parseInt(spare_id) : null;
+      // tool_id = tool_id && tool_id !== "-1" ? parseInt(tool_id) : null;
+      // survey_qty = parseInt(survey_qty || 0);
+
+      // Check if record exists
+      const [existing] = await connection.query(
+        `SELECT id FROM demand WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+      if (existing.length > 0) {
+        await connection.query(
+          `UPDATE demand 
+           SET spare_id = ?, tool_id = ?, survey_qty = ?, 
+               survey_voucher_no = ?, survey_date = ?, 
+               created_by = ?, created_at = ?
+           WHERE transaction_id = ?`,
+          [
+            spare_id,
+            tool_id,
+            survey_qty,
+            survey_voucher_no,
+            survey_date,
+            created_by,
+            created_at,
+            transaction_id,
+          ],
+        );
+
+        updated++;
+      } else {
+        await connection.query(
+          `INSERT INTO demand 
+           (transaction_id, spare_id, tool_id, survey_qty, 
+            survey_voucher_no, survey_date, created_by, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            transaction_id,
+            spare_id,
+            tool_id,
+            survey_qty,
+            survey_voucher_no,
+            survey_date,
+            created_by,
+            created_at,
+          ],
+        );
+
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+
+    console.log(`Inserted: ${inserted}, Updated: ${updated}`);
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Demand sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function syncTemporaryIssue() {
+  const filePath = path.join(uploadDir, `temporary_issue_local.csv`);
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`temporary_issue_local.csv not found at: ${filePath}`);
+    return;
+  }
+
+  const connection = await pool.getConnection();
+
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs
+      .createReadStream(filePath)
+      .on("error", (err) => {
+        console.error("Stream error:", err.message);
+      })
+      .pipe(csv());
+
+    for await (const row of stream) {
+      let {
+        transaction_id,
+        spare_id,
+        tool_id,
+        qty_withdrawn,
+        service_no,
+        issue_to,
+        individual_name,
+        issue_date,
+        loan_duration,
+        return_date,
+        box_no,
+        qty_received,
+        created_by,
+        created_at,
+        approved_by,
+        approved_at,
+        status,
+      } = row;
+
+      // Normalize IDs (-1 → NULL)
+      spare_id = spare_id && spare_id !== "-1" ? parseInt(spare_id) : null;
+      tool_id = tool_id && tool_id !== "-1" ? parseInt(tool_id) : null;
+      approved_by =
+        approved_by && approved_by !== "-1" ? parseInt(approved_by) : null;
+
+      // Numbers
+      qty_withdrawn = qty_withdrawn ? parseInt(qty_withdrawn) : null;
+      loan_duration = loan_duration ? parseInt(loan_duration) : null;
+      qty_received = qty_received ? parseInt(qty_received) : null;
+
+      // Dates
+      issue_date = issue_date && issue_date.trim() !== "" ? issue_date : null;
+      return_date =
+        return_date && return_date.trim() !== "" ? return_date : null;
+      approved_at =
+        approved_at && approved_at.trim() !== "" ? approved_at : null;
+      created_at =
+        created_at && created_at.trim() !== ""
+          ? created_at
+          : new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      //Required fields check (DB constraints)
+      if (
+        !transaction_id ||
+        !service_no ||
+        !issue_to ||
+        !issue_date ||
+        !created_by
+      ) {
+        console.log(`Skipping invalid row: ${transaction_id}`);
+        continue;
+      }
+
+      let parsedBox = null;
+      if (box_no && typeof box_no === "string") {
+        try {
+          parsedBox = JSON.parse(box_no);
+        } catch (e) {
+          console.log(`Invalid JSON for box_no: ${transaction_id}`);
+          console.log("Raw:", box_no);
+          parsedBox = null; // DB allows NULL
+        }
+      }
+
+      const [existing] = await connection.query(
+        `SELECT id FROM temporary_issue_local WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+      if (existing.length > 0) {
+        await connection.query(
+          `UPDATE temporary_issue_local 
+           SET spare_id = ?, tool_id = ?, qty_withdrawn = ?, 
+               service_no = ?, issue_to = ?, issue_date = ?, 
+               loan_duration = ?, return_date = ?, box_no = ?, 
+               qty_received = ?, created_by = ?, created_at = ?, 
+               approved_by = ?, approved_at = ?, status = ?, 
+               individual_name = ?
+           WHERE transaction_id = ?`,
+          [
+            spare_id,
+            tool_id,
+            qty_withdrawn,
+            service_no,
+            issue_to,
+            issue_date,
+            loan_duration,
+            return_date,
+            parsedBox ? JSON.stringify(parsedBox) : null,
+            qty_received,
+            created_by,
+            created_at,
+            approved_by,
+            approved_at,
+            status,
+            individual_name,
+            transaction_id,
+          ],
+        );
+
+        updated++;
+      } else {
+        await connection.query(
+          `INSERT INTO temporary_issue_local 
+           (transaction_id, spare_id, tool_id, qty_withdrawn, 
+            service_no, issue_to, issue_date, loan_duration, 
+            return_date, box_no, qty_received, created_by, created_at, 
+            approved_by, approved_at, status, individual_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            transaction_id,
+            spare_id,
+            tool_id,
+            qty_withdrawn,
+            service_no,
+            issue_to,
+            issue_date,
+            loan_duration,
+            return_date,
+            parsedBox ? JSON.stringify(parsedBox) : null,
+            qty_received,
+            created_by,
+            created_at,
+            approved_by,
+            approved_at,
+            status,
+            individual_name,
+          ],
+        );
+
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+
+    console.log(
+      `Temporary Issue Sync → Inserted: ${inserted}, Updated: ${updated}`,
+    );
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Temporary Issue sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function syncTyLoan() {
+  const filePath = path.join(uploadDir, `ty_loan.csv`);
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`ty_loan.csv not found at: ${filePath}`);
+    return;
+  }
+
+  const connection = await pool.getConnection();
+
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs
+      .createReadStream(filePath)
+      .on("error", (err) => {
+        console.error("Stream error:", err.message);
+      })
+      .pipe(csv());
+
+    for await (const row of stream) {
+      let {
+        transaction_id,
+        spare_id,
+        tool_id,
+        qty_withdrawn,
+        service_no,
+        concurred_by,
+        issue_date,
+        loan_duration,
+        return_date,
+        box_no,
+        qty_received,
+        created_by,
+        created_at,
+        approved_by,
+        approved_at,
+        status,
+        unit_name,
+        individual_name,
+        phone,
+        designation,
+      } = row;
+
+      // Normalize IDs (-1 → NULL)
+      spare_id = spare_id && spare_id !== "-1" ? parseInt(spare_id) : null;
+      tool_id = tool_id && tool_id !== "-1" ? parseInt(tool_id) : null;
+      approved_by =
+        approved_by && approved_by !== "-1" ? parseInt(approved_by) : null;
+
+      // Numbers
+      qty_withdrawn = parseInt(qty_withdrawn || 0);
+      loan_duration = loan_duration ? parseInt(loan_duration) : null;
+      qty_received = qty_received ? parseInt(qty_received) : null;
+
+      // Dates
+      issue_date = issue_date && issue_date.trim() !== "" ? issue_date : null;
+      return_date =
+        return_date && return_date.trim() !== "" ? return_date : null;
+      approved_at =
+        approved_at && approved_at.trim() !== "" ? approved_at : null;
+      created_at =
+        created_at && created_at.trim() !== ""
+          ? created_at
+          : new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      // issue_date is NOT NULL in DB → must exist
+      if (!issue_date) {
+        console.log(`Skipping (missing issue_date): ${transaction_id}`);
+        continue;
+      }
+
+      // Parse box_no JSON
+      let parsedBox = [];
+      if (box_no && typeof box_no === "string") {
+        try {
+          parsedBox = JSON.parse(box_no);
+        } catch (e) {
+          console.log(`Invalid JSON for box_no: ${transaction_id}`);
+          console.log("Raw:", box_no);
+          parsedBox = [];
+        }
+      }
+
+      // Check existing
+      const [existing] = await connection.query(
+        `SELECT id FROM ty_loan WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+      if (existing.length > 0) {
+        // UPDATE
+        await connection.query(
+          `UPDATE ty_loan 
+           SET spare_id = ?, tool_id = ?, qty_withdrawn = ?, 
+               service_no = ?, concurred_by = ?, issue_date = ?, 
+               loan_duration = ?, return_date = ?, box_no = ?, 
+               qty_received = ?, created_by = ?, created_at = ?, 
+               approved_by = ?, approved_at = ?, status = ?, 
+               unit_name = ?, individual_name = ?, phone = ?, designation = ?
+           WHERE transaction_id = ?`,
+          [
+            spare_id,
+            tool_id,
+            qty_withdrawn,
+            service_no,
+            concurred_by,
+            issue_date,
+            loan_duration,
+            return_date,
+            JSON.stringify(parsedBox),
+            qty_received,
+            created_by,
+            created_at,
+            approved_by,
+            approved_at,
+            status || "pending",
+            unit_name,
+            individual_name,
+            phone,
+            designation,
+            transaction_id,
+          ],
+        );
+
+        updated++;
+      } else {
+        // INSERT
+        await connection.query(
+          `INSERT INTO ty_loan 
+           (transaction_id, spare_id, tool_id, qty_withdrawn, 
+            service_no, concurred_by, issue_date, loan_duration, 
+            return_date, box_no, qty_received, created_by, created_at, 
+            approved_by, approved_at, status, unit_name, 
+            individual_name, phone, designation)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            transaction_id,
+            spare_id,
+            tool_id,
+            qty_withdrawn,
+            service_no,
+            concurred_by,
+            issue_date,
+            loan_duration,
+            return_date,
+            JSON.stringify(parsedBox),
+            qty_received,
+            created_by,
+            created_at,
+            approved_by,
+            approved_at,
+            status || "pending",
+            unit_name,
+            individual_name,
+            phone,
+            designation,
+          ],
+        );
+
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+
+    console.log(`TY Loan Sync → Inserted: ${inserted}, Updated: ${updated}`);
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("TY Loan sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function syncBoxTransaction() {
+  const filePath = path.join(uploadDir, `box_transaction.csv`);
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`box_transaction.csv not found at: ${filePath}`);
+    return;
+  }
+
+  const connection = await pool.getConnection();
+
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs
+      .createReadStream(filePath)
+      .on("error", (err) => {
+        console.error("Stream error:", err.message);
+      })
+      .pipe(csv());
+
+    for await (const row of stream) {
+      let {
+        transaction_id,
+        demand_transaction,
+        spare_id,
+        tool_id,
+        box_no,
+        prev_qty,
+        withdrawl_qty,
+        transaction_date,
+      } = row;
+
+      // Normalize IDs (-1 → NULL)
+      spare_id = spare_id && spare_id !== "-1" ? parseInt(spare_id) : null;
+      tool_id = tool_id && tool_id !== "-1" ? parseInt(tool_id) : null;
+
+      // Numbers
+      prev_qty = parseInt(prev_qty || 0);
+      withdrawl_qty = parseInt(withdrawl_qty || 0);
+
+      // Dates (server expects datetime)
+      transaction_date =
+        transaction_date && transaction_date.trim() !== ""
+          ? transaction_date
+          : new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      // box_no cannot be NULL
+      if (!box_no || box_no.trim() === "") {
+        console.log(`Skipping (missing box_no): ${transaction_id}`);
+        continue;
+      }
+
+      // Check existing
+      const [existing] = await connection.query(
+        `SELECT id FROM box_transaction WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+      if (existing.length > 0) {
+        // UPDATE
+        await connection.query(
+          `UPDATE box_transaction
+           SET demand_transaction = ?, spare_id = ?, tool_id = ?, 
+               box_no = ?, prev_qty = ?, withdrawl_qty = ?, transaction_date = ?
+           WHERE transaction_id = ?`,
+          [
+            demand_transaction,
+            spare_id,
+            tool_id,
+            box_no,
+            prev_qty,
+            withdrawl_qty,
+            transaction_date,
+            transaction_id,
+          ],
+        );
+        updated++;
+      } else {
+        // INSERT
+        await connection.query(
+          `INSERT INTO box_transaction 
+           (transaction_id, demand_transaction, spare_id, tool_id, box_no, prev_qty, withdrawl_qty, transaction_date)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            transaction_id,
+            demand_transaction,
+            spare_id,
+            tool_id,
+            box_no,
+            prev_qty,
+            withdrawl_qty,
+            transaction_date,
+          ],
+        );
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+    console.log(
+      `Box Transaction Sync → Inserted: ${inserted}, Updated: ${updated}`,
+    );
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Box Transaction sync failed:", error);
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function syncObsAudit() {
+  const filePath = path.join(uploadDir, `obs_audit.csv`);
+
+  if (!fs.existsSync(filePath)) {
+    console.error(`obs_audit.csv not found at: ${filePath}`);
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await connection.beginTransaction();
+
+    const stream = fs
+      .createReadStream(filePath)
+      .on("error", (err) => console.error("Stream error:", err.message))
+      .pipe(csv());
+
+    for await (const row of stream) {
+      let { transaction_id, previous_obs, new_obs, created_at } = row;
+
+      // Normalize numbers
+      previous_obs = previous_obs ? parseInt(previous_obs) : 0;
+      new_obs = new_obs ? parseInt(new_obs) : 0;
+
+      // Dates
+      created_at =
+        created_at && created_at.trim() !== ""
+          ? created_at
+          : new Date().toISOString().slice(0, 19).replace("T", " ");
+
+      if (!transaction_id || transaction_id.trim() === "") {
+        console.log("Skipping row with missing transaction_id");
+        continue;
+      }
+
+      // Check existing
+      const [existing] = await connection.query(
+        `SELECT id FROM obs_audit WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+
+      if (existing.length > 0) {
+        // UPDATE
+        await connection.query(
+          `UPDATE obs_audit 
+           SET previous_obs = ?, new_obs = ?, created_at = ?
+           WHERE transaction_id = ?`,
+          [previous_obs, new_obs, created_at, transaction_id],
+        );
+        updated++;
+      } else {
+        // INSERT
+        await connection.query(
+          `INSERT INTO obs_audit (transaction_id, previous_obs, new_obs, created_at)
+           VALUES (?, ?, ?, ?)`,
+          [transaction_id, previous_obs, new_obs, created_at],
+        );
+        inserted++;
+      }
+    }
+
+    await connection.commit();
+    console.log(`OBS Audit Sync → Inserted: ${inserted}, Updated: ${updated}`);
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("OBS Audit sync failed:", error);
   } finally {
     if (connection) connection.release();
   }
@@ -366,4 +1134,10 @@ module.exports = {
   getDbUsbHandhelds,
   adbSync,
   syncAssets,
+  syncDemand,
+  syncSurvey,
+  syncTyLoan,
+  syncTemporaryIssue,
+  syncBoxTransaction,
+  syncObsAudit
 };

@@ -5,7 +5,15 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const path = require("path");
 const { encrypt } = require("./utils/helperFunctions");
-const { syncAssets } = require("./controllers/sync.controller");
+const {
+  syncAssets,
+  syncDemand,
+  syncSurvey,
+  syncTyLoan,
+  syncTemporaryIssue,
+  syncBoxTransaction,
+  syncObsAudit
+} = require("./controllers/sync.controller");
 
 // const enc = encrypt(new Date('2026-07-01').getTime() + "");
 // console.log(enc);
@@ -60,6 +68,7 @@ app.use("/api/v1/document", require("./routes/docCorner.routes"));
 app.use("/api/v1/stock", require("./routes/stockUpdate.routes"));
 
 // syncAssets("spares");
+syncTyLoan();
 
 app.listen(process.env.PORT || 7777, () => {
   console.log(

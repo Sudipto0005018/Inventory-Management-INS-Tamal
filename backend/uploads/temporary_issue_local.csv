@@ -1,0 +1,7 @@
+id,transaction_id,spare_id,tool_id,qty_withdrawn,service_no,individual_name,issue_to,issue_date,loan_duration,return_date,box_no,qty_received,created_by,created_at,approved_by,approved_at,status
+1,TEMP-1774609816188,22,,1,123456,NEW PERSON,AER,2026-03-27,5,,"[{""no"":""R001"",""qn"":10,""qtyHeld"":0},{""no"":""R002"",""qn"":10,""qtyHeld"":47}]",,1,2026-03-27 16:40:16,,,pending
+2,TEMP-1774609843440,22,,2,123456,NEW PERSON,OMS,2026-03-27,9,,"[{""no"":""R001"",""qn"":10,""qtyHeld"":0},{""no"":""R002"",""qn"":10,""qtyHeld"":45}]",,1,2026-03-27 16:40:43,,,pending
+3,TEMP-1774610130919,,8,5,12345,Sudipto Dutta,Control,2026-03-27,12,,"[{""no"":""001"",""qn"":30,""qtyHeld"":92}]",,1,2026-03-27 16:45:30,,,pending
+4,TEMP-1774610225732,,25,1,12345,Sudipto Dutta,AER,2026-03-27,12,,"[{""no"":""R12335"",""qn"":24,""qtyHeld"":16},{""no"":""R658"",""qn"":21,""qtyHeld"":0}]",,1,2026-03-27 16:47:05,,,pending
+5,TEMP-1774610348892,,2,1,12345,Sudipto Dutta,OMS,2026-03-27,1,,"[{""no"":""001"",""qn"":20,""qtyHeld"":24},{""no"":""002"",""qn"":20,""qtyHeld"":0}]",,1,2026-03-27 16:49:08,,,pending
+6,TEMP-1774610348899,,2,4,123456,NEW PERSON,FER,2026-03-27,9,,"[{""no"":""001"",""qn"":20,""qtyHeld"":21},{""no"":""002"",""qn"":20,""qtyHeld"":0}]",,1,2026-03-27 16:49:08,,,pending
