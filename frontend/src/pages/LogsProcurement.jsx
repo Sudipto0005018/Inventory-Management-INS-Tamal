@@ -40,7 +40,7 @@ const Procurement = () => {
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "approved_at", header: "Date of Return" },
+    { key: "approved_at", header: "Date of Receive" },
   ]);
 
   const options = [

@@ -1,9 +1,0 @@
-id,transaction_id,spare_id,tool_id,qty_withdrawn,service_no,concurred_by,issue_date,loan_duration,return_date,box_no,qty_received,created_by,created_at,approved_by,approved_at,status,unit_name,individual_name,phone,designation
-1,TY1774609867747,22,,1,12345,AEO (OMS),2026-03-27,6,,"[{""no"":""R001"",""qn"":10,""qtyHeld"":0},{""no"":""R002"",""qn"":10,""qtyHeld"":44}]",,1,2026-03-27 16:41:09,,,pending,sgsu,Sudipto Dutta,07449550732,ABC
-2,TY1774609894830,22,,5,123456,AEO (AFT),2026-03-27,9,,"[{""no"":""R001"",""qn"":10,""qtyHeld"":0},{""no"":""R002"",""qn"":10,""qtyHeld"":39}]",,1,2026-03-27 16:41:38,,,pending,trwywu,NEW PERSON,07449550732,ABC
-3,TY1774610157872,,8,3,12345,AEO (FWD),2026-03-27,3,,"[{""no"":""001"",""qn"":30,""qtyHeld"":89}]",,1,2026-03-27 16:45:59,,,pending,13qwrw6,Sudipto Dutta,07449550732,ABC
-4,TY1774610255091,,25,2,123456,AEO (OMS),2026-03-25,9,,"[{""no"":""R12335"",""qn"":24,""qtyHeld"":14},{""no"":""R658"",""qn"":21,""qtyHeld"":0}]",,1,2026-03-27 16:47:36,,,pending,heiei,NEW PERSON,07449550732,ABC
-5,TY1774610389463,,2,1,12345,SEO,2026-03-18,8,,"[{""no"":""001"",""qn"":20,""qtyHeld"":20},{""no"":""002"",""qn"":20,""qtyHeld"":0}]",,1,2026-03-27 16:50:25,,,pending,ehwi,Sudipto Dutta,07449550732,ABC
-6,TY1774610424022,,2,2,123456,AEO (FWD),2026-03-22,2,,"[{""no"":""001"",""qn"":20,""qtyHeld"":19},{""no"":""002"",""qn"":20,""qtyHeld"":0}]",,1,2026-03-27 16:50:25,,,pending,fwdhdj,NEW PERSON,07449550732,ABC
-7,TY1774611896271,6,,1,12345,EO,2026-03-18,7,,"[{""no"":""001"",""qn"":5,""qtyHeld"":5},{""no"":""002"",""qn"":5,""qtyHeld"":4}]",,1,2026-03-27 17:15:32,,,pending,gei7789,Sudipto Dutta,07449550732,ABC
-8,TY1774611926999,6,,1,123456,AEO (FWD),2026-03-27,4,,"[{""no"":""001"",""qn"":5,""qtyHeld"":5},{""no"":""002"",""qn"":5,""qtyHeld"":4}]",,1,2026-03-27 17:15:32,,,pending,shsusi,NEW PERSON,07449550732,ABC

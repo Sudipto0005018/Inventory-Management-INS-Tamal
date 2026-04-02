@@ -4,6 +4,17 @@ import {
   FaClock,
   FaChartPie,
 } from "react-icons/fa";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
+import { Button } from "@/components/ui/button";
+import { Usb } from "lucide-react";
+import Sync from "../pages/Sync";
 import { GoStarFill } from "react-icons/go";
 import { IoDocument } from "react-icons/io5";
 import { FaGears, FaTriangleExclamation, FaCartPlus } from "react-icons/fa6";
@@ -56,17 +67,38 @@ export default function Dashboard() {
   return (
     <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-[#c5cffa] from-gray-50 to-gray-100 p-3 mt-[-20px] md:p-5">
       {/* bg-gradient-to-br */} {/* Header with Gradient */}
-      <div className="mb-3 text-center">
-        <div className="flex flex-col items-center">
-          <div className="">
-            <h1 className="text-base md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Dashboard Overview
-            </h1>
-            <p className="text-xs text-gray-500 mt-1 font-semibold flex items-center gap-2 justify-center">
-              Complete Inventory Management Summary
-            </p>
-          </div>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex-1 text-center">
+          <h1 className="text-base md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Dashboard Overview
+          </h1>
+
+          <p className="text-xs text-gray-500 mt-1 font-semibold">
+            Complete Inventory Management Summary
+          </p>
         </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 h-9 px-3 rounded-lg shadow-sm"
+            >
+              <Usb size={16} />
+              USB Connection
+            </Button>
+          </SheetTrigger>
+
+          <SheetContent side="right" className="w-[340px] sm:w-[380px] p-0">
+            <SheetHeader className="px-4 py-3 border-b">
+              <SheetTitle>USB Connection</SheetTitle>
+            </SheetHeader>
+
+            <div className="p-3 h-full overflow-hidden">
+              < Sync />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       {/* INVENTORY SUMMARY SECTION */}
       <div className="mb-3">

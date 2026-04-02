@@ -40,7 +40,7 @@ const PermanentPendings = () => {
     { key: "mo_no", header: "MO Gate Pass No." },
     { key: "mo_date", header: "MO Date" },
     { key: "qty_received", header: "Received Qty" },
-    { key: "approved_at", header: "Date of Return" },
+    { key: "approved_at", header: "Date of Receive" },
   ]);
 
   const options = [

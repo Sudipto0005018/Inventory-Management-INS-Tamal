@@ -28,7 +28,7 @@ const uploadDir =
     : path.join(__dirname, "../uploads");
 const destination = "/storage/emulated/0/Documents/";
 const pool = require("../utils/dbConnect");
-const { getISTString } = require("../utils/helperFunctions");
+const { getSQLTimestamp } = require("../utils/helperFunctions");
 
 if (process.platform !== "win32") {
   exec(`chmod +x "${adbPath}"`, (error, stdout, stderr) => {
@@ -72,9 +72,9 @@ const sendSignalToDevice = async (deviceId, signalName) => {
     "am",
     "broadcast",
     "-a",
-    `com.example.equipmentmonitoring.${signalName}`,
+    `in.gbtsolutions.inventorymanagement.${signalName}`,
     "-n",
-    "com.example.equipmentmonitoring/.CsvGenerationReceiver",
+    "in.gbtsolutions.inventorymanagement/.SignalReceiver",
   ];
 
   try {
@@ -86,6 +86,30 @@ const sendSignalToDevice = async (deviceId, signalName) => {
   }
 };
 
+async function manualAdbSync(req, res) {
+  const { deviceId } = req.params;
+
+  if (!deviceId) {
+    return res
+      .status(400)
+      .json(new ApiErrorResponse(400, {}, "Device ID is required"));
+  }
+
+  try {
+    await adbSync(deviceId);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "ADB sync successful"));
+  } catch (error) {
+    console.error("ADB sync failed:", error);
+
+    return res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "ADB sync failed"));
+  }
+}
+
 async function adbSync(deviceId) {
   const sparesPath = path.join(uploadDir, "spare.csv");
   const toolsPath = path.join(uploadDir, "tool.csv");
@@ -95,6 +119,7 @@ async function adbSync(deviceId) {
     await exportUsersToCSV();
     await exportConfigToCSV();
     await sendSignalToDevice(deviceId, "GEN_CSVS");
+
     await runAdb(["-s", deviceId, "push", userPath, destination + "."]);
     await runAdb(["-s", deviceId, "push", configPath, destination + "."]);
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -108,14 +133,26 @@ async function adbSync(deviceId) {
     await syncTyLoan();
     await syncBoxTransaction();
     await syncObsAudit();
-    //
 
     await exportItemToCSV("spares");
     await exportItemToCSV("tools");
     await runAdb(["-s", deviceId, "push", sparesPath, destination + "."]);
     await runAdb(["-s", deviceId, "push", toolsPath, destination + "."]);
     await sendSignalToDevice(deviceId, "SYNC_SPARE_TOOL");
-    unlinkFiles([sparesPath, toolsPath, userPath, configPath]);
+    unlinkFiles([
+      sparesPath,
+      toolsPath,
+      userPath,
+      configPath,
+      path.join(uploadDir, "spares.csv"),
+      path.join(uploadDir, "tools.csv"),
+      path.join(uploadDir, "box_transaction.csv"),
+      path.join(uploadDir, "demand.csv"),
+      path.join(uploadDir, "obs_audit.csv"),
+      path.join(uploadDir, "survey.csv"),
+      path.join(uploadDir, "temporary_issue_local.csv"),
+      path.join(uploadDir, "ty_loan.csv"),
+    ]);
   } catch (error) {
     console.error(`Error syncing device ${deviceId}:`, error);
 
@@ -125,6 +162,29 @@ async function adbSync(deviceId) {
     };
   }
 }
+
+// async function pullCSVs(deviceId) {
+//   const csvs = [
+//     "spares",
+//     "tools",
+//     "demand",
+//     "survey",
+//     "temporary_issue_local",
+//     "ty_loan",
+//     "box_transaction",
+//     "obs_audit",
+//   ];
+
+//   for await (const csv of csvs) {
+//     await runAdb([
+//       "-s",
+//       deviceId,
+//       "pull",
+//       destination + csv + ".csv",
+//       path.join(uploadDir, csv + ".csv"),
+//     ]);
+//   }
+// }
 
 async function pullCSVs(deviceId) {
   const csvs = [
@@ -138,14 +198,18 @@ async function pullCSVs(deviceId) {
     "obs_audit",
   ];
 
-  for await (const csv of csvs) {
-    await runAdb([
-      "-s",
-      deviceId,
-      "pull",
-      destination + csv + ".csv",
-      path.join(uploadDir, csv + ".csv"),
-    ]);
+  for (const csvFile of csvs) {
+    try {
+      await runAdb([
+        "-s",
+        deviceId,
+        "pull",
+        destination + csvFile + ".csv",
+        path.join(uploadDir, csvFile + ".csv"),
+      ]);
+    } catch (error) {
+      console.error(`Failed pulling ${csvFile}:`, error.message);
+    }
   }
 }
 
@@ -194,14 +258,12 @@ async function syncAssets(tableName) {
         return item;
       });
       if (hasChanged) {
-        console.log(id, JSON.stringify(updatedBox));
+        // console.log(id, JSON.stringify(updatedBox));
 
-        // await connection.query(`UPDATE ?? SET box_no = ?, obs_held = ? WHERE id = ?`, [
-        //     tableName,
-        //     JSON.stringify(updatedBox),
-        //     obs_held,
-        //     id,
-        // ]);
+        await connection.query(
+          `UPDATE ?? SET box_no = ?, obs_held = ? WHERE id = ?`,
+          [tableName, JSON.stringify(updatedBox), obs_held, id],
+        );
         changedRowsCount++;
       }
     }
@@ -214,7 +276,6 @@ async function syncAssets(tableName) {
     if (connection) connection.release();
   }
 }
-
 
 async function syncSurvey() {
   const filePath = path.join(uploadDir, `survey.csv`);
@@ -261,9 +322,7 @@ async function syncSurvey() {
           parsedBox = JSON.parse(box_no);
         } catch (e) {
           try {
-            const fixed = box_no
-              .replace(/(\w+):/g, '"$1":') 
-              .replace(/=/g, ":"); 
+            const fixed = box_no.replace(/(\w+):/g, '"$1":').replace(/=/g, ":");
 
             parsedBox = JSON.parse(fixed);
             console.log(`Fixed malformed JSON: ${transaction_id}`);
@@ -281,35 +340,33 @@ async function syncSurvey() {
         continue;
       }
 
-
       const [existing] = await connection.query(
         `SELECT id FROM survey WHERE transaction_id = ?`,
         [transaction_id],
       );
 
-
       if (existing.length > 0) {
-        await connection.query(
-          `UPDATE survey 
-           SET spare_id = ?, tool_id = ?, issue_to = ?, 
-               withdrawl_qty = ?, withdrawl_date = ?, 
-               box_no = ?, service_no = ?, name = ?, 
-               created_by = ?, created_at = ?
-           WHERE transaction_id = ?`,
-          [
-            spare_id,
-            tool_id,
-            issue_to,
-            withdrawl_qty,
-            withdrawl_date,
-            JSON.stringify(parsedBox),
-            service_no,
-            name,
-            created_by,
-            created_at,
-            transaction_id,
-          ],
-        );
+        // await connection.query(
+        //   `UPDATE survey
+        //    SET spare_id = ?, tool_id = ?, issue_to = ?,
+        //        withdrawl_qty = ?, withdrawl_date = ?,
+        //        box_no = ?, service_no = ?, name = ?,
+        //        created_by = ?, created_at = ?
+        //    WHERE transaction_id = ?`,
+        //   [
+        //     spare_id,
+        //     tool_id,
+        //     issue_to,
+        //     withdrawl_qty,
+        //     withdrawl_date,
+        //     JSON.stringify(parsedBox),
+        //     service_no,
+        //     name,
+        //     created_by,
+        //     created_at,
+        //     transaction_id,
+        //   ],
+        // );
 
         updated++;
       } else {
@@ -388,23 +445,23 @@ async function syncDemand() {
       );
 
       if (existing.length > 0) {
-        await connection.query(
-          `UPDATE demand 
-           SET spare_id = ?, tool_id = ?, survey_qty = ?, 
-               survey_voucher_no = ?, survey_date = ?, 
-               created_by = ?, created_at = ?
-           WHERE transaction_id = ?`,
-          [
-            spare_id,
-            tool_id,
-            survey_qty,
-            survey_voucher_no,
-            survey_date,
-            created_by,
-            created_at,
-            transaction_id,
-          ],
-        );
+        // await connection.query(
+        //   `UPDATE demand
+        //    SET spare_id = ?, tool_id = ?, survey_qty = ?,
+        //        survey_voucher_no = ?, survey_date = ?,
+        //        created_by = ?, created_at = ?
+        //    WHERE transaction_id = ?`,
+        //   [
+        //     spare_id,
+        //     tool_id,
+        //     survey_qty,
+        //     survey_voucher_no,
+        //     survey_date,
+        //     created_by,
+        //     created_at,
+        //     transaction_id,
+        //   ],
+        // );
 
         updated++;
       } else {
@@ -424,7 +481,6 @@ async function syncDemand() {
             created_at,
           ],
         );
-
         inserted++;
       }
     }
@@ -1028,7 +1084,7 @@ async function syncDevice(req, res) {
     }
     await adbSync(deviceId);
 
-    const currentIST = getISTString();
+    const currentIST = getSQLTimestamp();
     const [existing] = await pool.query(
       "SELECT uid FROM usb_devices WHERE uid = ?",
       [deviceId],
@@ -1132,12 +1188,15 @@ module.exports = {
   syncDevice,
   updateDevice,
   getDbUsbHandhelds,
+  pullCSVs,
+  sendSignalToDevice,
   adbSync,
+  manualAdbSync,
   syncAssets,
   syncDemand,
   syncSurvey,
   syncTyLoan,
   syncTemporaryIssue,
   syncBoxTransaction,
-  syncObsAudit
+  syncObsAudit,
 };

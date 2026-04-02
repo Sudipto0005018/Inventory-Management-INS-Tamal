@@ -44,6 +44,7 @@ import LogsStock from "../pages/LogsStock";
 import LogsSpecialDemand from "../pages/LogsSpecialDemand";
 import Original from "../pages/Original";
 import Amendment from "../pages/Amendment";
+import Sync from "../pages/Sync";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -498,6 +499,16 @@ const Router = () => {
           element={
             <ProtectedRoute>
               <CompletedTYLoan />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/sync"
+          element={
+            <ProtectedRoute>
+              <Sync />
             </ProtectedRoute>
           }
         />

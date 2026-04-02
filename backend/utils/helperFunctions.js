@@ -74,6 +74,28 @@ function decrypt(encStr = "") {
   return decrypted.toString("utf8");
 }
 
+function getISTString(systemDate = new Date()) {
+  const options = {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
+
+  const parts = new Intl.DateTimeFormat("en-GB", options)
+    .formatToParts(systemDate)
+    .reduce((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 module.exports = {
   validateUsername,
   mergeAndSubArrays,
@@ -81,4 +103,5 @@ module.exports = {
   getSQLTimestamp,
   encrypt,
   decrypt,
+  getISTString,
 };

@@ -5,3 +5,4 @@ backend/build
 test
 backend/main*.js
 build
+backend/uploads/*.csv

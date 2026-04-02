@@ -66,6 +66,7 @@ app.use("/api/v1/stocks", require("./routes/procurement_stock.routes"));
 app.use("/api/v1/tyLoan", require("./routes/tyLoan.routes"));
 app.use("/api/v1/document", require("./routes/docCorner.routes"));
 app.use("/api/v1/stock", require("./routes/stockUpdate.routes"));
+app.use("/api/v1/sync", require("./routes/sync.routes"));
 
 // syncAssets("spares");
 syncTyLoan();
