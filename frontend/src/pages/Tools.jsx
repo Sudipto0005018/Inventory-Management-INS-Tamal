@@ -1072,7 +1072,21 @@ const Tools = ({ type = "" }) => {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
-      await apiService.post("/specialDemand/special", obsAuthChange);
+
+      //new payload
+      const specialPayload = {
+        tool_id: selectedRow.id,
+        obs_authorised: Number(selectedRow.obs_authorised) || 0,
+        obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
+        obs_maintained: Number(selectedRow.obs_maintained) || 0,
+        obs_held: Number(selectedRow.obs_held) || 0,
+        maintained_qty: Number(selectedRow.obs_maintained) || 0,
+        qty_held: Number(selectedRow.obs_held) || 0,
+        box_no: JSON.parse(selectedRow.box_no || "[]"),
+      };
+
+      await apiService.post("/specialDemand/special", specialPayload);
+      // await apiService.post("/specialDemand/special", obsAuthChange);
       if (response.success) {
         toaster("success", "Tool updated successfully");
         resetImageState(); // clear image payload

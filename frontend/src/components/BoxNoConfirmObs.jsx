@@ -186,7 +186,8 @@ function BoxNoConfirmObs({
             <TableRow key={index}>
               <TableCell>
                 <Input
-                  readOnly
+                  // readOnly
+                  onWheel={(e) => e.preventDefault()}
                   required
                   disabled={isBoxnumberDisable}
                   placeholder={isLooseSpare ? "Rack No." : "Box No."}
@@ -208,11 +209,25 @@ function BoxNoConfirmObs({
               </TableCell>
 
               <TableCell>
-                <Input required type="number" value={row.qn} disabled />
+                <Input
+                  required
+                  type="number"
+                  value={row.qn}
+                  onChange={(e) =>
+                    handleInputChange(index, "qn", Number(e.target.value))
+                  }
+                />
               </TableCell>
 
               <TableCell>
-                <Input required type="number" value={row.qnMain} disabled />
+                <Input
+                  required
+                  type="number"
+                  value={row.qnMain}
+                  onChange={(e) =>
+                    handleInputChange(index, "qnMain", Number(e.target.value))
+                  }
+                />
               </TableCell>
 
               <TableCell>
