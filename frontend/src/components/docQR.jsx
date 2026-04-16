@@ -43,7 +43,6 @@ const GenerateQRDialog = ({ open, setOpen, row, boxesData, updateDetails }) => {
       toaster("error", "Invalid box number data");
     }
   }, [open, row]);
-  console.log(row);
 
   const handleChange = (index, field, value) => {
     setBoxes((prev) => {

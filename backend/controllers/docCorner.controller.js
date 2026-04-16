@@ -396,12 +396,6 @@ async function updateDocCorner(req, res) {
       finalImages.pop();
     }
 
-    console.log("REQ.FILES:", req.files);
-    console.log("IMAGE STATUS:", imageStatus);
-    console.log("OLD IMAGES:", oldImages);
-    console.log("UPLOAD MAP:", uploadMap);
-    console.log("FINAL IMAGES:", finalImages);
-
     /* 3️⃣ Update doc_corner including images */
     const [result] = await pool.query(
       `
@@ -912,7 +906,6 @@ async function updateDocIssue(req, res) {
     );
 
     const previousOBS = parseInt(inventory.obs_held || 0);
-    console.log(inventory.box_no);
 
     let boxes = JSON.parse(
       typeof inventory.box_no == "string"
@@ -1035,8 +1028,6 @@ async function updateDocIssue(req, res) {
 
 async function generateQRCode(req, res) {
   const { id, boxes } = req.body;
-
-  console.log("req.body =>", req.body);
 
   const PDFDocument = require("pdfkit");
   const qr = require("qrcode");

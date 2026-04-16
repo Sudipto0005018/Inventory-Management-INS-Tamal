@@ -411,7 +411,6 @@ async function getDashboardData(req, res) {
       tyLoanQuery,
       documentQuery,
     ]);
-    console.log(spares);
 
     res.status(200).json({
       success: true,
@@ -446,6 +445,7 @@ async function updateUser(req, res) {
 
   // Required validation
   if (!name || !department || !role || !status) {
+  // if (!name || !department || !role || status === undefined || status === null) {
     return res
       .status(400)
       .json(
@@ -471,7 +471,6 @@ async function updateUser(req, res) {
     let query;
     let values;
 
-    // ✅ Convert status once (for both cases)
     const numericStatus =
       status === "active" ? 1 : status === "inactive" ? 0 : (status ?? 1);
 

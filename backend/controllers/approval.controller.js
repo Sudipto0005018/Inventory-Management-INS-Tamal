@@ -125,7 +125,6 @@ async function approveChange(req, res) {
   );
   approval = approval[0];
 
-  console.log(approval, id);
 
   if (!approval) {
     return res

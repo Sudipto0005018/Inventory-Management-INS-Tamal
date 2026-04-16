@@ -120,7 +120,6 @@ const isAdmin = async (req, res, next) => {
         new ApiErrorResponse(401, {}, "Not authorized, Please login again"),
       );
   }
-  console.log(req.user);
 
   const { role } = req.user;
   if (role?.toLowerCase() !== "admin") {

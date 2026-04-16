@@ -105,7 +105,6 @@ async function getConcurredBy(req, res) {
 
 async function getUserByServiceNo(req, res) {
   try {
-    console.log("SERVICE NO HIT 👉", req.params.service_no);
     const { service_no } = req.params;
     const [rows] = await pool.query(
       `SELECT attr_1, attr_2 

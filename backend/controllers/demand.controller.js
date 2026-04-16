@@ -95,7 +95,6 @@ async function getDemands(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
   const status = req.query.status || "pending";
-  console.log(rawCols);
 
   const columnMap = {
     description: ["sp.description", "t.description"],
@@ -170,7 +169,6 @@ async function getDemands(req, res) {
         ? "WHERE " + whereConditions.join(" AND ")
         : "";
 
-    console.log(finalWhereClause);
 
     const [totalCountRows] = await connection.query(
       `SELECT COUNT(*) as count 

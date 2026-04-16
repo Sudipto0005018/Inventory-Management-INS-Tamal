@@ -693,9 +693,9 @@ async function addQRCodeResults(req, res) {
       const qr = qrs[i];
       let query = `SELECT * FROM spares WHERE uid = ? UNION ALL SELECT * FROM tools WHERE uid = ?;`;
       const [result] = await connection.query(query, [qr, qr]);
-      if (result.length === 0) {
-        console.log(qr);
-      }
+      // if (result.length === 0) {
+      //   console.log(qr);
+      // }
 
       query = `INSERT INTO pending (uid, department, status) VALUES (?, ?, ?);`;
       await connection.query(query, [qr, req.department.id, "pending"]);
