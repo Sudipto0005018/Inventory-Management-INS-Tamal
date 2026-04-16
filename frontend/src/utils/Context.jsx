@@ -12,6 +12,9 @@ const ContextProvider = ({ children }) => {
   const [concurredBy, setConcurredBy] = useState([]);
   const [issueTo, setIssueTo] = useState([]);
   const [surveyReason, setSurveyReason] = useState([]);
+  const [category, setCategory] = useState([]);
+  const [denos, setDenos] = useState([]);
+  const [equipment_system, setEquipment] = useState([]);
 
   async function fetchStorageLocation() {
     try {
@@ -50,17 +53,51 @@ const ContextProvider = ({ children }) => {
     }
   }
 
-const fetchSurveyReason = async () => {
-  try {
-    const response = await apiService.get("/config/survey");
+  const fetchSurveyReason = async () => {
+    try {
+      const response = await apiService.get("/config/survey");
 
-    if (response.success) {
-      setSurveyReason(response.data);
+      if (response.success) {
+        setSurveyReason(response.data);
+      }
+    } catch (error) {
+      console.error(error);
     }
-  } catch (error) {
-    console.error(error);
+  };
+
+  async function fetchCategory() {
+    try {
+      const response = await apiService.get("/config/category");
+      if (response.success) {
+        setCategory(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
-};
+
+  async function fetchDenos() {
+    try {
+      const response = await apiService.get("/config/denos");
+      if (response.success) {
+        setDenos(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+    async function fetchEquipment() {
+      try {
+        const response = await apiService.get("/config/equipment_system");
+        if (response.success) {
+          setEquipment(response.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
   return (
     <Context.Provider
       value={{
@@ -83,7 +120,16 @@ const fetchSurveyReason = async () => {
         fetchIssueTo,
         fetchStorageLocation,
         fetchConcurredBy,
-        fetchSurveyReason
+        fetchSurveyReason,
+        category,
+        setCategory,
+        fetchCategory,
+        denos,
+        setDenos,
+        fetchDenos,
+        equipment_system,
+        setEquipment,
+        fetchEquipment,
       }}
     >
       {children}

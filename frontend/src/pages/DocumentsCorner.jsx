@@ -57,6 +57,8 @@ const DocumentsCorner = ({ type = "" }) => {
     fetchIssueTo,
     fetchConcurredBy,
     fetchStorageLocation,
+    fetchEquipment,
+    equipment_system,
     issueTo,
     concurredBy,
     user,
@@ -260,6 +262,10 @@ const DocumentsCorner = ({ type = "" }) => {
         if (type === "location_of_storage") {
           await fetchStorageLocation();
         }
+
+         if (type === "equipment_system") {
+           await fetchEquipment();
+         }
       }
     } catch (error) {
       console.error(error);
@@ -1277,11 +1283,39 @@ const DocumentsCorner = ({ type = "" }) => {
                   <Label className="ms-2 mb-1">
                     Equipment / System<span className="text-red-500">*</span>
                   </Label>
-                  <Input
+                  {/* <Input
                     type="text"
                     name="equipment_system"
                     value={inputs.equipment_system}
                     onChange={handleChange}
+                  /> */}
+                  <ComboBox
+                    className="w-full"
+                    options={equipment_system}
+                    onCustomAdd={async (value) => {
+                      await addToDropdown("equipment_system", value.name);
+                    }}
+                    placeholder="Select Equipment / System..."
+                    onSelect={(value) => {
+                      setInputs((prev) => ({
+                        ...prev,
+                        equipment_system: value.name,
+                      }));
+
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        equipment_system: value.name,
+                      }));
+                    }}
+                    onDelete={async (value) => {
+                      try {
+                        await apiService.delete(`/config/${value.id}`);
+                        await fetchEquipment();
+                        toaster("success", "Deleted Successfully");
+                      } catch (error) {
+                        toaster("error", "Failed to delete the item");
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -1539,13 +1573,38 @@ const DocumentsCorner = ({ type = "" }) => {
                   <Label>
                     Equipment / System<span className="text-red-500">*</span>
                   </Label>
-                  <InputWithPencil
+                  {/* <InputWithPencil
                     name="equipment_system"
                     value={selectedRow.equipment_system}
                     onChange={handleEditChange}
                     editable={editableFields.equipment_system}
                     onEdit={() => enableEdit("equipment_system")}
                     onBlur={() => disableEdit("equipment_system")}
+                  /> */}
+
+                  <ComboBox
+                    className="w-full"
+                    options={equipment_system}
+                    value={selectedRow.equipment_system || ""}
+                    onCustomAdd={async (value) => {
+                      await addToDropdown("equipment_system", value.name);
+                    }}
+                    placeholder="Select Equipment / System..."
+                    onSelect={(value) => {
+                      setSelectedRow((prev) => ({
+                        ...prev,
+                        equipment_system: value?.name || "",
+                      }));
+                    }}
+                    onDelete={async (value) => {
+                      try {
+                        await apiService.delete(`/config/${value.id}`);
+                        await fetchEquipment();
+                        toaster("success", "Deleted Successfully");
+                      } catch (error) {
+                        toaster("error", "Failed to delete the item");
+                      }
+                    }}
                   />
                 </div>
 

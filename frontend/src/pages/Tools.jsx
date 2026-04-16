@@ -76,8 +76,14 @@ const Tools = ({ type = "" }) => {
     fetchIssueTo,
     fetchConcurredBy,
     fetchStorageLocation,
+    fetchCategory,
+    fetchEquipment,
+    fetchDenos,
     issueTo,
     concurredBy,
+    category,
+    equipment_system,
+    denos,
     user,
     admin,
   } = useContext(Context);
@@ -333,6 +339,14 @@ const Tools = ({ type = "" }) => {
 
         if (type === "location_of_storage") {
           await fetchStorageLocation();
+        }
+
+        if (type === "category") {
+          await fetchCategory();
+        }
+
+        if (type === "equipment_system") {
+          await fetchEquipment();
         }
       }
     } catch (error) {
@@ -1438,7 +1452,7 @@ const Tools = ({ type = "" }) => {
           <div className="mb-2">
             <Input
               type="text"
-              placeholder="Search tools..."
+              placeholder="Search Tools..."
               className="bg-white"
               value={inputs.search}
               onChange={(e) =>
@@ -1559,7 +1573,7 @@ const Tools = ({ type = "" }) => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical Tools</TableCell>
+                      <TableCell>Critical / Special Tool</TableCell>
                       <TableCell>
                         {panelProduct.critical_tool ? "Yes" : "No"}
                       </TableCell>
@@ -1666,21 +1680,79 @@ const Tools = ({ type = "" }) => {
                     <Label className="ms-2 mb-1">
                       Equipment / System<span className="text-red-500">*</span>
                     </Label>
-                    <Input
+                    {/* <Input
                       type="text"
                       name="equipment_system"
                       value={inputs.equipment_system}
                       onChange={handleChange}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={equipment_system}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("equipment_system", value.name);
+                      }}
+                      placeholder="Select Equipment / System..."
+                      onSelect={(value) => {
+                        setInputs((prev) => ({
+                          ...prev,
+                          equipment_system: value.name,
+                        }));
+
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          equipment_system: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchEquipment();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
                   <div>
                     <Label className="ms-2 mb-1">Denos.</Label>
-                    <Input
+                    {/* <Input
                       type="text"
                       name="denos"
                       value={inputs.denos}
                       onChange={handleChange}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={denos}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("denos", value.name);
+                      }}
+                      placeholder="Select denos..."
+                      onSelect={(value) => {
+                        setInputs((prev) => ({
+                          ...prev,
+                          denos: value.name,
+                        }));
+
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          denos: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchDenos();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -1734,7 +1806,30 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">Category</Label>
-                    <select
+                    <ComboBox
+                      className="w-full"
+                      options={category}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("category", value.name);
+                      }}
+                      placeholder="Select category..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          category: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchCategory();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
+                    />
+                    {/* <select
                       name="category"
                       value={selectedRow.category || ""}
                       onChange={handleEditChange}
@@ -1747,7 +1842,7 @@ const Tools = ({ type = "" }) => {
                       <option value="C">C</option>
                       <option value="LP">LP</option>
                       <option value="NA">NA</option>
-                    </select>
+                    </select> */}
                   </div>
                 </div>
 
@@ -1811,7 +1906,9 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <div>
-                      <Label className="ms-2 mb-1">Critical Tool</Label>
+                      <Label className="ms-2 mb-1">
+                        Critical / Special Tool
+                      </Label>
                       <RadioGroup
                         value={inputs.critical_tool}
                         onValueChange={(value) =>
@@ -1900,7 +1997,7 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                    <Label className="ms-2 mb-1">Price/Cost per unit</Label>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -2113,13 +2210,38 @@ const Tools = ({ type = "" }) => {
                     <Label>
                       Equipment / System<span className="text-red-500">*</span>
                     </Label>
-                    <InputWithPencil
+                    {/* <InputWithPencil
                       name="equipment_system"
                       value={selectedRow.equipment_system}
                       onChange={handleEditChange}
                       editable={editableFields.equipment_system}
                       onEdit={() => enableEdit("equipment_system")}
                       onBlur={() => disableEdit("equipment_system")}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={equipment_system}
+                      value={selectedRow.equipment_system || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("equipment_system", value.name);
+                      }}
+                      placeholder="Select Equipment / System..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          equipment_system: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchEquipment();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -2127,13 +2249,38 @@ const Tools = ({ type = "" }) => {
                     <Label>
                       Denos.<span className="text-red-500">*</span>
                     </Label>
-                    <InputWithPencil
+                    {/* <InputWithPencil
                       name="denos"
                       value={selectedRow.denos}
                       onChange={handleEditChange}
                       editable={editableFields.denos}
                       onEdit={() => enableEdit("denos")}
                       onBlur={() => disableEdit("denos")}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={denos}
+                      value={selectedRow.denos || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("denos", value.name);
+                      }}
+                      placeholder="Select denos..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          denos: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchDenos();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -2205,7 +2352,32 @@ const Tools = ({ type = "" }) => {
                     <Label className="mb-2">
                       Category <span className="text-red-500">*</span>
                     </Label>
-                    <select
+
+                    <ComboBox
+                      className="w-full"
+                      options={category}
+                      value={selectedRow.category || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("category", value.name);
+                      }}
+                      placeholder="Select category..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          category: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchCategory();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
+                    />
+                    {/* <select
                       name="category"
                       value={selectedRow.category || ""}
                       onChange={handleEditChange}
@@ -2219,7 +2391,7 @@ const Tools = ({ type = "" }) => {
                       <option value="C">C</option>
                       <option value="LP">LP</option>
                       <option value="NA">NA</option>
-                    </select>
+                    </select> */}
                   </div>
 
                   <div>
@@ -2322,7 +2494,8 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Critical Tool<span className="text-red-500">*</span>
+                      Critical / Special Tool
+                      <span className="text-red-500">*</span>
                     </Label>
 
                     <RadioGroup
@@ -2376,7 +2549,7 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
+                      Price/Cost per unit<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
                       type="number"
@@ -2781,7 +2954,8 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Critical Tool<span className="text-red-500">*</span>
+                      Critical / Special Tool
+                      <span className="text-red-500">*</span>
                     </Label>
 
                     <RadioGroup
@@ -2832,7 +3006,7 @@ const Tools = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
+                      Price/Cost per unit<span className="text-red-500">*</span>
                     </Label>
                     <Input
                       type="number"

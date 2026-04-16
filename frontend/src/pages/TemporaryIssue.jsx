@@ -75,12 +75,12 @@ const PendingTempLoan = ({ type = "" }) => {
     },
     { value: "category", label: "Category" },
     { value: "equipment_system", label: "Equipment / System" },
-    { value: "qty_withdrawn", label: "Issued Qty" },
+    // { value: "qty_withdrawn", label: "Issued Qty" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
     { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
-    { value: "qty_received", label: "Returned Qty" },
+    // { value: "qty_received", label: "Returned Qty" },
   ];
 
   const [rollbackDialog, setRollbackDialog] = useState(false);

@@ -10,6 +10,9 @@ const {
   deleteConfig,
   getPersonnel,
   getSurveyReason,
+  getCategory,
+  getDenos,
+  getEquipment
 } = require("../controllers/config.controller");
 
 router.post("/add", addConfig);
@@ -20,5 +23,8 @@ router.get("/service-no/:service_no", getUserByServiceNo);
 router.delete("/:id", deleteConfig);
 router.get("/personnel", getPersonnel);
 router.get("/survey", getSurveyReason);
+router.get("/category", getCategory);
+router.get("/denos", getDenos);
+router.get("/equipment_system", getEquipment);
 
 module.exports = router;

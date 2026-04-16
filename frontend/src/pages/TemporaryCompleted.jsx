@@ -65,7 +65,7 @@ const PendingTempLoan = () => {
     { value: "denos", label: "Denos." },
     { value: "category", label: "Category" },
     // { value: "equipment_system", label: "Equipment / System" },
-    { value: "qty_withdrawn", label: "Qty Issued" },
+    // { value: "qty_withdrawn", label: "Qty Issued" },
     { value: "issue_to", label: "Issued To" },
     { value: "name", label: "Name of Individual" },
     { value: "service_no", label: "Service No." },

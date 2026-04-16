@@ -225,7 +225,7 @@ const Header = ({ onSidebarOpen }) => {
   }, []);
 
   return (
-    <header className="w-full px-4 py-3 shadow-sm flex items-center justify-between bg-[#0a1025] text-white h-16">
+    <header className="relative w-full px-4 py-3 shadow-sm flex items-center justify-between bg-[#0a1025] text-white h-16">
       <div className="flex items-center gap-3">
         <button
           onClick={onSidebarOpen}
@@ -239,25 +239,28 @@ const Header = ({ onSidebarOpen }) => {
         > */}
           <FiMenu size={15} />
         </button>
+      </div>
+
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-4">
           {/* <img src="/logo.png" alt="Logo" className="h-12 w-10" /> */}
           <img src={logo1} alt="Logo" className="h-12 w-10" />
-          <h1 className="text-2xl font-semibold text-pointer ms-2 title">
-            Inventory Management
+          <h1 className="text-2xl font-semibold tracking-wide title">
+            Inventory Management System
           </h1>
         </Link>
       </div>
 
       {user && (
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           {/* Export Button in Header */}
           <Button
             variant="primary"
             className="flex items-center justify-center 
              px-2 py-1 h-8 
              rounded-lg 
-             border border-green-800 
-             text-green-700 
+             bg-green-900 
+             text-white
              hover:bg-green-900 
              hover:text-white
              transition-all duration-200"

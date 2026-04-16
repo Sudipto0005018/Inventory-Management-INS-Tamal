@@ -399,7 +399,7 @@ export default function Dashboard() {
             />
 
             <Card
-              title="Critical Spares"
+              title="Critical Spare"
               value={spares.criticalSpare || 0}
               subtitle="critical spares"
               icon={<GoStarFill size={18} className="text-yellow-500" />}
@@ -433,7 +433,7 @@ export default function Dashboard() {
             />
 
             <Card
-              title="Critical / Special Tools"
+              title="Critical / Special Tool"
               value={tools.criticalTool || 0}
               subtitle="critical tools"
               icon={<GoStarFill size={20} className="text-yellow-500" />}

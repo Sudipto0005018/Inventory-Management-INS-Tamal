@@ -213,7 +213,7 @@ const PendingSurvey = () => {
       <div className="mb-2">
         <Input
           type="text"
-          placeholder="Search survey items"
+          placeholder="Search Survey Items"
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>

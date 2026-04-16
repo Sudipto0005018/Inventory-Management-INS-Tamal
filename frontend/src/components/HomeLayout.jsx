@@ -11,14 +11,24 @@ import apiService from "../utils/apiService";
 
 const HomeLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { fetchStorageLocation, fetchIssueTo, fetchConcurredBy, fetchSurveyReason } =
-    useContext(Context);
+  const {
+    fetchStorageLocation,
+    fetchIssueTo,
+    fetchConcurredBy,
+    fetchSurveyReason,
+    fetchCategory,
+    fetchDenos,
+    fetchEquipment
+  } = useContext(Context);
 
   useEffect(() => {
     fetchStorageLocation();
     fetchIssueTo();
     fetchConcurredBy();
     fetchSurveyReason();
+    fetchCategory();
+    fetchDenos();
+    fetchEquipment();
   }, []);
 
   return (

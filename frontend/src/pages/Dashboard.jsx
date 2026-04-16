@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { MdDashboard } from "react-icons/md";
 
 import { Button } from "@/components/ui/button";
 import { Usb } from "lucide-react";
@@ -69,13 +70,16 @@ export default function Dashboard() {
       {/* bg-gradient-to-br */} {/* Header with Gradient */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex-1 text-center">
-          <h1 className="text-base md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Dashboard Overview
+          <h1 className="flex items-center gap-2 text-base md:text-2xl font-semibold ml-[50%]">
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              DASHBOARD
+            </span>
+            <MdDashboard size={25} className="text-blue-600" />
           </h1>
 
-          <p className="text-xs text-gray-500 mt-1 font-semibold">
+          {/* <p className="text-xs text-gray-500 mt-1 font-semibold">
             Complete Inventory Management Summary
-          </p>
+          </p> */}
         </div>
 
         <Sheet>
@@ -95,7 +99,7 @@ export default function Dashboard() {
             </SheetHeader>
 
             <div className="p-3 h-full overflow-hidden">
-              < Sync />
+              <Sync />
             </div>
           </SheetContent>
         </Sheet>
@@ -124,7 +128,7 @@ export default function Dashboard() {
               />
 
               <StatCard
-                title="Critical Spares"
+                title="Critical Spare"
                 value={spares.criticalSpare || 0}
                 subtitle="Critical Items"
                 icon={

@@ -51,8 +51,8 @@ const PermanentPendings = () => {
 
     { value: "demand_date", label: "Demand Date" },
 
-    { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
+    // { value: "demand_quantity", label: "Demanded Qty" },
+    // { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
   ];
 
   //pending-issue rollback states
@@ -431,7 +431,7 @@ const PermanentPendings = () => {
         <div className="mb-2">
           <Input
             type="text"
-            placeholder="Search..."
+            placeholder="Search Pending for Issue..."
             className="bg-white "
             value={inputs.search}
             onChange={(e) =>

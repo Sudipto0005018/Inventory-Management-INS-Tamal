@@ -603,11 +603,11 @@ async function getCriticalSpares(req, res) {
           totalPages: Math.ceil(totalSpares / limit),
           currentPage: page,
         },
-        "Critical spares retrieved successfully",
+        "Critical spare retrieved successfully",
       ),
     );
   } catch (error) {
-    console.error("Error while getting critical spares:", error);
+    console.error("Error while getting critical spare:", error);
     res
       .status(500)
       .json(new ApiErrorResponse(500, {}, "Internal server error"));

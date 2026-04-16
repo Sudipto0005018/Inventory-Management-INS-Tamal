@@ -77,13 +77,13 @@ const PendingTempLoan = ({ type = "" }) => {
       ),
     },
     { value: "category", label: "Category" },
-    { value: "qty_withdrawn", label: "Issued Qty" },
+    // { value: "qty_withdrawn", label: "Issued Qty" },
     { value: "service_no", label: "Service No." },
 
     { value: "concurred_by", label: "Concurred By" },
     { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
-    { value: "qty_received", label: "Returned Qty" },
+    // { value: "qty_received", label: "Returned Qty" },
     { value: "loan_status", label: "Status" },
   ];
 

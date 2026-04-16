@@ -76,8 +76,14 @@ const Spares = ({ type = "" }) => {
     fetchIssueTo,
     fetchConcurredBy,
     fetchStorageLocation,
+    fetchCategory,
+    fetchDenos,
+    fetchEquipment,
     issueTo,
     concurredBy,
+    category,
+    denos,
+    equipment_system,
     user,
     admin,
   } = useContext(Context);
@@ -331,6 +337,18 @@ const Spares = ({ type = "" }) => {
 
         if (type === "location_of_storage") {
           await fetchStorageLocation();
+        }
+
+        if (type === "category") {
+          await fetchCategory();
+        }
+
+        if (type === "denos") {
+          await fetchDenos();
+        }
+
+        if (type === "equipment_system") {
+          await fetchEquipment();
         }
       }
     } catch (error) {
@@ -1032,7 +1050,6 @@ const Spares = ({ type = "" }) => {
         },
       );
 
-
       //new payload
       const specialPayload = {
         spare_id: selectedRow.id,
@@ -1322,7 +1339,7 @@ const Spares = ({ type = "" }) => {
     let updatedBox = parsedBox.map((box) => {
       const incDec = Number(box.incDecQty || 0);
       // const baseMaintained = Number(box.baseMaintainedQty || box.qnMain || 0);
-      const baseMaintained = Number(box.qnMain ?? 0); 
+      const baseMaintained = Number(box.qnMain ?? 0);
 
       let updatedMaint = shouldUpdateMaintained
         ? obsDialog.action === "increase"
@@ -1338,11 +1355,11 @@ const Spares = ({ type = "" }) => {
       };
     });
 
-      const newObsMaintained = updatedBox.reduce(
-        (sum, box) => sum + Number(box.qnMain || 0),
-        0,
+    const newObsMaintained = updatedBox.reduce(
+      (sum, box) => sum + Number(box.qnMain || 0),
+      0,
     );
-    
+
     const incDecQty =
       obsDialog.action === "increase"
         ? Number(obsDialog.quantity)
@@ -1416,7 +1433,7 @@ const Spares = ({ type = "" }) => {
           <div className="mb-2">
             <Input
               type="text"
-              placeholder="Search spares..."
+              placeholder="Search Spares..."
               className="bg-white"
               value={inputs.search}
               onChange={(e) =>
@@ -1536,7 +1553,7 @@ const Spares = ({ type = "" }) => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical Spares</TableCell>
+                      <TableCell>Critical Spare</TableCell>
                       <TableCell>
                         {panelProduct.critical_spare ? "Yes" : "No"}
                       </TableCell>
@@ -1643,21 +1660,79 @@ const Spares = ({ type = "" }) => {
                     <Label className="ms-2 mb-1">
                       Equipment / System<span className="text-red-500">*</span>
                     </Label>
-                    <Input
+                    {/* <Input
                       type="text"
                       name="equipment_system"
                       value={inputs.equipment_system}
                       onChange={handleChange}
+                    /> */}
+                    <ComboBox
+                      className="w-full"
+                      options={equipment_system}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("equipment_system", value.name);
+                      }}
+                      placeholder="Select Equipment / System..."
+                      onSelect={(value) => {
+                        setInputs((prev) => ({
+                          ...prev,
+                          equipment_system: value.name,
+                        }));
+
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          equipment_system: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchEquipment();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
                   <div>
                     <Label className="ms-2 mb-1">Denos.</Label>
-                    <Input
+                    {/* <Input
                       type="text"
                       name="denos"
                       value={inputs.denos}
                       onChange={handleChange}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={denos}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("denos", value.name);
+                      }}
+                      placeholder="Select denos..."
+                      onSelect={(value) => {
+
+                        setInputs((prev) => ({
+                          ...prev,
+                         denos: value.name,
+                        }));
+
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          denos: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchDenos();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -1711,7 +1786,30 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="mb-2">Category</Label>
-                    <select
+                    <ComboBox
+                      className="w-full"
+                      options={category}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("category", value.name);
+                      }}
+                      placeholder="Select category..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          category: value.name,
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchCategory();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
+                    />
+                    {/* <select
                       name="category"
                       value={selectedRow.category || ""}
                       onChange={handleEditChange}
@@ -1724,7 +1822,7 @@ const Spares = ({ type = "" }) => {
                       <option value="C">C</option>
                       <option value="LP">LP</option>
                       <option value="NA">NA</option>
-                    </select>
+                    </select> */}
                   </div>
                 </div>
 
@@ -1877,7 +1975,7 @@ const Spares = ({ type = "" }) => {
                   </div>
 
                   <div>
-                    <Label className="ms-2 mb-1">Price/Unit Cost</Label>
+                    <Label className="ms-2 mb-1">Price/Cost per unit</Label>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -2092,13 +2190,37 @@ const Spares = ({ type = "" }) => {
                       Equipment / System
                       <span className="text-red-500">*</span>
                     </Label>
-                    <InputWithPencil
+                    {/* <InputWithPencil
                       name="equipment_system"
                       value={selectedRow.equipment_system}
                       onChange={handleEditChange}
                       editable={editableFields.equipment_system}
                       onEdit={() => enableEdit("equipment_system")}
                       onBlur={() => disableEdit("equipment_system")}
+                    /> */}
+                    <ComboBox
+                      className="w-full"
+                      options={equipment_system}
+                      value={selectedRow.equipment_system || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("equipment_system", value.name);
+                      }}
+                      placeholder="Select Equipment / System..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          equipment_system: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchEquipment();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -2106,13 +2228,38 @@ const Spares = ({ type = "" }) => {
                     <Label>
                       Denos.<span className="text-red-500">*</span>
                     </Label>
-                    <InputWithPencil
+                    {/* <InputWithPencil
                       name="denos"
                       value={selectedRow.denos}
                       onChange={handleEditChange}
                       editable={editableFields.denos}
                       onEdit={() => enableEdit("denos")}
                       onBlur={() => disableEdit("denos")}
+                    /> */}
+
+                    <ComboBox
+                      className="w-full"
+                      options={denos}
+                      value={selectedRow.denos || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("denos", value.name);
+                      }}
+                      placeholder="Select denos..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          denos: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchDenos();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
                     />
                   </div>
 
@@ -2187,7 +2334,31 @@ const Spares = ({ type = "" }) => {
                     <Label className="mb-2">
                       Category <span className="text-red-500">*</span>
                     </Label>
-                    <select
+                    <ComboBox
+                      className="w-full"
+                      options={category}
+                      value={selectedRow.category || ""}
+                      onCustomAdd={async (value) => {
+                        await addToDropdown("category", value.name);
+                      }}
+                      placeholder="Select category..."
+                      onSelect={(value) => {
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          category: value?.name || "",
+                        }));
+                      }}
+                      onDelete={async (value) => {
+                        try {
+                          await apiService.delete(`/config/${value.id}`);
+                          await fetchCategory();
+                          toaster("success", "Deleted Successfully");
+                        } catch (error) {
+                          toaster("error", "Failed to delete the item");
+                        }
+                      }}
+                    />
+                    {/* <select
                       name="category"
                       value={selectedRow.category || ""}
                       onChange={handleEditChange}
@@ -2201,7 +2372,7 @@ const Spares = ({ type = "" }) => {
                       <option value="C">C</option>
                       <option value="LP">LP</option>
                       <option value="NA">NA</option>
-                    </select>
+                    </select> */}
                   </div>
 
                   <div>
@@ -2359,7 +2530,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
+                      Price/Cost per unit<span className="text-red-500">*</span>
                     </Label>
                     <InputWithPencil
                       type="number"
@@ -2814,7 +2985,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
+                      Price/Cost per unit<span className="text-red-500">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -4296,50 +4467,44 @@ const Spares = ({ type = "" }) => {
                       : Number(originalObsAuthorised) -
                         Number(obsDialog.quantity);
 
-                    console.log("Logs Start");
+                  console.log("Logs Start");
 
-                    console.log(
-                      "originalObsAuthorised:",
-                      originalObsAuthorised,
-                    );
-                    console.log("obsDialog:", obsDialog);
-                    console.log("obsDialog.quantity:", obsDialog.quantity);
-                    console.log("obsDialog.action:", obsDialog.action);
+                  console.log("originalObsAuthorised:", originalObsAuthorised);
+                  console.log("obsDialog:", obsDialog);
+                  console.log("obsDialog.quantity:", obsDialog.quantity);
+                  console.log("obsDialog.action:", obsDialog.action);
 
-                    console.log(
-                      "selectedRow.obs_authorised (DB value):",
-                      selectedRow.obs_authorised,
-                    );
+                  console.log(
+                    "selectedRow.obs_authorised (DB value):",
+                    selectedRow.obs_authorised,
+                  );
 
-                    console.log("parsedBox (RAW):", parsedBox);
+                  console.log("parsedBox (RAW):", parsedBox);
 
-                    console.log("updatedBoxes (AFTER CALC):", updatedBoxes);
+                  console.log("updatedBoxes (AFTER CALC):", updatedBoxes);
 
-                    updatedBoxes.forEach((box, index) => {
-                      console.log(`Box ${index}:`, {
-                        baseQn: box.baseQn,
-                        incDecQty: box.incDecQty,
-                        finalQn: box.qn,
-                      });
+                  updatedBoxes.forEach((box, index) => {
+                    console.log(`Box ${index}:`, {
+                      baseQn: box.baseQn,
+                      incDecQty: box.incDecQty,
+                      finalQn: box.qn,
                     });
+                  });
 
-                    console.log("totalBoxQty:", totalBoxQty);
+                  console.log("totalBoxQty:", totalBoxQty);
 
-                    console.log(
-                      "finalValue (EXPECTED AUTHORISED):",
-                      finalValue,
-                    );
+                  console.log("finalValue (EXPECTED AUTHORISED):", finalValue);
 
-                    const baseTotal = parsedBox.reduce(
-                      (sum, box) => sum + Number(box.baseQn ?? box.qn ?? 0),
-                      0,
-                    );
+                  const baseTotal = parsedBox.reduce(
+                    (sum, box) => sum + Number(box.baseQn ?? box.qn ?? 0),
+                    0,
+                  );
 
-                    console.log("BASE TOTAL FROM BOX:", baseTotal);
-                    console.log(
-                      "OBS AUTHORISED FROM DB:",
-                      selectedRow.obs_authorised,
-                    );
+                  console.log("BASE TOTAL FROM BOX:", baseTotal);
+                  console.log(
+                    "OBS AUTHORISED FROM DB:",
+                    selectedRow.obs_authorised,
+                  );
 
                   console.log("Logs End");
                   console.log("totalBoxQty", totalBoxQty);

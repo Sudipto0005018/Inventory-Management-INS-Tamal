@@ -2,9 +2,9 @@ export const pageTitles = {
   // "/dashboard": "Dashboard",
 
   "/spares": "Spares",
-  "/spares/critical": "Critical Spares",
+  "/spares/critical": "Critical Spare",
   "/spares/low-stock": "Low Stock Spares",
-  "/spares/low-stock": "Low Stock Tools",
+  "/tools/low-stock": "Low Stock Tools",
   "/documents/low-stock": "Low Stock Documents",
   "/temporary-issue/overdue": "Overdue Temporary Issue",
   "/temp-loan/overdue": "Overdue TY Loan",
@@ -12,7 +12,7 @@ export const pageTitles = {
   "/permanent/nac": "Pending for NAC",
 
   "/tools": "Tools & Accessories",
-  "/tools/critical": "Critical Tools",
+  "/tools/critical": "Critical / Special Tools",
   "/documents": "Documents Master",
   "/documents/issue": "Documents for Issue",
   "/documents/completed": "Documents Logs",

@@ -323,7 +323,7 @@ const PermanentPendings = () => {
         <div className="flex items-center mb-4 gap-4 w-[98%] mx-auto">
           <Input
             type="text"
-            placeholder="Search survey items"
+            placeholder="Search Survey Items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>

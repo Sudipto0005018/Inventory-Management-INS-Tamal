@@ -33,7 +33,7 @@ const menuItems = [
     icon: <FaGears size={22} />,
     roles: ["admin", "user", "officer"],
     parentClickable: true,
-    submenu: [{ name: "Critical Spares", path: "/spares/critical" }],
+    submenu: [{ name: "Critical Spare", path: "/spares/critical" }],
   },
   {
     name: "Tools & Accessories",
@@ -41,7 +41,7 @@ const menuItems = [
     icon: <FaTools size={20} />,
     roles: ["admin", "user", "officer"],
     parentClickable: true,
-    submenu: [{ name: "Critical / Special Tools", path: "/tools/critical" }],
+    submenu: [{ name: "Critical / Special Tool", path: "/tools/critical" }],
   },
   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
   // { name: "Handheld Details", path: "/handheld", icon: <FaMobileAlt /> },

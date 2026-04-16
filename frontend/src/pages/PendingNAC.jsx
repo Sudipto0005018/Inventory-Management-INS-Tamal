@@ -80,12 +80,12 @@ const Procurement = () => {
     { value: "category", label: "Category" },
     // { value: "demand_no", label: "Demand No." },
     // { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "nac_qty", label: "NAC / Ordered Qty" },
+    // { value: "nac_qty", label: "NAC / Ordered Qty" },
     { value: "nac_no", label: "NAC No." },
     { value: "nac_date", label: "NAC Date" },
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
-    { value: "qty_received", label: "Received Qty" },
+    // { value: "qty_received", label: "Received Qty" },
   ];
 
   const [generateQR, setGenerateQR] = useState("no");
@@ -588,7 +588,7 @@ const Procurement = () => {
         <div className="px-3 mb-2">
           <Input
             type="text"
-            placeholder="Search procurement items"
+            placeholder="Search Procurement Items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>

@@ -91,11 +91,11 @@ const PendingDemand = () => {
       label: "Survey Voucher No.",
       width: "min-w-[40px]",
     },
-    {
-      value: "survey_qty",
-      label: "Surveyed / Utilised Qty",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   value: "survey_qty",
+    //   label: "Surveyed / Utilised Qty",
+    //   width: "min-w-[40px]",
+    // },
     {
       value: "survey_date",
       label: "Surveyed Date / Utilised Date",
@@ -345,7 +345,7 @@ const PendingDemand = () => {
       <div className="mb-2">
         <Input
           type="text"
-          placeholder="Search..."
+          placeholder="Search Demand..."
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>

@@ -212,7 +212,7 @@ const NACLogs = () => {
         <div className="px-3 mb-2">
           <Input
             type="text"
-            placeholder="Search procurement items"
+            placeholder="Search Procurement Items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>

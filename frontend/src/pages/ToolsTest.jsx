@@ -1265,7 +1265,7 @@ const Tools = ({ type = "" }) => {
         <div className="flex items-center mb-4 gap-2 w-full">
           <Input
             type="text"
-            placeholder="Search tools..."
+            placeholder="Search Tools..."
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>
@@ -1370,7 +1370,7 @@ const Tools = ({ type = "" }) => {
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Critical Tools</TableCell>
+                    <TableCell>Critical / Special Tool</TableCell>
                     <TableCell>
                       {panelProduct.critical_tool ? "Yes" : "No"}
                     </TableCell>
@@ -1619,7 +1619,7 @@ const Tools = ({ type = "" }) => {
                 <div>
                   <div>
                     <Label className="ms-2 mb-1">
-                      Critical Tool<span className="text-red-500">*</span>
+                      Critical / Special Tool<span className="text-red-500">*</span>
                     </Label>
 
                     <RadioGroup
@@ -1713,7 +1713,7 @@ const Tools = ({ type = "" }) => {
 
                 <div>
                   <Label className="ms-2 mb-1">
-                    Price/Unit Cost<span className="text-red-500">*</span>
+                    Price/Cost per unit<span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="number"
@@ -2137,7 +2137,7 @@ const Tools = ({ type = "" }) => {
 
               <div>
                 <Label className="ms-2 mb-1">
-                  Critical Tool<span className="text-red-500">*</span>
+                  Critical / Special Tool<span className="text-red-500">*</span>
                 </Label>
 
                 <RadioGroup
@@ -2185,7 +2185,7 @@ const Tools = ({ type = "" }) => {
 
               <div>
                 <Label className="ms-2 mb-1">
-                  Price/Unit Cost<span className="text-red-500">*</span>
+                  Price/Cost per unit<span className="text-red-500">*</span>
                 </Label>
                 <InputWithPencil
                   type="number"

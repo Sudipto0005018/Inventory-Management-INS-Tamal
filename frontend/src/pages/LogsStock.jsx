@@ -234,7 +234,7 @@ const PermanentPendings = () => {
         <div className="px-3 mb-2">
           <Input
             type="text"
-            placeholder="Search Stock items"
+            placeholder="Search Stock Items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>

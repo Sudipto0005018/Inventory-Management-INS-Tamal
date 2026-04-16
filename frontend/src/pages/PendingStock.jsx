@@ -76,11 +76,11 @@ const PermanentPendings = () => {
     { value: "category", label: "Category" },
     { value: "demand_no", label: "Demand No." },
     { value: "demand_date", label: "Demand Date" },
-    { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "stocked_in_qty", label: "Stocked In Qty" },
+    // { value: "demand_quantity", label: "Demanded Qty" },
+    // { value: "stocked_in_qty", label: "Stocked In Qty" },
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
-    { value: "qty_received", label: "Received Qty" },
+    // { value: "qty_received", label: "Received Qty" },
   ];
 
   //stock-update rollback states
@@ -462,7 +462,7 @@ const PermanentPendings = () => {
         <div className="px-3 mb-2">
           <Input
             type="text"
-            placeholder="Search Stock items"
+            placeholder="Search Stock Items"
             className="bg-white"
             value={inputs.search}
             onChange={(e) =>

@@ -85,8 +85,6 @@ const PendingSurvey = () => {
     { value: "withdrawl_date", label: "Withdrawal Date" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
-    { value: "withdrawl_qty", label: "Withdrawal Qty" },
-    { value: "survey_quantity", label: "Surveyed Qty" },
   ];
 
   //rollback states
@@ -378,7 +376,7 @@ const PendingSurvey = () => {
       <div className="mb-2">
         <Input
           type="text"
-          placeholder="Search survey items"
+          placeholder="Search Survey Items"
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>

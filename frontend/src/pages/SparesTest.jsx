@@ -1258,7 +1258,7 @@ const Spares = ({ type = "" }) => {
           <div className="flex items-center mb-4 gap-2 w-full">
             <Input
               type="text"
-              placeholder="Search spares..."
+              placeholder="Search Spares..."
               className="bg-white"
               value={inputs.search}
               onChange={(e) =>
@@ -1366,7 +1366,7 @@ const Spares = ({ type = "" }) => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical Spares</TableCell>
+                      <TableCell>Critical Spare</TableCell>
                       <TableCell>
                         {panelProduct.critical_spare ? "Yes" : "No"}
                       </TableCell>
@@ -1711,7 +1711,7 @@ const Spares = ({ type = "" }) => {
 
                   <div>
                     <Label className="ms-2 mb-1">
-                      Price/Unit Cost<span className="text-red-500">*</span>
+                      Price/Cost per unit<span className="text-red-500">*</span>
                     </Label>
                     <Input
                       type="number"
@@ -2179,7 +2179,7 @@ const Spares = ({ type = "" }) => {
 
                 <div>
                   <Label className="ms-2 mb-1">
-                    Price/Unit Cost<span className="text-red-500">*</span>
+                    Price/Cost per unit<span className="text-red-500">*</span>
                   </Label>
                   <InputWithPencil
                     type="number"

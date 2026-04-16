@@ -167,6 +167,52 @@ async function getSurveyReason(req, res) {
   }
 }
 
+
+async function getCategory(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, attr_1 FROM config WHERE type = 'category'`,
+    );
+    const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
+    res.status(200).json(new ApiResponse(200, data, "All category"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
+async function getDenos(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, attr_1 FROM config WHERE type = 'denos'`,
+    );
+    const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
+    res.status(200).json(new ApiResponse(200, data, "All denos"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
+async function getEquipment(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, attr_1 FROM config WHERE type = 'equipment_system'`,
+    );
+    const data = rows.map((row) => ({ name: row.attr_1, id: row.id }));
+    res.status(200).json(new ApiResponse(200, data, "All Equipment/System"));
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   addConfig,
   getLocationStorage,
@@ -176,4 +222,7 @@ module.exports = {
   deleteConfig,
   getPersonnel,
   getSurveyReason,
+  getCategory,
+  getDenos,
+  getEquipment
 };

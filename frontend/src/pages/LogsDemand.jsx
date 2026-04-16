@@ -211,7 +211,7 @@ const PendingDemand = () => {
       <div className="mb-2">
         <Input
           type="text"
-          placeholder="Search..."
+          placeholder="Search Demand..."
           className="bg-white "
           value={inputs.search}
           onChange={(e) =>
