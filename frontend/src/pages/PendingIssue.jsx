@@ -46,13 +46,12 @@ const PermanentPendings = () => {
       ),
     },
     { value: "category", label: "Category" },
+    { value: "denos", label: "Denos."},
 
     { value: "mo_no", label: "Demand No." },
 
     { value: "demand_date", label: "Demand Date" },
 
-    // { value: "demand_quantity", label: "Demanded Qty" },
-    // { value: "stocked_nac_qty", label: "Stocked In / NAC Qty" },
   ];
 
   //pending-issue rollback states
@@ -83,7 +82,7 @@ const PermanentPendings = () => {
 
   const columns = useMemo(
     () => [
-      { key: "description", header: "Item Description" },
+      { key: "description", header: "Item Description", width: "max-w-[80px] px-0", },
       {
         key: "indian_pattern",
         header: (
@@ -92,10 +91,12 @@ const PermanentPendings = () => {
           </span>
         ),
       },
-      { key: "category", header: "Category" },
+      { key: "category", header: "Category", width: "max-w-[25px] px-0" },
+      { key: "denos", header: "Denos.", width: "max-w-[25px] px-0" },
       {
         key: "display_demand_no",
         header: "Demand No.",
+        width: "max-w-[50px] px-0",
         // cell renderer receives row data (adjust prop names to your table library)
         cell: ({ row }) => {
           const demandNo = row?.demand_no || null;
@@ -114,6 +115,7 @@ const PermanentPendings = () => {
       {
         key: "display_demand_date",
         header: "Demand Date",
+        width: "max-w-[30px] px-0",
         cell: ({ row }) => {
           const demandDate = row?.demand_date || null;
           const moDate = row?.mo_date || null;
@@ -130,14 +132,33 @@ const PermanentPendings = () => {
           );
         },
       },
-      { key: "demand_quantity", header: "Demanded Qty" },
-      { key: "stocked_nac_qty", header: "Stocked In / NAC Qty" },
-      { key: "status_badge", header: "Status" },
+      {
+        key: "demand_quantity",
+        header: (
+          <span>
+            Demanded
+            <br />Qty
+          </span>
+        ),
+        width: "max-w-[30px] px-0",
+      },
+      {
+        key: "stocked_nac_qty",
+        header: (
+          <span>
+            MO Issued
+            <br />/ NAC Qty
+          </span>
+        ),
+        width: "max-w-[40px] px-0",
+      },
+      { key: "status_badge", header: "Status", width: "max-w-[50px] px-0" },
+      { key: "remarks", header: "Remarks", width: "max-w-[40px] px-0" },
       ...(user.role != "user"
-        ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+        ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
         : []),
       ...(user.role === "officer"
-        ? [{ key: "rollback", header: "Rollback" }]
+        ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
         : []),
     ],
     [],
@@ -179,7 +200,7 @@ const PermanentPendings = () => {
 
   const [inputs, setInputs] = useState({
     search: "",
-    issue_type: "nac",
+    issue_type: "stocking",
     demand_quantity: "",
     nac_no: "",
     nac_calender: new Date(),
@@ -301,11 +322,19 @@ const PermanentPendings = () => {
             className="bg-white text-black shadow border"
             onClick={() => {
               setSelectedRow(row);
-              setInputs((p) => ({
-                ...p,
-                issue_type: "nac",
+              setInputs({
+                search: "",
+                issue_type: "stocking", 
                 demand_quantity: row.demand_quantity,
-              }));
+                nac_no: "",
+                // nac_calender: new Date(),
+                validity: "",
+                rate_unit: "",
+                nac_qty: "",
+                stocked_qty: "",
+                mo_no: "",
+                // gate_pass_calender: new Date(),
+              });
               setProcurementPending("no");
               setIsOpen((p) => ({ ...p, issue: true }));
             }}
@@ -431,7 +460,7 @@ const PermanentPendings = () => {
         <div className="mb-2">
           <Input
             type="text"
-            placeholder="Search Pending for Issue..."
+            placeholder="Search Pending for MO Issue..."
             className="bg-white "
             value={inputs.search}
             onChange={(e) =>
@@ -539,12 +568,12 @@ const PermanentPendings = () => {
             className="flex gap-8"
           >
             <div className="flex items-center gap-2">
-              <RadioGroupItem value="nac" />
-              <Label>NAC</Label>
-            </div>
-            <div className="flex items-center gap-2">
               <RadioGroupItem value="stocking" />
               <Label>Stocking in Inventory</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="nac" />
+              <Label>NAC</Label>
             </div>
           </RadioGroup>
           {/* <p>{inputs.demand_quantity}</p> */}
@@ -562,7 +591,7 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Previous NAC/Stocked In Qty</Label>
+                  <Label>Previous NAC / MO Issued Qty</Label>
                   <Input
                     className="mt-3"
                     placeholder="Previous NAC Qty"
@@ -632,7 +661,11 @@ const PermanentPendings = () => {
                 <div>
                   <FormattedDatePicker
                     className="w-full"
-                    label="NAC Date *"
+                    label={
+                      <span>
+                        NAC Date <span className="text-red-500">*</span>
+                      </span>
+                    }
                     value={inputs.nac_calender}
                     onChange={(d) =>
                       setInputs((p) => ({ ...p, nac_calender: d }))
@@ -656,20 +689,20 @@ const PermanentPendings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Previous NAC/Stocked In Qty</Label>
+                  <Label>Previous NAC / MO Issued Qty</Label>
                   <Input
                     className="mt-3"
-                    placeholder="Previous Stocked In Qty"
+                    placeholder="Previous MO Issued Qty"
                     value={selectedRow?.stocked_nac_qty ?? 0}
                   />
                 </div>
                 <div>
                   <Label>
-                    Stocked In Qty <span className="text-red-500">*</span>
+                    MO Issued Qty <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     className="mt-3"
-                    placeholder="Enter Stocked In Qty"
+                    placeholder="Enter MO Issued Qty"
                     type="number"
                     value={inputs.stocked_qty}
                     onChange={(e) =>
@@ -698,7 +731,11 @@ const PermanentPendings = () => {
                 <div>
                   <FormattedDatePicker
                     className="w-full"
-                    label="MO Date *"
+                    label={
+                      <span>
+                        MO Date <span className="text-red-500">*</span>
+                      </span>
+                    }
                     value={inputs.gate_pass_calender}
                     onChange={(d) =>
                       setInputs((p) => ({ ...p, gate_pass_calender: d }))

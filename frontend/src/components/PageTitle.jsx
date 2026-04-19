@@ -31,7 +31,16 @@ const PageTitle = () => {
   let title = pageTitles[pathname];
   let Icon = pageIcons[pathname];
 
-  if (pathname.startsWith("/spares") && pathname !== "/spares") {
+  // if (pathname.startsWith("/spares") && pathname !== "/spares") {
+  //   title = "Critical Spare";
+  //   Icon = pageIcons["/spares"];
+  // }
+
+  if (
+    pathname.startsWith("/spares") &&
+    pathname !== "/spares" &&
+    pathname !== "/spares/low-stock"
+  ) {
     title = "Critical Spare";
     Icon = pageIcons["/spares"];
   }

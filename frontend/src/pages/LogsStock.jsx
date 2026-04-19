@@ -32,7 +32,7 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    { key: "denos", header: "Denos" },
+    { key: "denos", header: "Denos." },
     { key: "demand_no", header: "Demand No." },
     { key: "demand_date", header: "Demand Date" },
     { key: "demand_quantity", header: "Demanded Qty" },
@@ -55,15 +55,11 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
-    { value: "denos", label: "Denos" },
+    { value: "denos", label: "Denos." },
     { value: "demand_no", label: "Demand No." },
     { value: "demand_date", label: "Demand Date" },
-    { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "stocked_in_qty", label: "Stocked In Qty" },
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
-    { value: "qty_received", label: "Received Qty" },
-    // { value: "approved_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

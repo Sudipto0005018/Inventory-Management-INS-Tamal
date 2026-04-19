@@ -31,7 +31,7 @@ const PendingSpecial = () => {
       header: "Type",
       width: "min-w-[40px]",
     },
-    { key: "denos", header: "Denos" },
+    { key: "denos", header: "Denos." },
     { key: "category", header: "Category" },
     {
       key: "quantity",
@@ -103,16 +103,14 @@ const PendingSpecial = () => {
         </span>
       ),
     },
-    // { key: "status", header: "Status" },
     { key: "created_at", header: "Date of Return" },
   ]);
 
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
-    { value: "denos", label: "Denos" },
+    { value: "denos", label: "Denos." },
     { value: "category", label: "Category" },
-    { value: "quantity", label: "Issued Quantity" },
     { value: "obs_authorised", label: "Modified OBS Authorised" },
     { value: "quote_authority", label: "Authority" },
     { value: "internal_demand_no", label: "Internal Demand No." },
@@ -121,7 +119,6 @@ const PendingSpecial = () => {
     { value: "requisition_date", label: "Requisition Date." },
     { value: "mo_demand_no", label: "MO Demand No." },
     { value: "mo_demand_date", label: "MO Demand Date" },
-    // { value: "created_at", label: "Date of Return" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

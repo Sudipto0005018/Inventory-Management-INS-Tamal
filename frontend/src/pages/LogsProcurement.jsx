@@ -30,7 +30,7 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
-    { key: "denos", header: "Denos" },
+    { key: "denos", header: "Denos." },
     { key: "demand_no", header: "Demand No." },
     { key: "demand_date", header: "Demand Date" },
     { key: "demand_quantity", header: "Demanded Qty" },
@@ -55,16 +55,13 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
-    { value: "denos", label: "Denos" },
+    { value: "denos", label: "Denos." },
     { value: "demand_no", label: "Demand No." },
     { value: "demand_date", label: "Demanded Date" },
-    { value: "demand_quantity", label: "Demanded Qty" },
-    { value: "nac_qty", label: "NAC / Ordered Qty" },
     { value: "nac_no", label: "NAC No." },
     { value: "nac_date", label: "NAC Date" },
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
-    { value: "qty_received", label: "Received Qty" },
   ];
 
   const [selectedValues, setSelectedValues] = useState([]);

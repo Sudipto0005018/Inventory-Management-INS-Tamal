@@ -143,6 +143,7 @@ async function getPendingIssue(req, res) {
     // Item Info
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
 
     // Demand fields (pending_issue table)
@@ -269,6 +270,7 @@ END AS display_demand_date,
         COALESCE(sp.description, t.description) as description,
         COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
         COALESCE(sp.category, t.category) as category,
+        COALESCE(sp.denos, t.denos) as denos,
         COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern,
         COALESCE(sp.box_no, t.box_no) as box_no
       FROM pending_issue pi

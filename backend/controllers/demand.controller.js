@@ -99,6 +99,7 @@ async function getDemands(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     survey_qty: ["d.survey_qty"],
@@ -196,6 +197,7 @@ async function getDemands(req, res) {
                 COALESCE(sp.description, t.description) as description,
                 COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
                 COALESCE(sp.category, t.category) as category,
+                COALESCE(sp.denos, t.denos) as denos,
                 COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
              FROM demand d
              LEFT JOIN spares sp ON d.spare_id = sp.id

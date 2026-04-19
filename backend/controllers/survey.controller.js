@@ -431,6 +431,7 @@ async function getSurveys(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
     withdrawl_date: ["s.withdrawl_date"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     service_no: ["s.service_no"],
@@ -524,6 +525,7 @@ async function getSurveys(req, res) {
                 COALESCE(sp.description, t.description) as description,
                 COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
                 COALESCE(sp.category, t.category) as category,
+                COALESCE(sp.denos, t.denos) as denos,
                 COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
              FROM survey s
              LEFT JOIN spares sp ON s.spare_id = sp.id

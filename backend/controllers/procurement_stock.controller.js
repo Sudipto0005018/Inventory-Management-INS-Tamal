@@ -14,6 +14,7 @@ async function getProcurementPending(req, res) {
     // Item Info
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
 
     // Demand (from pending_issue)
@@ -115,6 +116,7 @@ async function getProcurementPending(req, res) {
         p.*,
         COALESCE(sp.description, t.description) AS description,
         COALESCE(sp.category, t.category) AS category,
+        COALESCE(sp.denos, t.denos) AS denos,
         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
         COALESCE(sp.supplier, t.supplier) AS supplier,
@@ -950,7 +952,7 @@ async function updateProcurement(req, res) {
       `,
       [transactionId, previousOBS, newOBS],
     );
-    
+
     /* =====================================================
    🔟 CHECK IF SOURCE IS SPECIAL DEMAND
    ===================================================== */

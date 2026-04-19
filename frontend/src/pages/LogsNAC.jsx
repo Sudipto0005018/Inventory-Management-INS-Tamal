@@ -63,11 +63,7 @@ const NACLogs = () => {
       },
       { value: "category", label: "Category" },
       { value: "denos", label: "Denos." },
-      // { value: "demand_quantity", label: "Demanded Qty" },
-      { value: "nac_qty", label: "Qty NAC" },
-      // { value: "validity", label: "Validity" },
       { value: "rate_unit", label: "Rate/ Unit" },
-      // { value: "qty_received", label: "Qty Received" },
     ];
 
   const [selectedValues, setSelectedValues] = useState([]);

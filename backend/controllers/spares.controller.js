@@ -1301,6 +1301,7 @@ async function generateExcel(req, res) {
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
 
     FROM survey s
@@ -1337,6 +1338,7 @@ async function generateExcel(req, res) {
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
 
     FROM demand d

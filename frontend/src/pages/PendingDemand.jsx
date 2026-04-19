@@ -37,7 +37,11 @@ const PendingDemand = () => {
   const { config, user, officer } = useContext(Context);
     const navigate = useNavigate();
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
+    {
+      key: "description",
+      header: "Item Description",
+      width: "max-w-[80px] px-0",
+    },
     {
       key: "indian_pattern",
       header: (
@@ -47,27 +51,40 @@ const PendingDemand = () => {
       ),
       width: "min-w-[40px]",
     },
-    { key: "category", header: "Category", width: "min-w-[40px]" },
+    { key: "category", header: "Category", width: "max-w-[20px] px-0" },
+    { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
     {
       key: "survey_voucher_no",
       header: "Survey Voucher No.",
-      width: "min-w-[40px]",
+      width: "max-w-[50px] px-0",
     },
     {
       key: "survey_qty",
-      header: "Surveyed / Utilised Qty",
-      width: "max-w-[100px]",
+      header: (
+        <span>
+          Surveyed Qty
+          {/* <br />
+          Utilised Qty */}
+        </span>
+      ),
+      width: "max-w-[20px] px-0",
     },
     {
       key: "survey_date",
-      header: "Surveyed Date / Utilised Date",
-      width: "min-w-[40px]",
+      header: (
+        <span>
+          Surveyed Date
+          {/* <br />
+          Utilised Date */}
+        </span>
+      ),
+      width: "max-w-[30px] px-0",
     },
     ...(user.role != "user"
-      ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+      ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
       : []),
     ...(user.role === "officer"
-      ? [{ key: "rollback", header: "Rollback" }]
+      ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
       : []),
   ]);
   const options = [
@@ -86,6 +103,7 @@ const PendingDemand = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
+    { value: "denos", label: "Denos.", width: "min-w-[40px]" },
     {
       value: "survey_voucher_no",
       label: "Survey Voucher No.",

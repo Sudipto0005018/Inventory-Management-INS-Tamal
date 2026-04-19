@@ -25,7 +25,7 @@ export const pageTitles = {
 
   "/logs/pending-survey": "Survey Logs",
   "/logs/pending-demand": "Demand Logs",
-  "/logs/pending-issue": "Issue Logs",
+  "/logs/pending-issue": "MO Issue Logs",
   "/logs/nac": "NAC Logs",
   "/logs/procurement": "Procurement Logs",
   "/logs/stock-update": "Stock Update Logs",
@@ -33,7 +33,7 @@ export const pageTitles = {
 
   "/permanent/pending-survey": "Pending for Survey",
   "/permanent/pending-demand": "Pending for Demand",
-  "/permanent/pending-issue": "Pending for Issue",
+  "/permanent/pending-issue": "Pending for MO Issue",
   "/permanent/stock-update": "Pending for Stock Update",
   "/permanent/procurement": "Pending for Procurement",
   "/permanent/special-demand": "Pending for Special Demand",

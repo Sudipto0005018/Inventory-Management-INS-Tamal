@@ -237,7 +237,7 @@ export default function Dashboard() {
           />
 
           <WorkflowCard
-            title="Pending Issue"
+            title="Pending MO Issue"
             value={permanent.pendingIssue || 0}
             subtitle="To be Issued"
             icon="issue"
@@ -264,12 +264,12 @@ export default function Dashboard() {
           />
 
           <WorkflowCard
-            title="Pending NAC"
+            title="NAC Logs"
             value={permanent.pendingProcurement || 0}
             subtitle="Items Pending"
             icon="nac"
             color="rose"
-            onClick={() => navigateTo("/permanent/nac")}
+            onClick={() => navigateTo("/logs/nac")}
           />
         </div>
       </div>
@@ -291,8 +291,8 @@ export default function Dashboard() {
               <IssueCard
                 title="Active Issues"
                 value={temporary.active || 0}
-                subtitle="Currently Issued"
-                status="active"
+                // subtitle="Currently Issued"
+                // status="active"
                 icon={<FaClock className="text-cyan-600" />}
                 onClick={() => navigateTo("/temporary/temporary-issue")}
               />
@@ -300,8 +300,8 @@ export default function Dashboard() {
               <IssueCard
                 title="Overdue Returns"
                 value={temporary.overdue || 0}
-                subtitle="Past Due Date"
-                status="overdue"
+                // subtitle="Past Due Date"
+                // status="overdue"
                 icon={<FaExclamationCircle className="text-red-500" />}
                 onClick={() => navigate("/temporary-issue/overdue")}
               />
@@ -319,8 +319,8 @@ export default function Dashboard() {
               <IssueCard
                 title="Active Loans"
                 value={tyLoan.active || 0}
-                subtitle="Currently on Loan"
-                status="active"
+                // subtitle="Currently on Loan"
+                // status="active"
                 icon={<FaClock className="text-purple-600" />}
                 onClick={() => navigateTo("/temp-loan/pending")}
               />
@@ -328,8 +328,8 @@ export default function Dashboard() {
               <IssueCard
                 title="Overdue Loans"
                 value={tyLoan.overdue || 0}
-                subtitle="Overdue Returns"
-                status="overdue"
+                // subtitle="Overdue Returns"
+                // status="overdue"
                 icon={<FaExclamationCircle className="text-red-500" />}
                 onClick={() => navigateTo("/temp-loan/overdue")}
               />
@@ -348,8 +348,8 @@ export default function Dashboard() {
               <IssueCardDoc
                 title="Active Documents"
                 value={documents.active || 0}
-                subtitle="Currently Issued"
-                status="active"
+                // subtitle="Currently Issued"
+                // status="active"
                 icon={<FaClock className="text-cyan-800" />}
                 onClick={() => navigateTo("/documents/issue")}
               />
@@ -357,8 +357,8 @@ export default function Dashboard() {
               <IssueCardDoc
                 title="Overdue Documents"
                 value={documents.overdue || 0}
-                subtitle="Overdue Returns"
-                status="overdue"
+                // subtitle="Overdue Returns"
+                // status="overdue"
                 icon={<FaExclamationCircle className="text-red-500" />}
                 onClick={() => navigateTo("/documents/overdue")}
               />
@@ -492,11 +492,11 @@ function IssueCard({ title, value, subtitle, status, icon, onClick }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <p className="text-[12px] font-semibold text-gray-700">{title}</p>
-            <span
+            {/* <span
               className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusColors[status]}`}
             >
               {status}
-            </span>
+            </span> */}
           </div>
           <p className="text-[15px] font-bold text-gray-900">{value}</p>
           <p className="text-[12px] font-semibold text-gray-500 mt-1">
@@ -534,11 +534,11 @@ function IssueCardDoc({ title, value, subtitle, status, icon, onClick }) {
             <p className="text-[10.98px] font-semibold text-gray-700">
               {title}
             </p>
-            <span
+            {/* <span
               className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusColors[status]}`}
             >
               {status}
-            </span>
+            </span> */}
           </div>
           <p className="text-[15px] font-bold text-gray-900">{value}</p>
           <p className="text-[11px] font-semibold text-gray-500 mt-1">

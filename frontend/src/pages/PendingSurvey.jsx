@@ -41,7 +41,11 @@ const PendingSurvey = () => {
   const { config, user, surveyReason, fetchSurveyReason } = useContext(Context);
   const navigate = useNavigate();
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
+    {
+      key: "description",
+      header: "Item Description",
+      width: "max-w-[80px] px-0",
+    },
     {
       key: "indian_pattern",
       header: (
@@ -51,23 +55,30 @@ const PendingSurvey = () => {
       ),
       width: "min-w-[40px]",
     },
-    { key: "category", header: "Category", width: "min-w-[40px]" },
+    { key: "category", header: "Category", width: "max-w-[20px] px-0" },
+    { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
     {
       key: "withdrawl_date_str",
       header: "Withdrawal Date",
-      width: "min-w-[40px]",
+      width: "max-w-[40px] px-0",
     },
-    { key: "service_no", header: "Service No.", width: "min-w-[40px]" },
-    { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
-    { key: "withdrawl_qty", header: "Withdrawal Qty", width: "min-w-[40px]" },
+    { key: "service_no", header: "Service No.", width: "max-w-[30px] px-0" },
+    { key: "issue_to", header: "Issued To", width: "max-w-[40px] px-0" },
+    {
+      key: "withdrawl_qty",
+      header: <span>Withdrawal Qty</span>,
+      width: "max-w-[30px] px-0",
+    },
     {
       key: "survey_quantity",
       header: "Surveyed Qty",
-      width: "max-w-[40px]",
+      width: "max-w-[30px]",
     },
-    ...(user.role != "user" ? [{ key: "processed", header: "Proceed" }] : []),
+    ...(user.role != "user"
+      ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
+      : []),
     ...(user.role === "officer"
-      ? [{ key: "rollback", header: "Rollback" }]
+      ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
       : []),
   ]);
   const options = [
@@ -82,6 +93,7 @@ const PendingSurvey = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
+    { value: "denos", label: "Denos." },
     { value: "withdrawl_date", label: "Withdrawal Date" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
@@ -270,6 +282,11 @@ const PendingSurvey = () => {
 
   const handleServay = async () => {
     try {
+      const qty = Number(inputs.quantity);
+
+      if (!qty || qty < 0) {
+        return toaster("error", "Qty must be greater than 0");
+      }
       setIsLoading((prev) => ({ ...prev, survey: true }));
 
       if (repairStatus === "yes") {
@@ -552,6 +569,7 @@ const PendingSurvey = () => {
                 </Label>
                 <Input
                   type="number"
+                  min="0"
                   placeholder="Enter Repairable Qty"
                   value={inputs.quantity}
                   onChange={(e) =>
@@ -584,6 +602,7 @@ const PendingSurvey = () => {
                   </Label>
                   <Input
                     type="number"
+                    min="0"
                     placeholder="Enter Survey Qty"
                     value={inputs.quantity}
                     onChange={(e) =>
@@ -688,7 +707,7 @@ const PendingSurvey = () => {
 
                 <div className="mt-4">
                   <Label>
-                    Remarks <span className="text-red-500">*</span>
+                    Remarks
                   </Label>
 
                   <Input

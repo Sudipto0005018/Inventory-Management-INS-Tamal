@@ -53,7 +53,7 @@ const menuItems = [
     submenu: [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
       { name: "Pending for Demand", path: "/permanent/pending-demand" },
-      { name: "Pending for Issue", path: "/permanent/pending-issue" },
+      { name: "Pending for MO Issue", path: "/permanent/pending-issue" },
       { name: "Pending for Procurement", path: "/permanent/procurement" },
       { name: "Pending for Stock Update", path: "/permanent/stock-update" },
       { name: "Pending for Special Demand", path: "/permanent/special-demand" },
@@ -128,7 +128,7 @@ const menuItems = [
     submenu: [
       { name: "Survey Logs", path: "/logs/pending-survey" },
       { name: "Demand Logs", path: "/logs/pending-demand" },
-      { name: "Issue Logs", path: "/logs/pending-issue" },
+      { name: "MO Issue Logs", path: "/logs/pending-issue" },
       { name: "NAC Logs", path: "/logs/nac" },
       { name: "Procurement Logs", path: "/logs/procurement" },
       { name: "Stock Update Logs", path: "/logs/stock-update" },

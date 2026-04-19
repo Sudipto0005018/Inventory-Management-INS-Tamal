@@ -47,15 +47,28 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { key: "category", header: "Category" },
+    { key: "denos", header: "Denos." },
     { key: "demand_no", header: "Demand No." },
     { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Demanded Qty" },
-    { key: "nac_qty", header: "NAC / Ordered Qty" },
+    {
+      key: "demand_quantity",
+      header: "Demanded Qty",
+      width: "max-w-[50px] px-0",
+    },
+    {
+      key: "nac_qty",
+      header: (
+        <span>
+          NAC / <br /> Ordered Qty
+        </span>
+      ),
+      width: "max-w-[60px] px-0",
+    },
     { key: "nac_no", header: "NAC No." },
     { key: "nac_date", header: "NAC Date" },
     { key: "validity", header: "Validity" },
     { key: "rate_unit", header: "Rate/ Unit" },
-    { key: "qty_received", header: "Received Qty" },
+    { key: "qty_received", header: "Received Qty", width: "max-w-[40px] px-0" },
     { key: "statusBadge", header: "Status" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
@@ -78,15 +91,13 @@ const Procurement = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
+    { value: "denos", label: "Denos." },
     { value: "demand_no", label: "Demand No." },
     { value: "demand_date", label: "Demanded Date" },
-    // { value: "demand_quantity", label: "Demanded Qty" },
-    // { value: "nac_qty", label: "NAC / Ordered Qty" },
     { value: "nac_no", label: "NAC No." },
     { value: "nac_date", label: "NAC Date" },
     { value: "validity", label: "Validity" },
     { value: "rate_unit", label: "Rate/ Unit" },
-    // { value: "qty_received", label: "Received Qty" },
   ];
 
   const [generateQR, setGenerateQR] = useState("no");

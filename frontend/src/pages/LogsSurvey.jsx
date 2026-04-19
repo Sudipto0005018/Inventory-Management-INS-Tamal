@@ -63,31 +63,6 @@ const PendingSurvey = () => {
     },
     { key: "survey_date", header: "Survey Date", width: "min-w-[40px]" },
     { key: "remarks", header: "Remarks", width: "min-w-[40px]" },
-    // {
-    //   key: "withdrawl_qty",
-    //   header: (
-    //     <span>
-    //       Withdrawal
-    //       <br />
-    //       Qty
-    //     </span>
-    //   ),
-    //   width: "min-w-[40px]",
-    // },
-    // {
-    //   key: "withdrawl_date_str",
-    //   header: (
-    //     <span>
-    //       Withdrawal
-    //       <br />
-    //       Date
-    //     </span>
-    //   ),
-    //   width: "min-w-[40px]",
-    // },
-    // { key: "service_no", header: "Service No.", width: "min-w-[40px]" },
-    // { key: "issue_to", header: "Issued To", width: "min-w-[40px]" },
-    // { key: "created_at", header: "Created On", width: "min-w-[40px]" },
   ]);
   const options = [
     { value: "equipment_system", label: "Equipment / System" },
@@ -103,16 +78,9 @@ const PendingSurvey = () => {
     { value: "item_type", label: "Type" },
     { value: "category", label: "Category" },
     { value: "denos", label: "Denos." },
-    { value: "survey_quantity", label: "Qty Surveyed" },
     { value: "reason_for_survey", label: "Reason for Survey" },
     { value: "survey_voucher_no", label: "Survey Voucher No." },
     { value: "remarks", label: "Remarks" },
-    // { value: "survey_date", label: "Survey Date" },
-    // { value: "withdrawl_qty", label: "Withdrawal Qty" },
-    // { value: "withdrawl_date", label: "Withdrawal Date" },
-    // { value: "service_no", label: "Service No." },
-    // { value: "issue_to", label: "Issued To" },
-    // { value: "created_at", label: "Created On" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
