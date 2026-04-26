@@ -185,10 +185,10 @@ const OEMFirm = ({
 
         <div className="space-y-3">
           {/* OEM Name */}
-          <Label>OEM Name</Label>
+          <Label>OEM Firm Name</Label>
           <div className="flex items-center">
             <Input
-              placeholder="OEM Name"
+              placeholder="OEM Firm Name"
               value={value.vendor}
               disabled={!isFieldEnabled("vendor") || !editable}
               onChange={(e) =>
@@ -199,10 +199,10 @@ const OEMFirm = ({
           </div>
 
           {/* Address */}
-          <Label>OEM Address</Label>
+          <Label>OEM Firm Address</Label>
           <div className="flex items-center">
             <Textarea
-              placeholder="Address"
+              placeholder="OEM Firm Address"
               value={value.address}
               disabled={!isFieldEnabled("address") || !editable}
               onChange={(e) =>

@@ -190,6 +190,7 @@ async function getTyLoanList(req, res) {
       service_no: ["ty.service_no"],
       concurred_by: ["ty.concurred_by"],
       box_no: ["ty.box_no"],
+      remarks: ["ty.remarks"],
 
       loan_duration: ["ty.loan_duration"],
       created_at: ["ty.created_at"],
@@ -268,6 +269,7 @@ async function getTyLoanList(req, res) {
           `%${word}%`,
           `%${word}%`,
           `%${word}%`,
+          `%${word}%`,
         );
 
         wordFragments.push(`
@@ -329,6 +331,7 @@ async function getTyLoanList(req, res) {
 
         ty.qty_withdrawn,
         ty.qty_received,
+        ty.remarks,
 
         (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
 
@@ -434,6 +437,7 @@ async function createTyLoan(req, res) {
       individual_name,
       phone,
       designation,
+      remarks,
     } = req.body;
 
     const transactionId = "TY-" + Date.now();
@@ -490,8 +494,8 @@ async function createTyLoan(req, res) {
     );
 
     /** 4. Insert ty loan */
-  await pool.query(
-    `
+    await pool.query(
+      `
   INSERT INTO ty_loan (
     transaction_id,
     spare_id,
@@ -512,34 +516,36 @@ async function createTyLoan(req, res) {
     approved_by,
     approved_at,
     box_no,
-    status
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+    status,
+    remarks
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending', ?)
   `,
-    [
-      transactionId,
-      a === "spare" ? spare_id : null,
-      a === "tool" ? tool_id : null,
-      qty_withdrawn,
+      [
+        transactionId,
+        a === "spare" ? spare_id : null,
+        a === "tool" ? tool_id : null,
+        qty_withdrawn,
 
-      service_no,
+        service_no,
 
-      unit_name || null,
-      individual_name || null,
-      phone || null,
-      designation || null,
+        unit_name || null,
+        individual_name || null,
+        phone || null,
+        designation || null,
 
-      concurred_by || null,
+        concurred_by || null,
 
-      issue_date || null,
-      loan_duration || null,
-      return_date || null,
-      qty_received || null,
+        issue_date || null,
+        loan_duration || null,
+        return_date || null,
+        qty_received || null,
 
-      userId,
+        userId,
 
-      JSON.stringify(updatedBoxes),
-    ],
-  );
+        JSON.stringify(updatedBoxes),
+        remarks || null,
+      ],
+    );
 
     /** 5. Insert box transactions */
     if (boxTransactions.length) {
@@ -893,6 +899,7 @@ async function getLogsTy(req, res) {
 
       qty_withdrawn: ["ty.qty_withdrawn"],
       qty_received: ["ty.qty_received"],
+      remarks: ["ty.remarks"],
 
       service_no: ["ty.service_no"],
       concurred_by: ["ty.concurred_by"],
@@ -980,6 +987,7 @@ async function getLogsTy(req, res) {
           `%${word}%`,
           `%${word}%`,
           `%${word}%`,
+          `%${word}%`,
         );
 
         wordFragments.push(`
@@ -1041,6 +1049,7 @@ async function getLogsTy(req, res) {
 
         ty.qty_withdrawn,
         ty.qty_received,
+        ty.remarks,
 
         ty.unit_name,
         ty.individual_name AS name,
@@ -1161,6 +1170,7 @@ async function getTyLoanOverdue(req, res) {
       "ty.service_no",
       "ty.concurred_by",
       "ty.box_no",
+      "ty.remarks",
       "u1.name",
       "u2.name",
     ];
@@ -1224,6 +1234,7 @@ async function getTyLoanOverdue(req, res) {
 
         ty.qty_withdrawn,
         ty.qty_received,
+        ty.remarks,
 
         (ty.qty_withdrawn - IFNULL(ty.qty_received,0)) AS balance_qty,
 

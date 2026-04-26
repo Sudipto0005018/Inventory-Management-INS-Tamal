@@ -13,6 +13,7 @@ const {
   revertPendingIssue,
   createRepairStock,
   manualAddDemand,
+  getDemandItems,
 } = require("../controllers/demand.controller");
 
 router.post("/create", authMiddleware, createDemand);
@@ -25,5 +26,6 @@ router.post("/reverse", authMiddleware, revertDemand);
 router.post("/pending-issue/reverse", authMiddleware, revertPendingIssue);
 router.post("/repair-stock", authMiddleware, createRepairStock);
 router.post("/manual-add", authMiddleware, manualAddDemand);
+router.get("/items", authMiddleware, getDemandItems);
 
 module.exports = router;

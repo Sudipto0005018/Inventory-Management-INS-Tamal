@@ -3,6 +3,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent } from "../components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useContext, useState, useEffect } from "react";
@@ -12,6 +19,7 @@ import { FaFileExcel, FaBook } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
+import { MdDashboard } from "react-icons/md";
 
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
@@ -33,7 +41,7 @@ const Header = ({ onSidebarOpen }) => {
       "/permanent/pending-issue": "issue",
       "/permanent/procurement": "procurement",
       "/permanent/stock-update": "stock_update",
-      "/permanent/special-demand": "special_demand",
+      "/special/special-demand": "special_demand",
       "/temp-loan/pending": "ty",
       "/temporary/temporary-issue": "temp",
       "/documents/issue": "docIssue",
@@ -55,12 +63,34 @@ const Header = ({ onSidebarOpen }) => {
     }),
     [],
   );
-  const completedPaths = useMemo(() => [
+  // const completedPaths = useMemo(() => [
+  //   "/temp-loan/complete",
+  //   "/temporary/completed",
+  //   "/documents/completed",
+  //   "/d787/amendment",
+
+  //   "/logs/pending-survey",
+  //   "/logs/pending-demand",
+  //   "/logs/pending-issue",
+  //   "/logs/procurement",
+  //   "/logs/stock-update",
+  //   "/logs/special-demand",
+  //   "/logs/nac",
+
+  //   "/permanent/pending-survey",
+  //     "/permanent/pending-demand",
+  //     "/permanent/pending-issue",
+  //     "/permanent/procurement",
+  //     "/permanent/stock-update",
+  //     "/permanent/special-demand",
+  //     "/temp-loan/pending",
+  //     "/temporary/temporary-issue",
+  // ]);
+
+  const completedPaths = [
     "/temp-loan/complete",
     "/temporary/completed",
     "/documents/completed",
-    "/d787/amendment",
-
     "/logs/pending-survey",
     "/logs/pending-demand",
     "/logs/pending-issue",
@@ -68,11 +98,26 @@ const Header = ({ onSidebarOpen }) => {
     "/logs/stock-update",
     "/logs/special-demand",
     "/logs/nac",
-  ]);
+    "/d787/amendment",
+  ];
 
-  const { user, setUser, setLoading, setConfig } = useContext(Context);
+  const pendingPaths = [
+    "/permanent/pending-survey",
+    "/permanent/pending-demand",
+    "/permanent/pending-issue",
+    "/permanent/procurement",
+    "/permanent/stock-update",
+    "/special/special-demand",
+    "/temp-loan/pending",
+    "/temporary/temporary-issue",
+  ];
+
+  const { user, officer, setUser, setLoading, setConfig } = useContext(Context);
   const [isOpen, setIsOpen] = useState({ popOver: false, dateRange: false });
   const [inputs, setInputs] = useState({ startDate: null, endDate: null });
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  const isDashboard = location.pathname === "/dashboard";
 
   const handleLogout = async () => {
     try {
@@ -91,12 +136,32 @@ const Header = ({ onSidebarOpen }) => {
   //   setIsOpen(false);
   // };
 
-  const exportExcel = async () => {
-    if (completedPaths.includes(location.pathname)) {
-      setIsOpen((prev) => ({ ...prev, dateRange: true }));
-    } else {
-      handleExportExcel();
-    }
+  // const exportExcel = async () => {
+  //   if (completedPaths.includes(location.pathname)) {
+  //     setIsOpen((prev) => ({ ...prev, dateRange: true }));
+  //   } else {
+  //     handleExportExcel();
+  //   }
+  // };
+
+  const exportExcel = () => {
+    setIsOpen((prev) => ({ ...prev, dateRange: true }));
+  };
+
+  //Convert date to start of day (IST)
+  const getStartOfDay = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return getISTTimestamp(d);
+  };
+
+  //Convert date to end of day (IST)
+  const getEndOfDay = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    d.setHours(23, 59, 59, 999);
+    return getISTTimestamp(d);
   };
 
   // const handleExportExcel = async () => {
@@ -104,16 +169,17 @@ const Header = ({ onSidebarOpen }) => {
   //     const module = map[location.pathname];
   //     const config = { module };
 
-  //     // ✅ Only validate for completed paths
+  //     //Only validate for completed paths
   //     if (completedPaths.includes(location.pathname)) {
   //       if (!inputs.startDate || !inputs.endDate) {
   //         toaster("error", "Please fill start date and end date");
   //         return;
   //       }
 
+  //       // FIX: send full-day range
   //       config.completed = true;
-  //       config.startDate = getISTTimestamp(inputs.startDate);
-  //       config.endDate = getISTTimestamp(inputs.endDate);
+  //       config.startDate = getStartOfDay(inputs.startDate);
+  //       config.endDate = getEndOfDay(inputs.endDate);
   //     }
 
   //     setIsOpen((prev) => ({ ...prev, popOver: false }));
@@ -126,38 +192,32 @@ const Header = ({ onSidebarOpen }) => {
   //   }
   // };
 
-  // ✅ Convert date to start of day (IST)
-  const getStartOfDay = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    return getISTTimestamp(d);
-  };
-
-  // ✅ Convert date to end of day (IST)
-  const getEndOfDay = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    d.setHours(23, 59, 59, 999);
-    return getISTTimestamp(d);
-  };
-
   const handleExportExcel = async () => {
     try {
       const module = map[location.pathname];
       const config = { module };
 
-      // ✅ Only validate for completed paths
+      // Completed export with date range
       if (completedPaths.includes(location.pathname)) {
         if (!inputs.startDate || !inputs.endDate) {
           toaster("error", "Please fill start date and end date");
           return;
         }
 
-        // ✅ FIX: send full-day range
         config.completed = true;
         config.startDate = getStartOfDay(inputs.startDate);
         config.endDate = getEndOfDay(inputs.endDate);
+      }
+
+      //Pending export (NO completed flag)
+      else if (pendingPaths.includes(location.pathname)) {
+        config.completed = false;
+
+        // OPTIONAL: if you want date filtering for pending also
+        if (inputs.startDate && inputs.endDate) {
+          config.startDate = getStartOfDay(inputs.startDate);
+          config.endDate = getEndOfDay(inputs.endDate);
+        }
       }
 
       setIsOpen((prev) => ({ ...prev, popOver: false }));
@@ -241,6 +301,30 @@ const Header = ({ onSidebarOpen }) => {
         </button>
       </div>
 
+      {user?.role === "officer" && isDashboard && (
+        <Button
+          className="cursor-pointer ml-[20px]"
+          disabled={backupLoading}
+          onClick={async () => {
+            try {
+              setBackupLoading(true);
+              toaster("info", "Backup started...");
+
+              await apiService.get("backup/run-backup", {
+                withCredentials: true,
+              });
+
+              toaster("success", "Backup completed");
+            } catch {
+              toaster("error", "Backup failed");
+            } finally {
+              setBackupLoading(false);
+            }
+          }}
+        >
+          {backupLoading ? "Backing up..." : "Backup"}
+        </Button>
+      )}
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-4">
           {/* <img src="/logo.png" alt="Logo" className="h-12 w-10" /> */}
@@ -253,10 +337,30 @@ const Header = ({ onSidebarOpen }) => {
 
       {user && (
         <div className="ml-auto flex items-center gap-3">
-          {/* Export Button in Header */}
-          <Button
-            variant="primary"
-            className="flex items-center justify-center 
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => navigate("/dashboard")}
+                  className="p-1.5 rounded-lg bg-white text-blue-600 shadow-sm"
+                >
+                  <MdDashboard size={18} />
+                </motion.button>
+              </TooltipTrigger>
+
+              <TooltipContent side="bottom">
+                <p>Dashboard</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="primary"
+                  className="flex items-center justify-center 
              px-2 py-1 h-8 
              rounded-lg 
              bg-green-900 
@@ -264,10 +368,17 @@ const Header = ({ onSidebarOpen }) => {
              hover:bg-green-900 
              hover:text-white
              transition-all duration-200"
-            onClick={exportExcel}
-          >
-            <FaFileExcel className="size-[18px]" />
-          </Button>
+                  onClick={exportExcel}
+                >
+                  <FaFileExcel className="size-[18px]" />
+                </Button>
+              </TooltipTrigger>
+
+              <TooltipContent side="bottom">
+                <p>Export to Excel</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Popover
             open={isOpen.popOver}
             onOpenChange={(val) =>
@@ -284,27 +395,6 @@ const Header = ({ onSidebarOpen }) => {
 
             <PopoverContent className="w-60 p-2">
               <div className="flex flex-col gap-1">
-                {/* Export to Excel */}
-                {/* <Button
-                variant="ghost"
-                className="w-full justify-start text-black hover:bg-primary/10"
-                onClick={exportExcel}
-              >
-                <FaFileExcel className="size-[15px]" /> Export to Excel
-              </Button> */}
-
-                {/* User Manual */}
-                {/* <Button
-                variant="ghost"
-                className="w-full justify-start text-black hover:bg-primary/10"
-                onClick={handleUserManual}
-              >
-                <FaBook className="size-[15px]" /> User Manual
-              </Button> */}
-
-                {/* <div className="border-t my-1" /> */}
-
-                {/* Logout */}
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"

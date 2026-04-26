@@ -21,10 +21,6 @@ import { MultiSelect } from "../components/ui/multi-select";
 const NACLogs = () => {
   const { config, user } = useContext(Context);
     const columns = useMemo(() => [
-      { key: "demand_no", header: "Demand No." },
-      // { key: "demand_date", header: "Demand Date" },
-      { key: "nac_no", header: "NAC No." },
-      { key: "nac_date", header: "NAC Date" },
       { key: "description", header: "Item Description" },
       {
         key: "indian_pattern",
@@ -44,13 +40,13 @@ const NACLogs = () => {
       // { key: "validity", header: "Validity" },
       { key: "rate_unit", header: "Rate/ Unit" },
       // { key: "qty_received", header: "Qty Received" },
+      { key: "demand_no", header: "Demand No." },
+      // { key: "demand_date", header: "Demand Date" },
+      { key: "nac_no", header: "NAC No." },
+      { key: "nac_date", header: "NAC Date" },
     ]);
 
     const options = [
-      { value: "demand_no", label: "Demand No." },
-      // { value: "demand_date", label: "Demand date" },
-      { value: "nac_no", label: "NAC No." },
-      { value: "nac_date", label: "NAC Date" },
       { value: "description", label: "Item Description" },
       {
         value: "indian_pattern",
@@ -64,6 +60,10 @@ const NACLogs = () => {
       { value: "category", label: "Category" },
       { value: "denos", label: "Denos." },
       { value: "rate_unit", label: "Rate/ Unit" },
+      { value: "demand_no", label: "Demand No." },
+      // { value: "demand_date", label: "Demand date" },
+      { value: "nac_no", label: "NAC No." },
+      { value: "nac_date", label: "NAC Date" },
     ];
 
   const [selectedValues, setSelectedValues] = useState([]);
@@ -224,7 +224,7 @@ const NACLogs = () => {
             <MultiSelect
               className="bg-white hover:bg-blue-50"
               options={options}
-              placeholder="Select columns"
+              placeholder="Select Fields"
               onValueChange={setSelectedValues}
               defaultValue={selectedValues}
               singleLine

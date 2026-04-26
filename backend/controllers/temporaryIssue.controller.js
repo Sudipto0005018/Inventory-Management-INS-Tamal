@@ -186,8 +186,6 @@ async function getTemporaryIssueList(req, res) {
   // ✅ IMPORTANT: Declare searchParams outside
   let searchParams = [];
 
-  /* ---------- SEARCH FILTER ---------- */
-  /* ---------- SEARCH FILTER ---------- */
   if (search) {
     const columnMap = {
       description: ["s.description", "t.description"],
@@ -196,6 +194,7 @@ async function getTemporaryIssueList(req, res) {
       equipment_system: ["s.equipment_system", "t.equipment_system"],
       service_no: ["til.service_no"],
       issue_to: ["til.issue_to"],
+      remarks: ["til.remarks"],
       created_by_name: ["u1.name"],
       approved_by_name: ["u2.name"],
       box_no: ["til.box_no"],
@@ -319,6 +318,7 @@ async function getTemporaryIssueList(req, res) {
         til.tool_id,
         til.qty_withdrawn,
         til.qty_received,
+        til.remarks,
         (til.qty_withdrawn - IFNULL(til.qty_received,0)) AS balance_qty,
         til.service_no,
         til.issue_to,
@@ -558,6 +558,7 @@ async function createTemporaryIssue(req, res) {
       box_no,
       a,
       individual_name,
+      remarks,
     } = req.body;
 
     const transactionId = "TI-" + Date.now();
@@ -619,8 +620,8 @@ async function createTemporaryIssue(req, res) {
         transaction_id, spare_id, tool_id, qty_withdrawn,
         service_no, individual_name, issue_to, issue_date, loan_duration,
         return_date, qty_received, created_by, created_at,
-        approved_by, approved_at, box_no, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending')
+        approved_by, approved_at, box_no, status, remarks
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NULL, NULL, ?, 'pending', ?)
       `,
       [
         transactionId,
@@ -636,6 +637,7 @@ async function createTemporaryIssue(req, res) {
         qty_received || null,
         userId,
         JSON.stringify(updatedBoxes),
+        remarks || null,
       ],
     );
 
@@ -988,6 +990,7 @@ async function getLogsTemporary(req, res) {
      equipment_system: ["s.equipment_system", "t.equipment_system"],
      qty_withdrawn: ["til.qty_withdrawn"],
      issue_to: ["til.issue_to"],
+     remarks: ["til.remarks"],
      name: ["til.individual_name"],
      service_no: ["til.service_no"],
      qty_received: ["til.qty_received"],
@@ -1039,6 +1042,7 @@ async function getLogsTemporary(req, res) {
       } else {
         // Global fallback
         searchParams.push(
+          `%${word}%`,
           `%${word}%`,
           `%${word}%`,
           `%${word}%`,
@@ -1109,6 +1113,7 @@ async function getLogsTemporary(req, res) {
 
         til.qty_withdrawn,
         til.qty_received,
+        til.remarks,
 
         til.individual_name AS name,
 
@@ -1306,6 +1311,7 @@ async function getOverdueTempIssue(req, res) {
       "t.equipment_system",
       "til.service_no",
       "til.issue_to",
+      "til.remarks",
       "u1.name",
       "u2.name",
       "til.box_no",
@@ -1370,6 +1376,7 @@ async function getOverdueTempIssue(req, res) {
 
         til.qty_withdrawn,
         til.qty_received,
+        til.remarks,
 
         (til.qty_withdrawn - IFNULL(til.qty_received,0)) AS balance_qty,
 

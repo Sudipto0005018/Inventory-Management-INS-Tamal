@@ -119,10 +119,18 @@ function BoxNoInputs({
                   required
                   placeholder="Authorised Qty"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   value={row.qn}
-                  onChange={(e) =>
-                    handleInputChange(index, "qn", e.target.value)
-                  }
+                  onChange={(e) => {
+                    let val = e.target.value;
+
+                    if (Number(val) < 0) {
+                      toaster("error", "Authorised Qty cannot be negative");
+                      return;
+                    }
+
+                    handleInputChange(index, "qn", val);
+                  }}
                 />
               </TableCell>
 
@@ -131,10 +139,18 @@ function BoxNoInputs({
                   required
                   placeholder="Maintained Qty"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   value={row.qnMain}
-                  onChange={(e) =>
-                    handleInputChange(index, "qnMain", e.target.value)
-                  }
+                  onChange={(e) => {
+                    let val = e.target.value;
+
+                    if (Number(val) < 0) {
+                      toaster("error", "Maintained Qty cannot be negative");
+                      return;
+                    }
+
+                    handleInputChange(index, "qnMain", val);
+                  }}
                 />
               </TableCell>
 
@@ -143,10 +159,16 @@ function BoxNoInputs({
                   required
                   placeholder="Qty Held"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   value={row.qtyHeld}
                   onChange={(e) => {
                     let val = e.target.value;
-                    // if (!val.startsWith("-"))
+
+                    if (Number(val) < 0) {
+                      toaster("error", "Qty Held cannot be negative");
+                      return;
+                    }
+
                     handleInputChange(index, "qtyHeld", val);
                   }}
                 />

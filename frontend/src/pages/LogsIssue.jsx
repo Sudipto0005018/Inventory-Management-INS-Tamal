@@ -37,6 +37,7 @@ const PermanentPendings = () => {
     { value: "category", label: "Category" },
     { value: "denos", label: "Denos" },
     { value: "mo_no", label: "Demand No." },
+    { value: "remarks", label: "Remarks" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
 
@@ -51,7 +52,7 @@ const PermanentPendings = () => {
           </span>
         ),
       },
-      { key: "item_type", header: "Type" },
+      // { key: "item_type", header: "Type" },
       { key: "category", header: "Category" },
       { key: "denos", header: "Denos" },
       {
@@ -93,6 +94,7 @@ const PermanentPendings = () => {
       },
       { key: "demand_quantity", header: "Demanded Qty" },
       { key: "stocked_nac_qty", header: "MO Issued / NAC Qty" },
+      { key: "remarks", header: "Remarks" },
     ],
     [],
   );
@@ -328,6 +330,11 @@ const PermanentPendings = () => {
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
           />
         </div>
         <div className="flex items-center mb-4 gap-4 w-full">

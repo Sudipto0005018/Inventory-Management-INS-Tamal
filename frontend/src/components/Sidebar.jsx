@@ -4,6 +4,8 @@ import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { FaInfoCircle, FaRegClipboard, FaTools } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
 import { FaUserTie } from "react-icons/fa6";
+import { MdFolderSpecial } from "react-icons/md";
+import { PiClockCountdownBold } from "react-icons/pi";
 
 import { FaGears, FaPeopleRoof, FaRegClock, FaCartPlus } from "react-icons/fa6";
 import { LuNotebookPen } from "react-icons/lu";
@@ -33,7 +35,10 @@ const menuItems = [
     icon: <FaGears size={22} />,
     roles: ["admin", "user", "officer"],
     parentClickable: true,
-    submenu: [{ name: "Critical Spare", path: "/spares/critical" }],
+    submenu: [
+      { name: "Critical Spare", path: "/spares/critical" },
+      { name: "Spares for Routines", path: "/spares/routine" },
+    ],
   },
   {
     name: "Tools & Accessories",
@@ -41,7 +46,10 @@ const menuItems = [
     icon: <FaTools size={20} />,
     roles: ["admin", "user", "officer"],
     parentClickable: true,
-    submenu: [{ name: "Critical / Special Tool", path: "/tools/critical" }],
+    submenu: [
+      { name: "Critical / Special Tool", path: "/tools/critical" },
+      { name: "Tools for Routines", path: "/tools/routine" },
+    ],
   },
   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
   // { name: "Handheld Details", path: "/handheld", icon: <FaMobileAlt /> },
@@ -54,11 +62,54 @@ const menuItems = [
       { name: "Pending for Survey", path: "/permanent/pending-survey" },
       { name: "Pending for Demand", path: "/permanent/pending-demand" },
       { name: "Pending for MO Issue", path: "/permanent/pending-issue" },
-      { name: "Pending for Procurement", path: "/permanent/procurement" },
       { name: "Pending for Stock Update", path: "/permanent/stock-update" },
-      { name: "Pending for Special Demand", path: "/permanent/special-demand" },
+      { name: "Pending for Procurement", path: "/permanent/procurement" },
+      // { name: "D787 Amendment Demand", path: "/permanent/special-demand" },
       // { name: "Completed", path: "/permanent/complete" },
     ],
+  },
+  //Special Demand New Tab
+  {
+    name: "Special Demand",
+    path: "/users",
+    icon: <MdFolderSpecial size={20} />,
+    roles: ["officer", "admin", "user"],
+    submenu: [
+      {
+        name: "D787 Amendment Demand",
+        path: "/special/special-demand",
+        icon: <PiClockCountdownBold size={20} />,
+      },
+      {
+        name: "PTS",
+        path: "/special/pts",
+        icon: <PiClockCountdownBold size={20} />,
+      },
+      {
+        name: "STOREDEM / OPDEM",
+        path: "/special/stordem",
+        icon: <PiClockCountdownBold size={20} />,
+      },
+    ],
+  },
+  {
+    name: "Departments",
+    path: "/departments",
+    icon: <FaPeopleRoof />,
+    roles: ["superadmin"],
+  },
+  { name: "Users", path: "/users", icon: <User />, roles: ["superadmin"] },
+  {
+    name: "Approvals",
+    path: "/approvals",
+    icon: <IoMdCheckmarkCircleOutline size={20} />,
+    roles: ["superadmin"],
+  },
+  {
+    name: "History",
+    path: "/history",
+    icon: <BsClockHistory size={20} />,
+    roles: ["superadmin"],
   },
   {
     name: "Temporary Issue",
@@ -67,10 +118,10 @@ const menuItems = [
     roles: ["admin", "user", "officer"],
     submenu: [
       { name: "Pending", path: "/temporary/temporary-issue" },
-      {
-        name: "Completed",
-        path: "/temporary/completed",
-      },
+      // {
+      //   name: "Completed",
+      //   path: "/temporary/completed",
+      // },
     ],
   },
   {

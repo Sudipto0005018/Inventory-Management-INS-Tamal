@@ -1,4 +1,5 @@
 import { FaGears, FaRegClock, FaCartPlus, FaPeopleRoof } from "react-icons/fa6";
+import { PiClockCountdownBold } from "react-icons/pi";
 import { FaTools } from "react-icons/fa";
 import { FaRegClipboard, FaUserTie } from "react-icons/fa";
 import { BsClockHistory } from "react-icons/bs";
@@ -12,9 +13,11 @@ export const pageIcons = {
   "/spares": FaGears,
   "/spares/critical": FaGears,
   "/spares/low-stock": FaGears,
+  "/spares/routine": FaGears,
 
   "/tools": FaTools,
   "/tools/critical": FaTools,
+  "/tools/routine": FaTools,
 
   "/documents": IoDocumentSharp,
   "/documents/issue": IoDocumentSharp,
@@ -31,7 +34,9 @@ export const pageIcons = {
   "/permanent/pending-issue": FaRegClock,
   "/permanent/procurement": FaRegClock,
   "/permanent/stock-update": FaRegClock,
-  "/permanent/special-demand": FaRegClock,
+  "/special/special-demand": PiClockCountdownBold,
+  "/special/pts": PiClockCountdownBold,
+  "/special/stordem": PiClockCountdownBold,
 
   "/logs/pending-survey": GoLog,
   "/logs/pending-demand": GoLog,

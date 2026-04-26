@@ -28,14 +28,15 @@ const PendingDemand = () => {
       ),
       width: "min-w-[40px]",
     },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   key: "item_type",
+    //   header: "Type",
+    //   width: "min-w-[40px]",
+    // },
     { key: "category", header: "Category", width: "min-w-[40px]" },
     { key: "denos", header: "Denos.", width: "min-w-[40px]" },
     { key: "demand_quantity", header: "Qty Demanded", width: "min-w-[40px]" },
+    { key: "remarks", header: "Remarks", width: "min-w-[40px]" },
   ]);
 
   const options = [
@@ -53,6 +54,7 @@ const PendingDemand = () => {
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
     { value: "denos", label: "Denos.", width: "min-w-[40px]" },
+    { value: "remarks", label: "Remarks", width: "min-w-[40px]" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -158,6 +160,11 @@ const PendingDemand = () => {
           onChange={(e) =>
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
       </div>
       <div className="flex items-center mb-4 gap-4 w-full">

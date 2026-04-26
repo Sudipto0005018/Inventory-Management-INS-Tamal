@@ -34,9 +34,7 @@ import {
 import Spinner from "../components/Spinner";
 import Chip from "../components/Chip";
 import { useNavigate } from "react-router";
-// substitute in pattern name (non men)
-// oem/vendor details (non men)
-// local terminology (non men)
+
 const PendingSurvey = () => {
   const { config, user, surveyReason, fetchSurveyReason } = useContext(Context);
   const navigate = useNavigate();
@@ -44,7 +42,7 @@ const PendingSurvey = () => {
     {
       key: "description",
       header: "Item Description",
-      width: "max-w-[80px] px-0",
+      width: "max-w-[90px] px-0",
     },
     {
       key: "indian_pattern",
@@ -53,7 +51,7 @@ const PendingSurvey = () => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[40px]",
+      width: "max-w-[80px] px-0",
     },
     { key: "category", header: "Category", width: "max-w-[20px] px-0" },
     { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
@@ -62,8 +60,8 @@ const PendingSurvey = () => {
       header: "Withdrawal Date",
       width: "max-w-[40px] px-0",
     },
-    { key: "service_no", header: "Service No.", width: "max-w-[30px] px-0" },
-    { key: "issue_to", header: "Issued To", width: "max-w-[40px] px-0" },
+    { key: "service_no", header: "Service No.", width: "max-w-[40px] px-0" },
+    { key: "issue_to", header: "Issued To", width: "max-w-[30px] px-0" },
     {
       key: "withdrawl_qty",
       header: <span>Withdrawal Qty</span>,
@@ -74,6 +72,7 @@ const PendingSurvey = () => {
       header: "Surveyed Qty",
       width: "max-w-[30px]",
     },
+    { key: "remarks_survey", header: "Remarks", width: "max-w-[45px]" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
       : []),
@@ -97,6 +96,7 @@ const PendingSurvey = () => {
     { value: "withdrawl_date", label: "Withdrawal Date" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
+    { value: "remarks_survey", label: "Remarks" },
   ];
 
   //rollback states
@@ -106,7 +106,6 @@ const PendingSurvey = () => {
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
 
   //add survey states
-  const [itemType, setItemType] = useState("");
   const [itemsList, setItemsList] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [withdrawlQty, setWithdrawlQty] = useState("");
@@ -140,31 +139,10 @@ const PendingSurvey = () => {
     survey: false,
     survey_calender: false,
     addSurvey: false,
+    addSpare: false,
+    addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
-
-  // const handleRollback = async (row) => {
-  //   const confirm = window.confirm(
-  //     "Are you sure you want to revert this survey?",
-  //   );
-  //   if (!confirm) return;
-
-  //   try {
-  //     await apiService.post("/survey/reverse", {
-  //       survey_id: row.id,
-  //     });
-
-  //     toaster("success", "Survey reverted successfully");
-
-  //     // Remove row instantly from UI
-  //     setFetchedData((prev) => ({
-  //       ...prev,
-  //       items: prev.items.filter((item) => item.id !== row.id),
-  //     }));
-  //   } catch (error) {
-  //     toaster("error", error.response?.data?.message || "Rollback failed");
-  //   }
-  // };
 
   const handleRollback = (issueId, description) => {
     setRollbackIssueId(issueId);
@@ -210,6 +188,7 @@ const PendingSurvey = () => {
 
     setSelectedRow({});
   };
+
   const addToDropdown = async (type, value) => {
     try {
       const data = {
@@ -231,6 +210,17 @@ const PendingSurvey = () => {
       toaster("error", "Failed to add");
     }
   };
+
+  const fetchSurveyItems = async () => {
+    try {
+      const response = await apiService.get("/survey/items");
+      setItemsList(response.data.items || []);
+    } catch (error) {
+      console.error("Error fetching survey items:", error);
+      toaster("error", "Failed to fetch items");
+    }
+  };
+
   const fetchdata = async (
     page = currentPage,
     search = inputs.search,
@@ -257,6 +247,12 @@ const PendingSurvey = () => {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
   };
+
+  useEffect(() => {
+    if (isOpen.addSurvey) {
+      fetchSurveyItems();
+    }
+  }, [isOpen.addSurvey]);
 
   const handleSearch = async () => {
     const searchTerm = inputs.search.trim();
@@ -326,10 +322,9 @@ const PendingSurvey = () => {
   };
 
   const resetAddSurveyDialog = () => {
-    setItemType("");
-    setItemsList([]);
     setSelectedItem(null);
     setWithdrawlQty("");
+    setItemsList([]);
   };
 
   useEffect(() => {
@@ -399,6 +394,11 @@ const PendingSurvey = () => {
           onChange={(e) =>
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
       </div>
       <div className="flex items-center mb-4 gap-4 w-full">
@@ -706,9 +706,7 @@ const PendingSurvey = () => {
                 </div>
 
                 <div className="mt-4">
-                  <Label>
-                    Remarks
-                  </Label>
+                  <Label>Remarks</Label>
 
                   <Input
                     className="mt-2"
@@ -805,8 +803,7 @@ const PendingSurvey = () => {
         </DialogContent>
       </Dialog>
 
-      {/* add syrvey dialog */}
-
+      {/* Add Survey Dialog */}
       <Dialog
         open={isOpen.addSurvey}
         onOpenChange={(open) => {
@@ -823,114 +820,41 @@ const PendingSurvey = () => {
         >
           <DialogTitle>Add Survey Item</DialogTitle>
 
-          {/* ITEM TYPE */}
+          {/* Select Item - Always visible */}
           <div className="mt-4">
-            <Label>Item Type</Label>
-
-            <select
-              className="w-full border rounded p-2 mt-1"
-              value={itemType}
-              onChange={async (e) => {
-                const type = e.target.value;
-                setItemType(type);
-
-                if (!type) return;
-
-                const response = await apiService.get(
-                  type === "spare" ? "/spares/surveyAdd" : "/tools/surveyAdd",
-                  {
-                    params: {
-                      limit: 100,
-                      category: "PR",
-                    },
-                  },
-                );
-
-                setItemsList(response.data.items);
+            <Label>
+              Select Item <span className="text-red-500">*</span>
+            </Label>
+            <ComboBox
+              className="w-full mt-1"
+              options={itemsList.map((item) => ({
+                id: item.id,
+                name: `${item.description} (${item.category}) - ${item.type}`,
+                raw: item,
+              }))}
+              placeholder="Search and select item.."
+              onSelect={(value) => {
+                setSelectedItem(value.raw);
               }}
-            >
-              <option value="">Select Type</option>
-              <option value="spare">Spares</option>
-              <option value="tool">Tools</option>
-            </select>
+            />
           </div>
 
-          {/* ITEM LIST */}
-          {/* {itemsList.length > 0 && (
-            <div className="mt-4">
-              <Label>Select Item</Label>
+          {/* Qty to be surveyed - Always visible */}
+          <div className="mt-4">
+            <Label>
+              Qty to be surveyed <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              placeholder="Enter Survey Qty"
+              value={withdrawlQty}
+              onChange={(e) => setWithdrawlQty(e.target.value)}
+              className="mt-1"
+            />
+          </div>
 
-              <select
-                className="w-full border rounded p-2 mt-1"
-                onChange={(e) => {
-                  const item = itemsList.find((i) => i.id == e.target.value);
-                  setSelectedItem(item);
-                }}
-              >
-                <option>Select Item</option>
-                {itemsList.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.description} ({item.category})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )} */}
-
-          {itemType && (
-            <div className="mt-4">
-              <Label>Select Item</Label>
-
-              <select
-                className="w-full border rounded p-2 mt-1"
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  if (value === "custom") {
-                    if (itemType === "spare") {
-                      setIsOpen((prev) => ({ ...prev, addSpare: true }));
-                    }
-
-                    if (itemType === "tool") {
-                      setIsOpen((prev) => ({ ...prev, addTool: true }));
-                    }
-
-                    return;
-                  }
-
-                  const item = itemsList.find((i) => i.id == value);
-                  setSelectedItem(item);
-                }}
-              >
-                <option>Select Item</option>
-
-                {itemsList.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.description} ({item.category})
-                  </option>
-                ))}
-                <option value="custom">➕ Add New {itemType}</option>
-              </select>
-            </div>
-          )}
-
-          {/* WITHDRAWAL QTY */}
-          {selectedItem && (
-            <div className="mt-4">
-              <Label>
-                Qty to be surveyed <span className="text-red-500">*</span>
-              </Label>
-
-              <Input
-                type="number"
-                placeholder="Enter Survey Qty"
-                value={withdrawlQty}
-                onChange={(e) => setWithdrawlQty(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* ACTION BUTTONS */}
+          {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="destructive"
@@ -946,98 +870,41 @@ const PendingSurvey = () => {
               className="text-white"
               onClick={async () => {
                 if (!selectedItem) {
-                  return toaster("error", "Please select item");
+                  return toaster("error", "Please select an item");
                 }
 
-                if (!withdrawlQty) {
-                  return toaster("error", "Please enter Withdrawal Qty");
-                }
-
-                if (withdrawlQty <= 0) {
+                if (!withdrawlQty || withdrawlQty <= 0) {
                   return toaster(
                     "error",
-                    "Withdrawal Qty must be greater than 0",
+                    "Please enter a valid quantity greater than 0",
                   );
                 }
 
-                await apiService.post("/survey/manual-add", {
-                  spare_id: itemType === "spare" ? selectedItem.id : null,
-                  tool_id: itemType === "tool" ? selectedItem.id : null,
-                  withdrawl_qty: withdrawlQty,
-                });
+                try {
+                  await apiService.post("/survey/manual-add", {
+                    spare_id:
+                      selectedItem.type === "spare" ? selectedItem.id : null,
+                    tool_id:
+                      selectedItem.type === "tool" ? selectedItem.id : null,
+                    withdrawl_qty: parseInt(withdrawlQty),
+                  });
 
-                toaster("success", "Survey item added");
+                  toaster("success", "Survey item added successfully");
 
-                setWithdrawlQty("");
-                setSelectedItem(null);
-                setItemsList([]);
-                setItemType("");
-
-                setIsOpen((prev) => ({ ...prev, addSurvey: false }));
-                fetchdata();
+                  resetAddSurveyDialog();
+                  setIsOpen((prev) => ({ ...prev, addSurvey: false }));
+                  fetchdata();
+                } catch (error) {
+                  console.error("Error adding survey item:", error);
+                  toaster(
+                    "error",
+                    error.response?.data?.message ||
+                      "Failed to add survey item",
+                  );
+                }
               }}
             >
               Submit
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ADD SPARE */}
-
-      <Dialog
-        open={isOpen.addSpare}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addSpare: open }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Add Spare</DialogTitle>
-
-          <p>Redirecting to Add Spare form</p>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsOpen((prev) => ({ ...prev, addSpare: false }));
-                navigate("/spares", {
-                  state: {
-                    add_spare: true,
-                  },
-                });
-              }}
-            >
-              Open
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ADD TOOL */}
-
-      <Dialog
-        open={isOpen.addTool}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addTool: open }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Add Tool</DialogTitle>
-
-          <p>Redirecting to Add Tool form</p>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsOpen((prev) => ({ ...prev, addTool: false }));
-                navigate("/tools", {
-                  state: {
-                    add_tool: true,
-                  },
-                });
-              }}
-            >
-              Open
             </Button>
           </div>
         </DialogContent>

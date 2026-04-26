@@ -44,18 +44,37 @@ const PendingTempLoan = ({ type = "" }) => {
         </span>
       ),
     },
-    { key: "category", header: "Category" },
-    { key: "equipment_system", header: "Equipment / System" },
-    { key: "qty_withdrawn", header: "Issued Qty" },
-    { key: "service_no", header: "Service No." },
+    { key: "category", header: "Category", width: "max-w-[65px] px-0" },
+    {
+      key: "equipment_system",
+      header: "Equipment / System",
+      width: "max-w-[75px] px-0",
+    },
+    { key: "qty_withdrawn", header: "Issued Qty", width: "max-w-[65px] px-0" },
+    { key: "service_no", header: "Service No.", width: "max-w-[55px] px-0" },
     { key: "issue_to", header: "Issued to" },
     { key: "issue_date_formated", header: "Issued Date" },
-    { key: "loan_duration", header: "Loan Duration (days)" },
-    { key: "submission_date", header: "Expected Return Date" },
-    { key: "days_until_return", header: "Days Until Return" },
-    { key: "qty_received", header: "Returned Qty" },
-    { key: "status", header: "Status" },
-    ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
+    {
+      key: "loan_duration",
+      header: "Loan Duration (days)",
+      width: "max-w-[75px] px-0",
+    },
+    {
+      key: "submission_date",
+      header: "Expected Return Date",
+      width: "max-w-[75px] px-0",
+    },
+    {
+      key: "days_until_return",
+      header: "Days Until Return",
+      width: "max-w-[95px] px-0",
+    },
+    { key: "qty_received", header: "Returned Qty", width: "max-w-[65px] px-0" },
+    { key: "status", header: "Status", width: "max-w-[75px] px-0" },
+    { key: "remarks", header: "Remarks", width: "max-w-[65px] px-0" },
+    ...(user.role != "user"
+      ? [{ key: "receive", header: "Proceed", width: "max-w-[45px] px-0" }]
+      : []),
     ...(user.role === "officer"
       ? [{ key: "rollback", header: "Rollback" }]
       : []),
@@ -75,12 +94,12 @@ const PendingTempLoan = ({ type = "" }) => {
     },
     { value: "category", label: "Category" },
     { value: "equipment_system", label: "Equipment / System" },
-    // { value: "qty_withdrawn", label: "Issued Qty" },
     { value: "service_no", label: "Service No." },
     { value: "issue_to", label: "Issued To" },
     { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
-    // { value: "qty_received", label: "Returned Qty" },
+    { value: "qty_received", label: "Returned Qty" },
+    { value: "remarks", label: "Remarks" },
   ];
 
   const [rollbackDialog, setRollbackDialog] = useState(false);

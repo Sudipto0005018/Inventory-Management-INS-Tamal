@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/sheet";
 import { MdDashboard } from "react-icons/md";
 
+import { motion } from "framer-motion";
+
 import { Button } from "@/components/ui/button";
 import { Usb } from "lucide-react";
 import Sync from "../pages/Sync";
@@ -67,21 +69,63 @@ export default function Dashboard() {
   // h-screen
   return (
     <div className="h-[calc(125vh-230px)] w-[calc(100vw-35px)] overflow-hidden bg-[#c5cffa] from-gray-50 to-gray-100 p-3 mt-[-20px] md:p-5">
-      {/* bg-gradient-to-br */} {/* Header with Gradient */}
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex-1 text-center">
-          <h1 className="flex items-center gap-2 text-base md:text-2xl font-semibold ml-[50%]">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              DASHBOARD
-            </span>
-            <MdDashboard size={25} className="text-blue-600" />
-          </h1>
+        {/* CENTER TITLE */}
+        <div className="flex-1 flex justify-center ml-[135px]">
+          <motion.div
+            initial={{ opacity: 0, y: -25, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex items-center gap-3"
+          >
+            {/* <motion.div
+              initial={{ rotate: -30, scale: 0.7 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="p-2 mt-[-12px]"
+            >
+              <MdDashboard size={40} className="text-blue-600" />
+            </motion.div> */}
 
-          {/* <p className="text-xs text-gray-500 mt-1 font-semibold">
-            Complete Inventory Management Summary
-          </p> */}
+            <motion.div
+              initial={{ rotate: -180, scale: 0.7 }}
+              animate={{ rotate: 360, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="p-2 mt-[-12px]"
+            >
+              <MdDashboard size={40} className="text-blue-600" />
+            </motion.div>
+
+            <div className="flex flex-col items-center">
+              <motion.h1
+                initial={{ opacity: 0, letterSpacing: "-2px" }}
+                animate={{ opacity: 1, letterSpacing: "2px" }}
+                transition={{ delay: 0.2 }}
+                className="text-lg md:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 bg-clip-text text-transparent tracking-wider"
+              >
+                DASHBOARD
+              </motion.h1>
+
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "60%" }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="h-[3px] bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-1"
+              />
+
+              {/* <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 0.5 }}
+                className="text-[11px] md:text-xs text-gray-500 font-medium mt-1"
+              >
+                Inventory Management Overview
+              </motion.p> */}
+            </div>
+          </motion.div>
         </div>
 
+        {/* RIGHT SIDE BUTTON */}
         <Sheet>
           <SheetTrigger asChild>
             <Button

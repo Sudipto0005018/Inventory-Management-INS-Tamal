@@ -21,7 +21,6 @@ import SpinnerButton from "../components/ui/spinner-button";
 const PendingTempLoan = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
-    { key: "issue_date_formated", header: "Date of Issue" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -31,27 +30,26 @@ const PendingTempLoan = () => {
         </span>
       ),
     },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   key: "item_type",
+    //   header: "Type",
+    //   width: "min-w-[40px]",
+    // },
+    { key: "category", header: "Category" },
     { key: "denos", header: "Denos." },
-    // { key: "category", header: "Category" },
     { key: "qty_withdrawn", header: "Qty Issued" },
+    { key: "issue_date_formated", header: "Date of Issue" },
     { key: "concurred_by", header: "Concurred By" },
     { key: "unit", header: "Unit Name" },
     { key: "name", header: "Name of Individual" },
     { key: "service_no", header: "Service No." },
     { key: "phone", header: "Phone No." },
     { key: "qty_received", header: "Qty Returned" },
-    // { key: "loan_duration", header: "Loan Duration (days)" },
-    // { key: "submission_date", header: "Expected Return Date" },
     { key: "approved_at", header: "Date of Return", width: "min-w-[40px]" },
+    { key: "remarks", header: "Reamrks" },
   ]);
 
   const options = [
-    { value: "issue_date", label: "Date of Issue" },
     { value: "description", label: "Item Description" },
     {
       value: "indian_pattern",
@@ -63,16 +61,15 @@ const PendingTempLoan = () => {
       ),
     },
     { value: "denos", label: "Denos." },
-    // { value: "category", label: "Category" },
-    // { value: "qty_withdrawn", label: "Qty Issued" },
-    { value: "concurred_by", label: "Concurred By" },
+    { value: "issue_date", label: "Date of Issue" },
+    // { value: "concurred_by", label: "Concurred By" },
     { value: "unit", label: "Unit Name" },
     { value: "name", label: "Name of Individual" },
     { value: "service_no", label: "Service No." },
     { value: "phone", label: "Phone No." },
-    // { value: "qty_received", label: "Qty Returned" },
-    // { value: "loan_duration", label: "Loan Duration" },
-    // { value: "approved_at", label: "Date of Return" },
+    { value: "qty_received", label: "Qty returned" },
+    { value: "approved_at", label: "Date of return" },
+    { value: "remarks", label: "Remarks" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);
   const [actionType, setActionType] = useState("returned");

@@ -314,6 +314,7 @@ async function getStockUpdatePending(req, res) {
   const columnMap = {
     description: ["sp.description", "t.description"],
     category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     mo_no: ["s.mo_no"],
     mo_date: ["s.mo_date"],
@@ -422,6 +423,7 @@ async function getStockUpdatePending(req, res) {
         s.*,
         COALESCE(sp.description, t.description) AS description,
         COALESCE(sp.category, t.category) AS category,
+        COALESCE(sp.denos, t.denos) AS denos,
         COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
         COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
         COALESCE(sp.box_no, t.box_no, s.box_no) AS box_no,

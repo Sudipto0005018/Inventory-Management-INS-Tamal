@@ -7,6 +7,7 @@ const {
   getLogSurveys,
   revertSurvey,
   manualAddSurvey,
+  getSurveyItems,
 } = require("../controllers/survey.controller");
 const { authMiddleware } = require("../middlewares/auth");
 
@@ -15,5 +16,5 @@ router.get("/", authMiddleware, getSurveys);
 router.get("/logs", authMiddleware, getLogSurveys);
 router.post("/reverse", authMiddleware, revertSurvey);
 router.post("/manual-add", authMiddleware, manualAddSurvey);
-
+router.get("/items", authMiddleware, getSurveyItems);
 module.exports = router;

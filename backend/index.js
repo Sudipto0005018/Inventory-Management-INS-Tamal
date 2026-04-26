@@ -67,6 +67,9 @@ app.use("/api/v1/tyLoan", require("./routes/tyLoan.routes"));
 app.use("/api/v1/document", require("./routes/docCorner.routes"));
 app.use("/api/v1/stock", require("./routes/stockUpdate.routes"));
 app.use("/api/v1/sync", require("./routes/sync.routes"));
+app.use("/api/v1/backup", require("./routes/backup.routes"));
+app.use("/api/v1/routines", require("./routes/routines.routes"));
+app.use("/api/v1/routinesTool", require("./routes/routinesTool.routes"));
 
 // syncAssets("spares");
 syncTyLoan();

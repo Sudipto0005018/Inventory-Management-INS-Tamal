@@ -47,16 +47,35 @@ const PendingTempLoan = ({ type = "" }) => {
         ),
       },
       { key: "category", header: "Category" },
-      { key: "qty_withdrawn", header: "Issued Qty" },
+      {
+        key: "qty_withdrawn",
+        header: "Issued Qty",
+        width: "max-w-[75px] px-0",
+      },
       { key: "service_no", header: "Service No." },
       { key: "concurred_by", header: "Concurred By" },
       { key: "issue_date_formated", header: "Issued Date" },
-      { key: "loan_duration", header: "Loan Duration (days)" },
-      { key: "submission_date", header: "Expected Return Date" },
+      {
+        key: "loan_duration",
+        header: "Loan Duration (days)",
+        width: "max-w-[75px] px-0",
+      },
+      {
+        key: "submission_date",
+        header: "Expected Return Date",
+        width: "max-w-[75px] px-0",
+      },
       { key: "days_until_return", header: "Days Until Return" },
-      { key: "qty_received", header: "Returned Qty" },
+      {
+        key: "qty_received",
+        header: "Returned Qty",
+        width: "max-w-[75px] px-0",
+      },
       { key: "status", header: "Status" },
-      ...(user.role != "user" ? [{ key: "receive", header: "Proceed" }] : []),
+      { key: "remarks", header: "Remarks", width: "max-w-[85px] px-0" },
+      ...(user.role != "user"
+        ? [{ key: "receive", header: "Proceed", width: "max-w-[75px] px-0" }]
+        : []),
       ...(user.role === "officer"
         ? [{ key: "rollback", header: "Rollback" }]
         : []),
@@ -83,8 +102,9 @@ const PendingTempLoan = ({ type = "" }) => {
     { value: "concurred_by", label: "Concurred By" },
     { value: "issue_date", label: "Issued Date" },
     { value: "loan_duration", label: "Loan Duration" },
-    // { value: "qty_received", label: "Returned Qty" },
+    { value: "qty_received", label: "Returned Qty" },
     { value: "loan_status", label: "Status" },
+    { value: "remarks", label: "Remarks" },
   ];
 
   const [rollbackDialog, setRollbackDialog] = useState(false);

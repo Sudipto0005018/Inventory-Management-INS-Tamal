@@ -45,6 +45,10 @@ import LogsSpecialDemand from "../pages/LogsSpecialDemand";
 import Original from "../pages/Original";
 import Amendment from "../pages/Amendment";
 import Sync from "../pages/Sync";
+import PtsSpecial from "../pages/PtsSpecial";
+import StordemSpecial from "../pages/StordemSpecial";
+import SparesForRoutines from "../pages/SparesRoutine";
+import ToolsRoutine from "../pages/ToolsRoutine";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -104,10 +108,30 @@ const Router = () => {
       </Route>
       <Route element={<HomeLayout />}>
         <Route
+          path="/spares/routine"
+          element={
+            <ProtectedRoute>
+              <SparesForRoutines key="4" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
           path="/tools/low-stock"
           element={
             <ProtectedRoute>
               <Tools type="low-stock" key="3" />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/tools/routine"
+          element={
+            <ProtectedRoute>
+              <ToolsRoutine key="4" />
             </ProtectedRoute>
           }
         />
@@ -334,10 +358,30 @@ const Router = () => {
       </Route>
       <Route element={<HomeLayout />}>
         <Route
-          path="/permanent/special-demand"
+          path="/special/special-demand"
           element={
             <ProtectedRoute>
               <PendingSpecial />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/special/pts"
+          element={
+            <ProtectedRoute>
+              <PtsSpecial />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+      <Route element={<HomeLayout />}>
+        <Route
+          path="/special/stordem"
+          element={
+            <ProtectedRoute>
+              <StordemSpecial />
             </ProtectedRoute>
           }
         />

@@ -149,6 +149,7 @@ async function getSpecialDemandList(req, res) {
     description: ["s.description", "t.description"],
     indian_pattern: ["s.indian_pattern", "t.indian_pattern"],
     category: ["s.category", "t.category"],
+    denos: ["s.denos", "t.denos"],
 
     quantity: ["sd.obs_increase_qty"],
     obs_authorised: ["sd.obs_authorised"],
@@ -240,6 +241,8 @@ WHERE NOT (
           `%${word}%`,
           `%${word}%`,
           `%${word}%`,
+          `%${word}%`,
+          `%${word}%`,
         );
 
         wordFragments.push(`
@@ -250,6 +253,8 @@ WHERE NOT (
           OR t.indian_pattern LIKE ?
           OR s.category LIKE ?
           OR t.category LIKE ?
+          OR s.denos LIKE ?
+          OR t.denos LIKE ?
           OR sd.internal_demand_no LIKE ?
           OR sd.requisition_no LIKE ?
           OR sd.mo_demand_no LIKE ?
@@ -342,7 +347,13 @@ WHERE NOT (
           WHEN sd.spare_id IS NOT NULL THEN s.category
           WHEN sd.tool_id IS NOT NULL THEN t.category
           ELSE NULL
-        END AS category
+        END AS category,
+
+        CASE
+          WHEN sd.spare_id IS NOT NULL THEN s.denos
+          WHEN sd.tool_id IS NOT NULL THEN t.denos
+          ELSE NULL
+        END AS denos
 
       FROM special_demand sd
       LEFT JOIN spares s ON s.id = sd.spare_id

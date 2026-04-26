@@ -4,6 +4,7 @@ import { MultiSelect } from "../components/ui/multi-select";
 import InputWithPencil from "../components/ui/InputWithPencil";
 import { IoMdRefresh } from "react-icons/io";
 import ActionIcons from "../components/ActionIcons";
+import { FaTimes } from "react-icons/fa";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -27,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { formatDate, getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 
-import PaginationTable from "../components/PaginationTableTwo";
+import PaginationTable from "../components/PaginationTableThree";
 import toaster from "../utils/toaster";
 import apiService from "../utils/apiService";
 import { Context } from "../utils/Context";
@@ -55,15 +56,15 @@ const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "IN Part No.", value: "indian_pattern" },
   { label: "Equipment / System", value: "equipment_system" },
-  { label: "Denos.", value: "denos" },
   { label: "Category", value: "category" },
-  { label: "OBS Authorised", value: "obs_authorised" },
-  { label: "OBS Maintained", value: "obs_maintained" },
-  { label: "OBS Held", value: "obs_held" },
+  { label: "Denos.", value: "denos" },
+  // { label: "OBS Authorised", value: "obs_authorised" },
+  // { label: "OBS Maintained", value: "obs_maintained" },
+  // { label: "OBS Held", value: "obs_held" },
   // { label: "Item Distribution", value: "item_distribution" },
-  // { label: "Item Storage Distribution", value: "boxNo" },
+  { label: "Box No.", value: "box_no" },
   { label: "Item Code", value: "item_code" },
-  { label: "Price/Unit", value: "price_unit" },
+  { label: "Price/Cost per unit", value: "price_unit" },
   { label: "Sub Component", value: "sub_component" },
   { label: "Location of Storage", value: "storage_location" },
   { label: "Substitute IN Part No.", value: "substitute_name" },
@@ -89,7 +90,7 @@ const Tools = ({ type = "" }) => {
   } = useContext(Context);
   const location = useLocation();
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description", width: "max-w-[80px]" },
+    { key: "description", header: "Item Description", width: "max-w-[110px]" },
     {
       key: "indian_pattern",
       header: (
@@ -97,7 +98,7 @@ const Tools = ({ type = "" }) => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[80px]",
+      width: "max-w-[100px]",
     },
     {
       key: "equipment_system",
@@ -107,7 +108,7 @@ const Tools = ({ type = "" }) => {
           <br /> System
         </span>
       ),
-      width: "max-w-[60px]",
+      width: "max-w-[70px]",
     },
     { key: "category", header: "Category", width: "max-w-[60px]" },
     { key: "denos", header: "Denos.", width: "max-w-[60px]" },
@@ -115,7 +116,7 @@ const Tools = ({ type = "" }) => {
     {
       key: "obs_authorised",
       header: <span>OBS Authorised</span>,
-      width: "max-w-[60px]",
+      width: "max-w-[50px]",
     },
     {
       key: "obs_held",
@@ -126,13 +127,13 @@ const Tools = ({ type = "" }) => {
           Held
         </span>
       ),
-      width: "min-w-[50px] px-0",
+      width: "max-w-[50px]",
     },
 
     {
       key: "boxNo",
       header: "Box No.",
-      width: "min-w-[60px]",
+      width: "max-w-[70px]",
     },
 
     {
@@ -291,6 +292,7 @@ const Tools = ({ type = "" }) => {
     options: [],
   });
 
+  const [tableFilters, setTableFilters] = useState({});
   const [obsAuthChange, setObsAuthChange] = useState({});
 
   //Demand no and Date
@@ -650,6 +652,21 @@ const Tools = ({ type = "" }) => {
 
       if (!inputs.equipment_system?.trim()) {
         toaster("error", "Equipment / System is required");
+        return;
+      }
+
+      if (Number(inputs.obs_authorised) < 0) {
+        toaster("error", "OBS Authorised cannot be negative");
+        return;
+      }
+
+      if (Number(inputs.obs_maintained) < 0) {
+        toaster("error", "OBS Maintained cannot be negative");
+        return;
+      }
+
+      if (Number(inputs.obs_held) < 0) {
+        toaster("error", "OBS Held cannot be negative");
         return;
       }
 
@@ -1209,6 +1226,7 @@ const Tools = ({ type = "" }) => {
         service_no: selectedPerson.person?.serviceNumber,
         name: selectedPerson.person?.name,
         issue_to: selectedRow.issue_to_text || selectedRow.issue_to,
+        remarks_survey: selectedRow.remarks_survey || "",
       });
       if (res.success) {
         toaster("success", "Survey created successfully");
@@ -1458,6 +1476,11 @@ const Tools = ({ type = "" }) => {
               onChange={(e) =>
                 setInputs((prev) => ({ ...prev, search: e.target.value }))
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
             />
           </div>
 
@@ -1468,7 +1491,7 @@ const Tools = ({ type = "" }) => {
                 options={SEARCH_FIELDS}
                 value={selectedSearchFields}
                 onValueChange={setSelectedSearchFields}
-                placeholder="Search Fields"
+                placeholder="Select Fields"
               />
             </div>
             <SpinnerButton
@@ -1505,6 +1528,19 @@ const Tools = ({ type = "" }) => {
               <span className="text-md font-bold text-green-700">Reset</span>
             </Button>
 
+            {Object.keys(tableFilters).length > 0 && (
+              <Button
+                variant="outline"
+                className="cursor-pointer flex items-center gap-1 bg-orange-100 hover:bg-orange-200"
+                onClick={() => setTableFilters({})}
+              >
+                <FaTimes className="size-4" />
+                <span className="text-md font-bold text-orange-700">
+                  Clear Filters
+                </span>
+              </Button>
+            )}
+
             {user.role != "user" && (
               <Button
                 onClick={() => {
@@ -1533,6 +1569,9 @@ const Tools = ({ type = "" }) => {
                 setPanelProduct(row);
                 calssName = "h-[65vh]";
               }}
+              filters={tableFilters}
+              onFiltersChange={setTableFilters}
+              filterableColumns={["equipment_system", "boxNo", "category"]}
             />
           </div>
         </div>
@@ -1560,6 +1599,12 @@ const Tools = ({ type = "" }) => {
                   <TableBody className="">
                     <TableRow>
                       <TableCell>
+                        Item Code<span className="text-red-500">*</span>
+                      </TableCell>
+                      <TableCell>{panelProduct.item_code || "--"}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>
                         Sub Component<span className="text-red-500">*</span>
                       </TableCell>
                       <TableCell>
@@ -1573,15 +1618,15 @@ const Tools = ({ type = "" }) => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical / Special Tool</TableCell>
-                      <TableCell>
-                        {panelProduct.critical_tool ? "Yes" : "No"}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
                       <TableCell>Local Terminology</TableCell>
                       <TableCell>
                         {panelProduct.local_terminology || "--"}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Critical / Special Tool</TableCell>
+                      <TableCell>
+                        {panelProduct.critical_tool ? "Yes" : "No"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -1763,6 +1808,7 @@ const Tools = ({ type = "" }) => {
                     <Input
                       type="number"
                       name="obs_authorised"
+                      onWheel={(e) => e.target.blur()}
                       value={inputs.obs_authorised}
                       onChange={handleChange}
                     />
@@ -1778,6 +1824,7 @@ const Tools = ({ type = "" }) => {
                     <Input
                       type="number"
                       name="obs_maintained"
+                      onWheel={(e) => e.target.blur()}
                       value={inputs.obs_maintained}
                       onChange={handleChange}
                     />
@@ -1789,6 +1836,7 @@ const Tools = ({ type = "" }) => {
                     <Input
                       type="number"
                       name="obs_held"
+                      onWheel={(e) => e.target.blur()}
                       value={inputs.obs_held}
                       onChange={handleChange}
                     />
@@ -3440,6 +3488,16 @@ const Tools = ({ type = "" }) => {
                       handleAddPersonnel(person);
                     }}
                   />
+                  <div className="w-1/2">
+                    <Label className="mb-1">Remarks</Label>
+                    <input
+                      name="remarks_survey"
+                      value={selectedRow.remarks_survey || ""}
+                      onChange={handleEditChange}
+                      placeholder="Add remarks"
+                      className="w-full border rounded-md px-3 py-2 text-sm"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -3647,7 +3705,7 @@ const Tools = ({ type = "" }) => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label>
+                      <Label className="mb-1">
                         Loan Duration (in days)
                         <span className="text-red-500">*</span>
                       </Label>
@@ -3657,6 +3715,17 @@ const Tools = ({ type = "" }) => {
                         value={selectedRow.loan_duration || ""}
                         onChange={handleEditChange}
                         placeholder="Enter days"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="mb-1">Remarks</Label>
+                      <input
+                        name="remarks"
+                        value={selectedRow.remarks || ""}
+                        onChange={handleEditChange}
+                        placeholder="Add remarks"
                         className="w-full border rounded-md px-3 py-2 text-sm"
                       />
                     </div>
@@ -3833,7 +3902,7 @@ const Tools = ({ type = "" }) => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label>
+                      <Label className="mb-2">
                         Loan Duration (in days)
                         <span className="text-red-500">*</span>
                       </Label>
@@ -3847,11 +3916,12 @@ const Tools = ({ type = "" }) => {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1 mt-[-10px]">
+                    <div className="flex flex-col gap-1 mt-[-2px]">
                       <label className="text-sm font-medium text-gray-700">
                         Concurred By <span className="text-red-500">*</span>
                       </label>
                       <ComboBox
+                        className="w-full"
                         options={concurredBy}
                         onCustomAdd={async (value) => {
                           await addToDropdown("concurred_by", value.name);
@@ -3872,6 +3942,17 @@ const Tools = ({ type = "" }) => {
                             toaster("error", "Failed to delete the item");
                           }
                         }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="mb-2">Remarks</Label>
+                      <input
+                        name="remarks"
+                        value={selectedRow.remarks || ""}
+                        onChange={handleEditChange}
+                        placeholder="Add remarks"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
                       />
                     </div>
                   </div>
@@ -4024,6 +4105,7 @@ const Tools = ({ type = "" }) => {
                       qty_received: null,
 
                       box_no: boxNo,
+                      remarks: selectedRow.remarks || "",
                     };
                     submitTemporaryIssue(payload);
                   } else if (selectedIssue === "ty") {
@@ -4072,6 +4154,7 @@ const Tools = ({ type = "" }) => {
                       qty_received: null,
 
                       box_no: boxNo,
+                      remarks: selectedRow.remarks || "",
                     };
 
                     submitTyLoan(payload);

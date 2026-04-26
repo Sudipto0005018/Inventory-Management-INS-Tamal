@@ -12,6 +12,7 @@ const {
   getCriticalTools,
   getLowStockTools,
   getAddSurveyTools,
+  getAllTools,
 } = require("../controllers/tools.controller");
 const {
   authMiddleware,
@@ -30,5 +31,6 @@ router.get("/critical", authMiddleware, getCriticalTools);
 router.delete("/:id", authMiddleware, deleteTool);
 router.get("/low-stock", getLowStockTools);
 router.get("/surveyAdd", authMiddleware, getAddSurveyTools);
+router.get("/all", authMiddleware, getAllTools);
 
 module.exports = router;

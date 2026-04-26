@@ -46,12 +46,13 @@ const PermanentPendings = () => {
       ),
     },
     { value: "category", label: "Category" },
-    { value: "denos", label: "Denos."},
+    { value: "denos", label: "Denos." },
 
     { value: "mo_no", label: "Demand No." },
 
     { value: "demand_date", label: "Demand Date" },
 
+    { value: "remarks", label: "Remarks" },
   ];
 
   //pending-issue rollback states
@@ -466,6 +467,11 @@ const PermanentPendings = () => {
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
           />
         </div>
         <div className="flex items-center mb-4 gap-4 w-full">

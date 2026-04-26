@@ -288,7 +288,16 @@ async function getDashboardData(req, res) {
       `SELECT
         COUNT(*) AS total,
         SUM(critical_spare = 1) AS criticalSpare,
-        SUM(obs_authorised > 0 AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)) AS lowStock
+        SUM(
+      obs_authorised > 0 
+      AND (
+        -- Case 1: Maintained qty is 2 or less -> low stock when Qty Held <= 51% of Maintained Qty
+        (obs_maintained <= 2 AND IFNULL(obs_held, 0) <= (0.51 * obs_maintained))
+        OR
+        -- Case 2: Maintained qty is 3 or above -> low stock when Qty Held <= 34% of Maintained Qty
+        (obs_maintained >= 3 AND IFNULL(obs_held, 0) <= (0.34 * obs_maintained))
+      )
+    ) AS lowStock
       FROM spares`,
     );
 
@@ -297,7 +306,16 @@ async function getDashboardData(req, res) {
       SELECT
             COUNT(*) AS total,
              SUM(critical_tool = 1) AS criticalTool,
-            SUM(obs_authorised > 0 AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)) AS lowStock
+SUM(
+      obs_authorised > 0 
+      AND (
+        -- Case 1: Maintained qty is 2 or less -> low stock when Qty Held <= 51% of Maintained Qty
+        (obs_maintained <= 2 AND IFNULL(obs_held, 0) <= (0.51 * obs_maintained))
+        OR
+        -- Case 2: Maintained qty is 3 or above -> low stock when Qty Held <= 34% of Maintained Qty
+        (obs_maintained >= 3 AND IFNULL(obs_held, 0) <= (0.34 * obs_maintained))
+      )
+    ) AS lowStock
       FROM tools
     `);
 

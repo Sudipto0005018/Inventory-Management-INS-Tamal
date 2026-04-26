@@ -49,7 +49,7 @@ import AsyncSelectBox, {
 import ServicePersonnelSearch from "../components/ServicePersonnelSearch";
 import ServicePersonnel from "../components/ServicePersonnel";
 
-//search fields
+//select fields
 const SEARCH_FIELDS = [
   { label: "Item Description", value: "description" },
   { label: "Equipment / System", value: "equipment_system" },
@@ -1258,7 +1258,7 @@ const Tools = ({ type = "" }) => {
             options={SEARCH_FIELDS}
             value={selectedSearchFields}
             onValueChange={setSelectedSearchFields}
-            placeholder="Search Fields"
+            placeholder="Select Fields"
           />
         </div>
 

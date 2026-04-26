@@ -25,11 +25,11 @@ const Original = () => {
         </span>
       ),
     },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   key: "item_type",
+    //   header: "Type",
+    //   width: "min-w-[40px]",
+    // },
     { key: "category", header: "Category" },
     {
       key: "equipment_system",
@@ -184,7 +184,7 @@ const Original = () => {
             <MultiSelect
               className="bg-white hover:bg-blue-50"
               options={options}
-              placeholder="Select columns"
+              placeholder="Select Fields"
               onValueChange={setSelectedValues}
               defaultValue={selectedValues}
               singleLine

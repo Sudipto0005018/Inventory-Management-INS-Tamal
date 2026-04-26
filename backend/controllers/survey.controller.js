@@ -13,6 +13,7 @@ async function createSurvey(req, res) {
     service_no,
     name,
     issue_to,
+    remarks_survey
   } = req.body;
 
   const connection = await pool.getConnection();
@@ -97,8 +98,8 @@ async function createSurvey(req, res) {
         `INSERT INTO demand (
           spare_id, tool_id, issue_to, transaction_id,
           survey_qty, survey_voucher_no, survey_date,
-          created_at, created_by, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          created_at, created_by, status, remarks_survey
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           spare_id || null,
           tool_id || null,
@@ -110,6 +111,7 @@ async function createSurvey(req, res) {
           getSQLTimestamp(),
           created_by,
           "pending",
+          remarks_survey || null,
         ],
       );
     } else {
@@ -120,8 +122,8 @@ async function createSurvey(req, res) {
         `INSERT INTO survey (
           spare_id, tool_id, withdrawl_qty, withdrawl_date,
           box_no, service_no, name, issue_to,
-          created_by, transaction_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          created_by, transaction_id, created_at, remarks_survey
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           spare_id || null,
           tool_id || null,
@@ -134,6 +136,7 @@ async function createSurvey(req, res) {
           created_by,
           transactionId,
           getSQLTimestamp(),
+          remarks_survey || null,
         ],
       );
     }
@@ -436,6 +439,7 @@ async function getSurveys(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     service_no: ["s.service_no"],
     issue_to: ["s.issue_to"],
+    remarks_survey: ["s.remarks_survey"],
     withdrawl_qty: ["s.withdrawl_qty"],
     survey_quantity: ["s.survey_quantity"],
   };
@@ -574,6 +578,7 @@ const columnMap = {
   survey_voucher_no: ["d.survey_voucher_no"],
   survey_date: ["d.survey_date"],
   remarks: ["d.remarks"],
+  remarks_survey: ["s.remarks_survey"],
   withdrawl_qty: ["s.withdrawl_qty"],
   withdrawl_date: ["s.withdrawl_date"],
   service_no: ["s.service_no"],
@@ -1112,7 +1117,7 @@ async function manualAddSurvey(req, res) {
         spare_id || null,
         tool_id || null,
         "MANUAL",
-        withdrawl_qty, // ✅ use value from frontend
+        withdrawl_qty, 
         JSON.stringify([]),
         "MANUAL",
         "MANUAL",
@@ -1131,10 +1136,40 @@ async function manualAddSurvey(req, res) {
   }
 }
 
+async function getSurveyItems(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, description, category, 'spare' AS type 
+      FROM spares 
+      WHERE category IN ('P', 'R')
+
+      UNION ALL
+
+      SELECT id, description, category, 'tool' AS type 
+      FROM tools 
+      WHERE category IN ('P', 'R')
+
+      ORDER BY description ASC
+    `);
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, { items: rows }, "Items fetched successfully"),
+      );
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   createSurvey,
   getSurveys,
   getLogSurveys,
   revertSurvey,
   manualAddSurvey,
+  getSurveyItems
 };

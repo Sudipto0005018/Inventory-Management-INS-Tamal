@@ -4,6 +4,7 @@ import { MultiSelect } from "../components/ui/multi-select";
 import InputWithPencil from "../components/ui/InputWithPencil";
 import { IoMdRefresh } from "react-icons/io";
 import ActionIconDocuments from "../components/ActionIconDocuments";
+import { FaTimes } from "react-icons/fa";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -22,7 +23,7 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 
-import PaginationTable from "../components/PaginationTableTwo";
+import PaginationTable from "../components/PaginationTableThree";
 import toaster from "../utils/toaster";
 import apiService from "../utils/apiService";
 import { Context } from "../utils/Context";
@@ -208,6 +209,7 @@ const DocumentsCorner = ({ type = "" }) => {
     persons: [{ prefix: "Mr", name: "", designation: "", phone: "" }],
   });
 
+  const [tableFilters, setTableFilters] = useState({});
   const [savedRow, setSavedRow] = useState(null);
   const [savedHeld, setSavedHeld] = useState(null);
   const [selectedPerson, setSelectedPerson] = useState({
@@ -263,9 +265,9 @@ const DocumentsCorner = ({ type = "" }) => {
           await fetchStorageLocation();
         }
 
-         if (type === "equipment_system") {
-           await fetchEquipment();
-         }
+        if (type === "equipment_system") {
+          await fetchEquipment();
+        }
       }
     } catch (error) {
       console.error(error);
@@ -1094,6 +1096,11 @@ const DocumentsCorner = ({ type = "" }) => {
             onChange={(e) =>
               setInputs((prev) => ({ ...prev, search: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
           />
         </div>
         <div className="flex items-center mb-4 gap-2 w-full">
@@ -1103,7 +1110,7 @@ const DocumentsCorner = ({ type = "" }) => {
               options={SEARCH_FIELDS}
               value={selectedSearchFields}
               onValueChange={setSelectedSearchFields}
-              placeholder="Search Fields"
+              placeholder="Select Fields"
             />
           </div>
 
@@ -1141,6 +1148,19 @@ const DocumentsCorner = ({ type = "" }) => {
             <span className="text-md font-bold text-green-700">Reset</span>
           </Button>
 
+          {Object.keys(tableFilters).length > 0 && (
+            <Button
+              variant="outline"
+              className="cursor-pointer flex items-center gap-1 bg-orange-100 hover:bg-orange-200"
+              onClick={() => setTableFilters({})}
+            >
+              <FaTimes className="size-4" />
+              <span className="text-md font-bold text-orange-700">
+                Clear Filters
+              </span>
+            </Button>
+          )}
+
           {user.role != "user" && (
             <Button
               onClick={() => {
@@ -1168,6 +1188,9 @@ const DocumentsCorner = ({ type = "" }) => {
               setSelectedRowIndex(index);
               setPanelProduct(row);
             }}
+            filters={tableFilters}
+            onFiltersChange={setTableFilters}
+            filterableColumns={["equipment_system", "boxNo", "category"]}
           />
         </div>
       </div>

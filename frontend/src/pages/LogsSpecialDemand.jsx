@@ -26,11 +26,11 @@ const PendingSpecial = () => {
       ),
       width: "min-w-[40px]",
     },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   key: "item_type",
+    //   header: "Type",
+    //   width: "min-w-[40px]",
+    // },
     { key: "denos", header: "Denos." },
     { key: "category", header: "Category" },
     {
@@ -307,7 +307,7 @@ const PendingSpecial = () => {
             <MultiSelect
               className="bg-white hover:bg-blue-50"
               options={options}
-              placeholder="Select columns"
+              placeholder="Select Fields"
               onValueChange={setSelectedValues}
               defaultValue={selectedValues}
               singleLine

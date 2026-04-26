@@ -1251,7 +1251,7 @@ const Spares = ({ type = "" }) => {
               options={SEARCH_FIELDS}
               value={selectedSearchFields}
               onValueChange={setSelectedSearchFields}
-              placeholder="Search Fields"
+              placeholder="Select Fields"
             />
           </div>
 

@@ -3,6 +3,8 @@ export const pageTitles = {
 
   "/spares": "Spares",
   "/spares/critical": "Critical Spare",
+  "/spares/routine": "Spares for Routines",
+  "/tools/routine": "Tools for Routines",
   "/spares/low-stock": "Low Stock Spares",
   "/tools/low-stock": "Low Stock Tools",
   "/documents/low-stock": "Low Stock Documents",
@@ -10,6 +12,8 @@ export const pageTitles = {
   "/temp-loan/overdue": "Overdue TY Loan",
   "/documents/overdue": "Overdue Documents",
   "/permanent/nac": "Pending for NAC",
+  "/special/pts": "PTS",
+  "/special/stordem": "STOREDEM / OPDEM",
 
   "/tools": "Tools & Accessories",
   "/tools/critical": "Critical / Special Tools",
@@ -36,7 +40,7 @@ export const pageTitles = {
   "/permanent/pending-issue": "Pending for MO Issue",
   "/permanent/stock-update": "Pending for Stock Update",
   "/permanent/procurement": "Pending for Procurement",
-  "/permanent/special-demand": "Pending for Special Demand",
+  "/special/special-demand": "D787 Amendment Demand",
   "/permanent/complete": "Completed Issues",
 
   "/temporary": "Temporary Issue",

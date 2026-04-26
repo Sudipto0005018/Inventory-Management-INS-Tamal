@@ -103,6 +103,7 @@ async function getDemands(req, res) {
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     survey_qty: ["d.survey_qty"],
+    remarks: ["d.remarks"],
     survey_date: ["d.survey_date"],
     survey_voucher_no: ["d.survey_voucher_no"],
   };
@@ -155,10 +156,19 @@ async function getDemands(req, res) {
         (
           sp.description LIKE ?
           OR t.description LIKE ?
+          OR sp.denos LIKE ?
+          OR t.denos LIKE ?
+          OR d.remarks LIKE ?
         )
       `);
 
-          queryParams.push(`%${word}%`, `%${word}%`);
+          queryParams.push(
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+            `%${word}%`,
+          );
         }
 
         whereConditions.push(`(${searchConditions.join(" AND ")})`);
@@ -234,6 +244,7 @@ async function createPendingIssue(req, res) {
     // Stocking fields
     mo_no,
     mo_date,
+    remarks,
   } = req.body;
 
   const connection = await pool.getConnection();
@@ -267,9 +278,10 @@ async function createPendingIssue(req, res) {
         mo_no,
         mo_date,
         status,
-         source_type
+        source_type,
+        remarks
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         demand_no,
@@ -285,6 +297,7 @@ async function createPendingIssue(req, res) {
         mo_date || null,
         "pending",
         "demand",
+        remarks || null,
       ],
     );
 
@@ -318,6 +331,7 @@ async function getPendingIssue(req, res) {
     category: ["sp.category", "t.category"],
     equipment_system: ["sp.equipment_system", "t.equipment_system"],
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    remarks: ["pi.remarks"],
   };
 
   const connection = await pool.getConnection();
@@ -343,8 +357,10 @@ async function getPendingIssue(req, res) {
           searchFragments.push(`(${subQuery})`);
         }
       } else {
-        searchFragments.push(`(sp.description LIKE ? OR t.description LIKE ?)`);
-        queryParams.push(`%${search}%`, `%${search}%`);
+        searchFragments.push(
+          `(sp.description LIKE ? OR t.description LIKE ? OR pi.remarks LIKE ?)`,
+        );
+        queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
       if (searchFragments.length > 0) {
@@ -757,6 +773,7 @@ async function getDemandLogs(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     category: ["sp.category", "t.category"],
     denos: ["sp.denos", "t.denos"],
+    remarks_survey:["d.remarks_survey"],
 
     demand_quantity: ["pi.demand_quantity"],
     quote_authority: ["pi.quote_authority"],
@@ -996,6 +1013,33 @@ async function manualAddDemand(req, res) {
   }
 }
 
+
+async function getDemandItems(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, description, category, 'spare' AS type 
+      FROM spares 
+
+      UNION ALL
+
+      SELECT id, description, category, 'tool' AS type 
+      FROM tools 
+
+      ORDER BY description ASC
+    `);
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, { items: rows }, "Items fetched successfully"),
+      );
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
 module.exports = {
   createDemand,
   getDemands,
@@ -1007,4 +1051,5 @@ module.exports = {
   revertPendingIssue,
   createRepairStock,
   manualAddDemand,
+  getDemandItems
 };

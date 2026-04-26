@@ -17,7 +17,6 @@ import Spinner from "../components/Spinner";
 const PendingSurvey = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
-    { key: "equipment_system", header: "Equipment/ System" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -28,11 +27,12 @@ const PendingSurvey = () => {
       ),
       width: "min-w-[40px]",
     },
-    {
-      key: "item_type",
-      header: "Type",
-      width: "min-w-[40px]",
-    },
+    // {
+    //   key: "item_type",
+    //   header: "Type",
+    //   width: "min-w-[40px]",
+    // },
+    { key: "equipment_system", header: "Equipment/ System" },
     { key: "category", header: "Category", width: "min-w-[40px]" },
     { key: "denos", header: "Denos.", width: "min-w-[40px]" },
     {
@@ -65,7 +65,6 @@ const PendingSurvey = () => {
     { key: "remarks", header: "Remarks", width: "min-w-[40px]" },
   ]);
   const options = [
-    { value: "equipment_system", label: "Equipment / System" },
     { value: "description", label: "Item Description" },
     {
       value: "indian_pattern",
@@ -75,7 +74,7 @@ const PendingSurvey = () => {
         </span>
       ),
     },
-    { value: "item_type", label: "Type" },
+    { value: "equipment_system", label: "Equipment / System" },
     { value: "category", label: "Category" },
     { value: "denos", label: "Denos." },
     { value: "reason_for_survey", label: "Reason for Survey" },
@@ -187,6 +186,11 @@ const PendingSurvey = () => {
           onChange={(e) =>
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
       </div>
       <div className="flex items-center mb-4 gap-4 w-full">

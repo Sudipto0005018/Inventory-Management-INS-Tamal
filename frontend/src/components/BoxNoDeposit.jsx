@@ -124,6 +124,7 @@ function BoxNoDeposit({
                   type="number"
                   min="0"
                   value={row.deposit}
+                  onWheel={(e) => e.target.blur()}
                   onChange={(e) =>
                     handleInputChange(index, "deposit", e.target.value)
                   }

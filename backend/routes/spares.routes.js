@@ -18,6 +18,7 @@ const {
   generateExcel,
   getLowStockSpares,
   getAddSurveySpares,
+  getAllSpares
 } = require("../controllers/spares.controller");
 
 router.post("/update/:id", authMiddleware, imageMiddleware, updateSpare);
@@ -34,5 +35,6 @@ router.post("/genarate-qr", generateQRCode);
 router.get("/excel", generateExcel);
 router.get("/low-stock", getLowStockSpares);
 router.get("/surveyAdd", authMiddleware, getAddSurveySpares);
+router.get("/all", authMiddleware, getAllSpares);
 
 module.exports = router;

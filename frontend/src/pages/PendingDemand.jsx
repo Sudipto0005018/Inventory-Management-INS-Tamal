@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdRefresh } from "react-icons/io";
+import ComboBox from "../components/ComboBox";
 
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -35,12 +36,13 @@ import { useNavigate } from "react-router";
 
 const PendingDemand = () => {
   const { config, user, officer } = useContext(Context);
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const columns = useMemo(() => [
     {
       key: "description",
       header: "Item Description",
-      width: "max-w-[80px] px-0",
+      width: "max-w-[100px] px-0",
     },
     {
       key: "indian_pattern",
@@ -49,37 +51,26 @@ const PendingDemand = () => {
           <i>IN</i> Part No.
         </p>
       ),
-      width: "min-w-[40px]",
+      width: "max-w-[100px] px-0",
     },
     { key: "category", header: "Category", width: "max-w-[20px] px-0" },
     { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
     {
       key: "survey_voucher_no",
       header: "Survey Voucher No.",
-      width: "max-w-[50px] px-0",
+      width: "max-w-[60px] px-0",
     },
     {
       key: "survey_qty",
-      header: (
-        <span>
-          Surveyed Qty
-          {/* <br />
-          Utilised Qty */}
-        </span>
-      ),
-      width: "max-w-[20px] px-0",
+      header: <span>Surveyed Qty</span>,
+      width: "max-w-[28px] px-0",
     },
     {
       key: "survey_date",
-      header: (
-        <span>
-          Surveyed Date
-          {/* <br />
-          Utilised Date */}
-        </span>
-      ),
-      width: "max-w-[30px] px-0",
+      header: <span>Surveyed Date</span>,
+      width: "max-w-[35px] px-0",
     },
+    { key: "remarks", header: "Remarks", width: "max-w-[45px]" },
     ...(user.role != "user"
       ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
       : []),
@@ -87,6 +78,7 @@ const PendingDemand = () => {
       ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
       : []),
   ]);
+
   const options = [
     {
       value: "description",
@@ -109,31 +101,24 @@ const PendingDemand = () => {
       label: "Survey Voucher No.",
       width: "min-w-[40px]",
     },
-    // {
-    //   value: "survey_qty",
-    //   label: "Surveyed / Utilised Qty",
-    //   width: "min-w-[40px]",
-    // },
     {
       value: "survey_date",
       label: "Surveyed Date / Utilised Date",
       width: "min-w-[40px]",
     },
+    { value: "remarks_survey", label: "Remarks" },
   ];
 
-//demand rollback states
+  //demand rollback states
   const [rollbackDialog, setRollbackDialog] = useState(false);
   const [rollbackChoice, setRollbackChoice] = useState("yes");
   const [rollbackRow, setRollbackRow] = useState(null);
   const [rollbackItemDesc, setRollbackItemDesc] = useState("");
 
-
   //add demand states
   const [addDemandItems, setAddDemandItems] = useState([]);
   const [selectedDemandItem, setSelectedDemandItem] = useState(null);
-  const [itemType, setItemType] = useState("");
-  const [surveyQty, setSurveyQty] = useState("");
-
+  const [demandQty, setDemandQty] = useState("");
 
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -148,54 +133,23 @@ const PendingDemand = () => {
     table: false,
     search: false,
     submit: false,
+    addDemand: false,
   });
   const [actualSearch, setActualSearch] = useState("");
   const [inputs, setInputs] = useState({
     search: "",
     demand_no: "",
     demand_date: new Date(),
+    remarks: "",
   });
   const [isOpen, setIsOpen] = useState({
     demand: false,
     demand_date: false,
     addDemand: false,
     addSpare: false,
+    addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
-
-  // const handleRollback = async (row) => {
-  //   const confirm = window.confirm(
-  //     "Are you sure you want to rollback this transaction?",
-  //   );
-  //   if (!confirm) return;
-
-  //   try {
-  //     // Case 1️⃣ : Manual Withdrawl (C / LP → Demand)
-  //     if (row.transaction_id?.startsWith("PI-")) {
-  //       await apiService.post("/survey/reverse", {
-  //         survey_id: row.id,
-  //       });
-  //     }
-
-  //     // Case 2️⃣ : Survey → Demand (Pending Survey Flow)
-  //     else {
-  //       await apiService.post("/demand/reverse", {
-  //         demand_id: row.id,
-  //       });
-  //     }
-
-  //     toaster("success", "Rollback successful");
-
-  //     // remove row instantly
-  //     setFetchedData((prev) => ({
-  //       ...prev,
-  //       items: prev.items.filter((item) => item.id !== row.id),
-  //     }));
-  //   } catch (error) {
-  //     toaster("error", error.response?.data?.message || "Rollback failed");
-  //   }
-  // };
-
 
   const handleRollback = (row) => {
     setRollbackRow(row);
@@ -237,7 +191,16 @@ const PendingDemand = () => {
     }
   };
 
-  // Placeholder fetch function as requested
+  const fetchDemandItems = async () => {
+    try {
+      const response = await apiService.get("/demand/items");
+      setAddDemandItems(response.data.items || []);
+    } catch (error) {
+      console.error("Error fetching demand items:", error);
+      toaster("error", "Failed to fetch items");
+    }
+  };
+
   const fetchdata = async (page = currentPage, search = inputs.search) => {
     console.log(selectedValues);
 
@@ -261,7 +224,6 @@ const PendingDemand = () => {
         totalPages: 1,
         currentPage: 1,
       });
-      // toaster.error(error.response?.data?.message || "Error fetching data");
     } finally {
       setIsLoading((prev) => ({ ...prev, table: false }));
     }
@@ -299,6 +261,7 @@ const PendingDemand = () => {
         id: selectedRow.id,
         demand_no: inputs.demand_no,
         demand_date: formatDate(inputs.demand_date),
+        remarks: inputs.remarks,
       });
       toaster("success", response.message);
       setIsOpen((prev) => ({ ...prev, demand: false }));
@@ -317,9 +280,14 @@ const PendingDemand = () => {
   const resetAddDemandDialog = () => {
     setAddDemandItems([]);
     setSelectedDemandItem(null);
-    setItemType("");
-    setSurveyQty("");
+    setDemandQty("");
   };
+
+  useEffect(() => {
+    if (isOpen.addDemand) {
+      fetchDemandItems();
+    }
+  }, [isOpen.addDemand]);
 
   useEffect(() => {
     fetchdata();
@@ -328,7 +296,7 @@ const PendingDemand = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-      survey_date: getFormatedDate(row.survey_date), // Assuming date format
+      survey_date: getFormatedDate(row.survey_date),
       created_at: getTimeDate(row.created_at),
       processed: (
         <Button
@@ -369,6 +337,11 @@ const PendingDemand = () => {
           onChange={(e) =>
             setInputs((prev) => ({ ...prev, search: e.target.value }))
           }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
         />
       </div>
       <div className="flex items-center mb-4 gap-4 w-full">
@@ -450,7 +423,7 @@ const PendingDemand = () => {
       >
         <DialogContent
           onInteractOutside={(e) => {
-            e.preventDefault(); // 🚫 Prevent outside click close
+            e.preventDefault();
           }}
           onPointerDownOutside={(e) => {
             e.preventDefault();
@@ -460,6 +433,7 @@ const PendingDemand = () => {
               ...prev,
               demand_no: "",
               demand_date: new Date(),
+              remarks: "",
             }));
           }}
         >
@@ -560,7 +534,20 @@ const PendingDemand = () => {
                 />
               </PopoverContent>
             </Popover>
-
+            <div>
+              <Label className="mb-1 mt-4">Remarks</Label>
+              <Input
+                className="mt-2"
+                placeholder="Enter remarks"
+                value={inputs.remarks}
+                onChange={(e) =>
+                  setInputs((prev) => ({
+                    ...prev,
+                    remarks: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </div>
             <div>
               <div className="flex items-center mt-4 gap-4 justify-end">
                 <Button
@@ -641,12 +628,12 @@ const PendingDemand = () => {
         </DialogContent>
       </Dialog>
 
-      {/* add demand dialog */}
+      {/* Add Demand Dialog - Modified */}
       <Dialog
         open={isOpen.addDemand}
         onOpenChange={(open) => {
           if (!open) resetAddDemandDialog();
-          setIsOpen((prev) => ({ ...prev, addDemand: open }))
+          setIsOpen((prev) => ({ ...prev, addDemand: open }));
         }}
       >
         <DialogContent
@@ -658,110 +645,47 @@ const PendingDemand = () => {
         >
           <DialogTitle>Add Demand Item</DialogTitle>
 
-          {/* ITEM TYPE */}
-          <div className="mt-4">
-            <Label>Item Type</Label>
-
-            <select
-              className="w-full border rounded p-2 mt-1"
-              value={itemType}
-              onChange={async (e) => {
-                const type = e.target.value;
-                setItemType(type);
-
-                if (!type) return;
-
-                const response = await apiService.get(
-                  type === "spare" ? "/spares" : "/tools",
-                  {
-                    params: {
-                      limit: 100,
-                      // category: "PR",
-                    },
-                  },
-                );
-
-                setAddDemandItems(response.data.items);
-              }}
-            >
-              <option value="">Select Type</option>
-              <option value="spare">Spares</option>
-              <option value="tool">Tools</option>
-            </select>
-          </div>
-
-          {/* ITEM LIST */}
-          {/* {addDemandItems.length > 0 && (
-            <div className="mt-4">
-              <Label>Select Item</Label>
-
-              <select
-                className="w-full border rounded p-2 mt-1"
-                onChange={(e) => {
-                  const item = addDemandItems.find(
-                    (i) => i.id == e.target.value,
-                  );
-                  setSelectedDemandItem(item);
-                }} */}
-          {itemType && (
-            <div className="mt-4">
-              <Label>Select Item</Label>
-
-              <select
-                className="w-full border rounded p-2 mt-1"
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  if (value === "custom") {
-                    if (itemType === "spare") {
-                      setIsOpen((prev) => ({ ...prev, addSpare: true }));
-                    }
-
-                    if (itemType === "tool") {
-                      setIsOpen((prev) => ({ ...prev, addTool: true }));
-                    }
-
-                    return;
-                  }
-
-                  const item = addDemandItems.find((i) => i.id == value);
-                  setSelectedDemandItem(item);
-                }}
-              >
-                <option>Select Item</option>
-
-                {addDemandItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.description} ({item.category})
-                  </option>
-                ))}
-                <option value="custom">➕ Add New {itemType}</option>
-              </select>
-            </div>
-          )}
-
-          {/* SURVEY QTY */}
+          {/* Select Item - Always visible with search */}
           <div className="mt-4">
             <Label>
-              Qty to be demanded<span className="text-red-500">*</span>
+              Select Item <span className="text-red-500">*</span>
             </Label>
+            <ComboBox
+              className="w-full mt-1"
+              options={addDemandItems.map((item) => ({
+                id: item.id,
+                name: `${item.description} (${item.category}) - ${item.type}`,
+                raw: item,
+              }))}
+              placeholder="Search and select item..."
+              onSelect={(value) => {
+                setSelectedDemandItem(value.raw);
+              }}
+            />
+          </div>
 
+          {/* Qty to be demanded - Always visible */}
+          <div className="mt-4">
+            <Label>
+              Qty to be demanded <span className="text-red-500">*</span>
+            </Label>
             <Input
               type="number"
               min="1"
               placeholder="Enter quantity"
-              value={surveyQty}
-              onChange={(e) => setSurveyQty(e.target.value)}
+              value={demandQty}
+              onChange={(e) => setDemandQty(e.target.value)}
+              className="mt-1"
             />
           </div>
 
-          {/* ACTION BUTTONS */}
+          {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="destructive"
               onClick={() => {
                 resetAddDemandDialog();
-                setIsOpen((prev) => ({ ...prev, addDemand: false }))
+                setIsOpen((prev) => ({ ...prev, addDemand: false }));
               }}
             >
               Cancel
@@ -771,38 +695,53 @@ const PendingDemand = () => {
               className="text-white"
               onClick={async () => {
                 if (!selectedDemandItem) {
-                  return toaster("error", "Please select item");
+                  return toaster("error", "Please select an item");
                 }
 
-                if (!surveyQty || Number(surveyQty) <= 0) {
-                  return toaster("error", "Survey Qty must be greater than 0");
+                if (!demandQty || Number(demandQty) <= 0) {
+                  return toaster("error", "Quantity must be greater than 0");
                 }
 
-                await apiService.post("/demand/manual-add", {
-                  spare_id: itemType === "spare" ? selectedDemandItem.id : null,
-                  tool_id: itemType === "tool" ? selectedDemandItem.id : null,
-                  survey_qty: Number(surveyQty),
-                });
+                setIsLoading((prev) => ({ ...prev, addDemand: true }));
 
-                toaster("success", "Demand item added");
+                try {
+                  await apiService.post("/demand/manual-add", {
+                    spare_id:
+                      selectedDemandItem.type === "spare"
+                        ? selectedDemandItem.id
+                        : null,
+                    tool_id:
+                      selectedDemandItem.type === "tool"
+                        ? selectedDemandItem.id
+                        : null,
+                    survey_qty: Number(demandQty),
+                  });
 
-                setSurveyQty("");
-                setSelectedDemandItem(null);
-                setItemType("");
+                  toaster("success", "Demand item added successfully");
 
-                setIsOpen((prev) => ({ ...prev, addDemand: false }));
-
-                fetchdata();
+                  resetAddDemandDialog();
+                  setIsOpen((prev) => ({ ...prev, addDemand: false }));
+                  fetchdata();
+                } catch (error) {
+                  console.error("Error adding demand item:", error);
+                  toaster(
+                    "error",
+                    error.response?.data?.message ||
+                      "Failed to add demand item",
+                  );
+                } finally {
+                  setIsLoading((prev) => ({ ...prev, addDemand: false }));
+                }
               }}
+              disabled={isLoading.addDemand}
             >
-              Submit
+              {isLoading.addDemand ? "Submitting..." : "Submit"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ADD SPARE */}
-
       <Dialog
         open={isOpen.addSpare}
         onOpenChange={(open) =>
@@ -825,14 +764,13 @@ const PendingDemand = () => {
                 });
               }}
             >
-             Open
+              Open
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ADD TOOL */}
-
       <Dialog
         open={isOpen.addTool}
         onOpenChange={(open) =>

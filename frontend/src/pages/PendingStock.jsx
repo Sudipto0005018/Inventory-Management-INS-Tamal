@@ -43,18 +43,42 @@ const PermanentPendings = () => {
       ),
       width: "min-w-[40px]",
     },
-    { key: "category", header: "Category" },
-    { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date" },
-    { key: "demand_quantity", header: "Demanded Qty" },
-    { key: "stocked_in_qty", header: "Stocked In Qty" },
-    { key: "mo_no", header: "MO Gate Pass No." },
-    { key: "mo_date", header: "MO Date" },
-
-    { key: "qty_received", header: "Received Qty" },
-    { key: "statusBadge", header: "Status" },
+    { key: "category", header: "Category", width: "max-w-[40px]" },
+    { key: "denos", header: "Denos.", width: "max-w-[40px]" },
+    { key: "demand_no", header: "Demand No.", width: "max-w-[75px] px-0" },
+    { key: "demand_date", header: "Demand Date", width: "max-w-[65px]" },
+    {
+      key: "demand_quantity",
+      header: (
+        <span>
+          Demanded <br /> Qty
+        </span>
+      ),
+      width: "max-w-[55px] px-0",
+    },
+    {
+      key: "stocked_in_qty",
+      header: (
+        <span>
+          MO Issued <br /> Qty
+        </span>
+      ),
+      width: "max-w-[55px] px-0",
+    },
+    { key: "mo_no", header: "MO Gate Pass No.", width: "max-w-[75px] px-0" },
+    { key: "mo_date", header: "MO Issued Date", width: "max-w-[60px]" },
+    {
+      key: "qty_received",
+      header: (
+        <span>
+          Received <br /> Qty
+        </span>
+      ),
+      width: "max-w-[55px] px-0",
+    },
+    { key: "statusBadge", header: "Status", width: "max-w-[55px] px-0" },
     ...(user.role != "user"
-      ? [{ key: "processed", header: "Proceed", width: "min-w-[40px]" }]
+      ? [{ key: "processed", header: "Proceed", width: "max-w-[55px] px-0" }]
       : []),
     ...(user.role === "officer"
       ? [{ key: "rollback", header: "Rollback" }]
@@ -74,13 +98,11 @@ const PermanentPendings = () => {
       width: "min-w-[40px]",
     },
     { value: "category", label: "Category" },
+    { value: "denos", label: "Denos." },
     { value: "demand_no", label: "Demand No." },
     { value: "demand_date", label: "Demand Date" },
-    // { value: "demand_quantity", label: "Demanded Qty" },
-    // { value: "stocked_in_qty", label: "Stocked In Qty" },
     { value: "mo_no", label: "MO Gate Pass No." },
     { value: "mo_date", label: "MO Date" },
-    // { value: "qty_received", label: "Received Qty" },
   ];
 
   //stock-update rollback states
@@ -478,7 +500,7 @@ const PermanentPendings = () => {
             <MultiSelect
               className="bg-white hover:bg-blue-50"
               options={options}
-              placeholder="Select columns"
+              placeholder="Select Fields"
               onValueChange={setSelectedValues}
               defaultValue={selectedValues}
               singleLine
@@ -633,7 +655,7 @@ const PermanentPendings = () => {
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div>
                   <Label className="mb-1 ms-2 gap-1" htmlFor="quantity">
-                    Stocked In Qty
+                    MO Issued Qty
                   </Label>
                   <Input
                     className="mt-2"

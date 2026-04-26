@@ -8,6 +8,7 @@ const ALLOWED_TOOL_SEARCH_FIELDS = [
   "equipment_system",
   "category",
   "boxNo",
+  "box_no",
   "storage_location",
   "item_distribution",
   "indian_pattern",
@@ -15,9 +16,6 @@ const ALLOWED_TOOL_SEARCH_FIELDS = [
   "price_unit",
   "sub_component",
   "denos",
-  "obs_authorised",
-  "obs_maintained",
-  "obs_held",
   "substitute_name",
   "local_terminology",
 ];
@@ -52,8 +50,13 @@ async function getTools(req, res) {
         "denos",
         "indian_pattern",
         "item_code",
+        "price_unit",
+        "sub_component",
         "category",
         "substitute_name",
+        "local_terminology",
+        "box_no",
+        "storage_location",
       ];
 
   const offset = (page - 1) * limit;
@@ -72,31 +75,35 @@ async function getTools(req, res) {
 
       let wordConditions = [];
 
-      for (const word of searchWords) {
-        let fieldFragments = [];
+        for (const word of searchWords) {
+          let fieldFragments = [];
 
-        for (const field of validFields) {
-          // Numeric field detection (add more if needed)
-          if (
-            [
-              "price_unit",
-              "obs_authorised",
-              "obs_maintained",
-              "obs_held",
-            ].includes(field) &&
-            !isNaN(word)
-          ) {
-            params.push(Number(word));
-            fieldFragments.push(`${field} = ?`);
-          } else {
-            params.push(`%${word}%`);
-            fieldFragments.push(`${field} LIKE ?`);
+          for (const field of validFields) {
+            if (field === "box_no") {
+              // Special handling for JSON box_no field
+              params.push(`%${word}%`);
+              // Search within the JSON array for box numbers
+              fieldFragments.push(`JSON_EXTRACT(${field}, '$[*].no') LIKE ?`);
+            } else if (
+              [
+                "price_unit",
+                "obs_authorised",
+                "obs_maintained",
+                "obs_held",
+              ].includes(field) &&
+              !isNaN(word)
+            ) {
+              params.push(Number(word));
+              fieldFragments.push(`${field} = ?`);
+            } else {
+              params.push(`%${word}%`);
+              fieldFragments.push(`${field} LIKE ?`);
+            }
           }
-        }
 
-        // One word must match at least one field (OR)
-        wordConditions.push(`(${fieldFragments.join(" OR ")})`);
-      }
+          // One word must match at least one field (OR)
+          wordConditions.push(`(${fieldFragments.join(" OR ")})`);
+        }
 
       // All words must match (AND)
       whereClause += ` AND (${wordConditions.join(" AND ")})`;
@@ -918,10 +925,22 @@ async function getLowStockTools(req, res) {
   const offset = (page - 1) * limit;
   const department = req.department;
   try {
+//     let whereClause = `
+//   WHERE obs_authorised > 0
+//   AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)
+    // `;
+    
     let whereClause = `
-  WHERE obs_authorised > 0
-  AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)
-`;
+      WHERE obs_authorised > 0
+      AND (
+        -- Case 1: Maintained qty is 2 or less -> low stock when Qty Held <= 51% of Maintained Qty
+        (obs_maintained <= 2 AND IFNULL(obs_held, 0) <= (0.51 * obs_maintained))
+        OR
+        -- Case 2: Maintained qty is 3 or above -> low stock when Qty Held <= 34% of Maintained Qty
+        (obs_maintained >= 3 AND IFNULL(obs_held, 0) <= (0.34 * obs_maintained))
+      )
+    `;
+
     let params = [];
     if (search) {
       const searchableFields = [
@@ -1002,6 +1021,34 @@ async function getLowStockTools(req, res) {
   }
 }
 
+const getAllTools = async (req, res) => {
+  const department = req.department;
+  const limit = parseInt(req.query?.limit) || 1000;
+
+  try {
+    const [tools] = await pool.query(
+      `SELECT id, description, indian_pattern, item_code, category, box_no, obs_authorised
+       FROM tools 
+       WHERE department = ?
+       ORDER BY description ASC
+       LIMIT ?`,
+      [department.id, limit],
+    );
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, { items: tools }, "Tools retrieved successfully"),
+      );
+  } catch (error) {
+    console.error("Error fetching all tools:", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+};
+
+
 module.exports = {
   createTool,
   getTools,
@@ -1013,4 +1060,5 @@ module.exports = {
   getCriticalTools,
   getLowStockTools,
   getAddSurveyTools,
+  getAllTools
 };

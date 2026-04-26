@@ -313,7 +313,7 @@ const PermanentPendings = () => {
           <MultiSelect
             className="bg-white hover:bg-blue-50"
             options={options}
-            placeholder="Select columns"
+            placeholder="Select Fields"
             onValueChange={setSelectedValues}
             defaultValue={selectedValues}
             singleLine
@@ -375,29 +375,32 @@ const PermanentPendings = () => {
           <div>
             <div className="flex gap-4 w-full">
               <div className="w-full mt-3">
-              <Label htmlFor="demand_no" className="ms-2 mb-2">
-                Demand No.
-              </Label>
-              <Input
-                id="demand_no"
-                type="text"
-                placeholder="Demand No."
-                name="demand_no"
-                value={inputs.demand_no}
-                onChange={(e) =>
-                  setInputs((prev) => ({ ...prev, demand_no: e.target.value }))
-                }
-              />
+                <Label htmlFor="demand_no" className="ms-2 mb-2">
+                  Demand No.
+                </Label>
+                <Input
+                  id="demand_no"
+                  type="text"
+                  placeholder="Demand No."
+                  name="demand_no"
+                  value={inputs.demand_no}
+                  onChange={(e) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      demand_no: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="w-full mt-2">
+                <FormattedDatePicker
+                  className="mt-4 w-full"
+                  label="Demand Date"
+                  value={date}
+                  onChange={setDate}
+                />
+              </div>
             </div>
-            <div className="w-full mt-2">
-              <FormattedDatePicker
-                className="mt-4 w-full"
-                label="Demand Date"
-                value={date}
-                onChange={setDate}
-              />
-              </div>
-              </div>
             <div className="flex items-center mt-4 gap-4 justify-end">
               <Button
                 variant="destructive"

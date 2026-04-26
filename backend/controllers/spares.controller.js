@@ -10,10 +10,8 @@ const ALLOWED_SEARCH_FIELDS = [
   "description",
   "equipment_system",
   "denos",
-  "obs_authorised",
-  "obs_maintained",
-  "obs_held",
   "boxNo",
+  "box_no",
   "storage_location",
   "item_distribution",
   "indian_pattern",
@@ -29,7 +27,6 @@ async function getSpares(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
   const search = (req.query?.search || "").trim();
-  // new: comma-separated or JSON array of fields
   let searchFieldsRaw = req.query?.searchFields || "";
   let searchFields = [];
 
@@ -48,7 +45,6 @@ async function getSpares(req, res) {
     }
   }
 
-  // sanitize/validate fields, fallback to default fields when none provided
   const validFields = searchFields.length
     ? searchFields.filter((f) => ALLOWED_SEARCH_FIELDS.includes(f))
     : [
@@ -57,20 +53,23 @@ async function getSpares(req, res) {
         "denos",
         "indian_pattern",
         "item_code",
+        "price_unit",
+        "sub_component",
         "category",
         "substitute_name",
+        "local_terminology",
+        "box_no",
+        "storage_location",
       ];
 
   const offset = (page - 1) * limit;
   const department = req.department;
 
   try {
-    // base where
     let whereClause = "WHERE 1=1";
     let params = [];
 
     if (search) {
-      // Split search by comma OR space
       const searchWords = search
         .split(/[,;\s]+/)
         .map((w) => w.trim())
@@ -82,13 +81,16 @@ async function getSpares(req, res) {
         let fieldFragments = [];
 
         for (const field of validFields) {
-          // Numeric fields detection
-          if (
+          if (field === "box_no") {
+            // Special handling for JSON box_no field
+            params.push(`%${word}%`);
+            fieldFragments.push(`JSON_EXTRACT(${field}, '$[*].no') LIKE ?`);
+          } else if (
             [
+              "price_unit",
               "obs_authorised",
               "obs_maintained",
               "obs_held",
-              "price_unit",
             ].includes(field) &&
             !isNaN(word)
           ) {
@@ -100,11 +102,9 @@ async function getSpares(req, res) {
           }
         }
 
-        // Each word must match at least one field (OR)
         wordConditions.push(`(${fieldFragments.join(" OR ")})`);
       }
 
-      // All words must match (AND)
       whereClause += ` AND (${wordConditions.join(" AND ")})`;
     }
 
@@ -133,6 +133,7 @@ async function getSpares(req, res) {
       LIMIT ? OFFSET ?;
     `;
     const [rows] = await pool.query(query, [...params, limit, offset]);
+
     res.status(200).json(
       new ApiResponse(
         200,
@@ -1179,12 +1180,26 @@ async function generateExcel(req, res) {
     }
 
     if (module === "procurement") {
-      const whereClause = completed
-        ? `WHERE p.status = 'complete'
-       AND p.created_at BETWEEN ? AND ?`
-        : `WHERE (p.status = 'pending' OR p.status = 'partial')`;
+      // const whereClause = completed
+      //   ? `WHERE p.status = 'complete'
+      //  AND p.created_at BETWEEN ? AND ?`
+      //   : `WHERE (p.status = 'pending' OR p.status = 'partial')`;
 
-      const args = completed ? [startDate, endDate] : [];
+      // const args = completed ? [startDate, endDate] : [];
+      let whereClause = "";
+      let args = [];
+
+      if (completed) {
+        whereClause = `WHERE p.status = 'complete' AND p.created_at BETWEEN ? AND ?`;
+        args = [startDate, endDate];
+      } else {
+        whereClause = `WHERE p.status != 'complete'`;
+
+        if (startDate && endDate) {
+          whereClause += ` AND p.created_at BETWEEN ? AND ?`;
+          args = [startDate, endDate];
+        }
+      }
       [rows] = await pool.query(
         `
       SELECT p.nac_qty, p.nac_no, p.nac_date, p.validity, p.rate_unit, p.issue_date,
@@ -1192,6 +1207,7 @@ async function generateExcel(req, res) {
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
         CASE
@@ -1244,6 +1260,7 @@ async function generateExcel(req, res) {
           END AS type,
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
 
@@ -1292,6 +1309,7 @@ async function generateExcel(req, res) {
       s.box_no,
       s.created_at,
       s.status,
+      s.remarks_survey,
         CASE
            WHEN s.spare_id IS NOT NULL THEN 'spare'
            WHEN s.tool_id IS NOT NULL THEN 'tool'
@@ -1329,7 +1347,8 @@ async function generateExcel(req, res) {
       d.survey_voucher_no,
       d.survey_date,
       d.created_at,
-      d.status, 
+      d.status,
+      d.remarks,
           CASE
            WHEN d.spare_id IS NOT NULL THEN 'spare'
            WHEN d.tool_id IS NOT NULL THEN 'tool'
@@ -1373,6 +1392,7 @@ async function generateExcel(req, res) {
       pi.demand_quantity,
       pi.created_at,
       pi.status,
+      pi.remarks,
           CASE
            WHEN pi.spare_id IS NOT NULL THEN 'spare'
            WHEN pi.tool_id IS NOT NULL THEN 'tool'
@@ -1381,6 +1401,7 @@ async function generateExcel(req, res) {
 
       COALESCE(sp.description, t.description) AS description,
       COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos,
       COALESCE(sp.equipment_system, t.equipment_system) AS equipment_system,
       COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern
 
@@ -1466,7 +1487,14 @@ async function generateExcel(req, res) {
             WHEN sd.spare_id IS NOT NULL THEN s.category
             WHEN sd.tool_id IS NOT NULL THEN t.category
             ELSE NULL
-          END AS category
+          END AS category,
+
+          CASE
+            WHEN sd.spare_id IS NOT NULL THEN s.denos
+            WHEN sd.tool_id IS NOT NULL THEN t.denos
+            ELSE NULL
+          END AS denos
+
 
 
     FROM special_demand sd
@@ -1498,6 +1526,7 @@ async function generateExcel(req, res) {
         ty.return_date,
         u1.name AS created_by_name,
         ty.created_at,
+        ty.remarks,
 
         u2.name AS approved_by_name,
         ty.approved_at,
@@ -1576,7 +1605,7 @@ async function generateExcel(req, res) {
     til.created_at,
     u2.name AS approved_by_name,
     til.approved_at,
-
+    til.remarks,
     til.box_no,
 
     CASE
@@ -2124,10 +2153,22 @@ async function getLowStockSpares(req, res) {
   const offset = (page - 1) * limit;
   const department = req.department;
   try {
+//     let whereClause = `
+//   WHERE obs_authorised > 0
+//   AND IFNULL(obs_held,0) <= (0.51 * obs_maintained)
+    // `;
+    
     let whereClause = `
-  WHERE obs_authorised > 0
-  AND IFNULL(obs_held,0) <= (0.30 * obs_maintained)
-`;
+      WHERE obs_authorised > 0
+      AND (
+        -- Case 1: Maintained qty is 2 or less -> low stock when Qty Held <= 51% of Maintained Qty
+        (obs_maintained <= 2 AND IFNULL(obs_held, 0) <= (0.51 * obs_maintained))
+        OR
+        -- Case 2: Maintained qty is 3 or above -> low stock when Qty Held <= 34% of Maintained Qty
+        (obs_maintained >= 3 AND IFNULL(obs_held, 0) <= (0.34 * obs_maintained))
+      )
+    `;
+
     let params = [];
     if (search) {
       const searchableFields = [
@@ -2208,6 +2249,29 @@ async function getLowStockSpares(req, res) {
   }
 }
 
+const getAllSpares = async (req, res) => {
+  const department = req.department;
+  const limit = parseInt(req.query?.limit) || 1000;
+  
+  try {
+    const [spares] = await pool.query(
+      `SELECT id, description, indian_pattern, item_code, category, box_no, obs_authorised
+       FROM spares 
+       WHERE department = ?
+       ORDER BY description ASC
+       LIMIT ?`,
+      [department.id, limit]
+    );
+    
+    res.status(200).json(
+      new ApiResponse(200, { items: spares }, "Spares retrieved successfully")
+    );
+  } catch (error) {
+    console.error("Error fetching all spares:", error);
+    res.status(500).json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+};
+
 module.exports = {
   createSpare,
   getSpares,
@@ -2223,4 +2287,5 @@ module.exports = {
   generateExcel,
   getLowStockSpares,
   getAddSurveySpares,
+  getAllSpares
 };
