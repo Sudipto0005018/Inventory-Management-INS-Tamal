@@ -37,9 +37,9 @@ async function backupDatabase() {
     await execPromise(
       `${mysqldumpPath} -u ${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${process.env.DB_NAME} > "${outputPath}"`,
     );
-    await execPromise(
-      `copy "${outputPath}" "\\\\${process.env.BACKUP_PC_IP}\\${process.env.SHARED_FOLDER}\\${fileName}"`,
-    );
+    // await execPromise(
+    //   `copy "${outputPath}" "\\\\${process.env.BACKUP_PC_IP}\\${process.env.SHARED_FOLDER}\\${fileName}"`,
+    // );
 
     return outputPath;
   } catch (error) {
