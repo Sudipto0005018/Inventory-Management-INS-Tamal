@@ -540,21 +540,32 @@ const AsyncSelectBox = ({
     }
   };
 
-  const handleIndividualSelect = (individual) => {
-    setSelectedIndividual(individual);
-    setIndividualOpen(false);
+const handleIndividualSelect = (individual) => {
+  console.log("Individual selected in AsyncSelectBox:", individual);
+  setSelectedIndividual(individual);
+  setIndividualOpen(false);
 
-    // Update the value with selected individual info
-    const updatedValue = {
-      ...value,
-      selectedIndividual: individual,
-    };
-    onChange(updatedValue);
-
-    if (onIndividualChange) {
-      onIndividualChange(individual);
-    }
+  // Create a clean individual object with proper id
+  const cleanIndividual = {
+    id: individual.id,
+    prefix: individual.prefix || "",
+    name: individual.name || "",
+    designation: individual.designation || "",
+    phone: individual.phone || "",
   };
+
+  // Update the value with selected individual info
+  const updatedValue = {
+    ...value,
+    selectedIndividual: cleanIndividual,
+  };
+
+  onChange(updatedValue);
+
+  if (onIndividualChange) {
+    onIndividualChange(cleanIndividual);
+  }
+};
 
   const handleAddNewIndividual = (newIndividual) => {
     // Add the new individual to the list

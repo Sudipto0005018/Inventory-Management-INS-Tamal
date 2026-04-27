@@ -114,7 +114,7 @@ const PaginationTable = ({
     <div
       className={cn(
         "flex flex-col bg-white pb-2 rounded-lg overflow-hidden border-gray-300 w-full",
-        hasSearch ? "h-[calc(100vh-185px)]" : "h-[calc(100vh-130px)]",
+        hasSearch ? "h-[calc(100vh-250px)]" : "h-[calc(100vh-130px)]",
         className,
       )}
     >

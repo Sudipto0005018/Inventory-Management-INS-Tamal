@@ -303,6 +303,10 @@ const createSpare = async (req, res) => {
     indian_pattern,
     remarks,
     oem,
+    oem_contact_person_id,
+    oem_contact_person_details,
+    supplier_contact_person_id,
+    supplier_contact_person_details,
     substitute_name,
     local_terminology,
     critical_spare,
@@ -310,7 +314,23 @@ const createSpare = async (req, res) => {
     price_unit,
     supplier,
   } = req.body;
+
   const department = req.department;
+
+  console.log("Received OEM Contact Person ID:", oem_contact_person_id);
+  console.log(
+    "Received OEM Contact Person Details:",
+    oem_contact_person_details,
+  );
+  console.log(
+    "Received Supplier Contact Person ID:",
+    supplier_contact_person_id,
+  );
+  console.log(
+    "Received Supplier Contact Person Details:",
+    supplier_contact_person_details,
+  );
+
   try {
     if (!description || !equipment_system) {
       return res
@@ -323,11 +343,42 @@ const createSpare = async (req, res) => {
     // ✅ MULTI IMAGE FILENAMES
     const images = req.files?.map((file) => file.filename) || [];
 
+    //new logic
+    // Parse contact person details if they are strings
+    let parsedOemDetails = null;
+    let parsedSupplierDetails = null;
+
+    if (oem_contact_person_details) {
+      try {
+        parsedOemDetails =
+          typeof oem_contact_person_details === "string"
+            ? JSON.parse(oem_contact_person_details)
+            : oem_contact_person_details;
+      } catch (e) {
+        console.error("Error parsing OEM details:", e);
+        parsedOemDetails = null;
+      }
+    }
+
+    if (supplier_contact_person_details) {
+      try {
+        parsedSupplierDetails =
+          typeof supplier_contact_person_details === "string"
+            ? JSON.parse(supplier_contact_person_details)
+            : supplier_contact_person_details;
+      } catch (e) {
+        console.error("Error parsing Supplier details:", e);
+        parsedSupplierDetails = null;
+      }
+    }
+
     const query = `
             INSERT INTO spares
-                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_spare, sub_component, price_unit, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location,
+                 item_code, indian_pattern, remarks, department, images, uid, oem,
+                   oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details, substitute_name, local_terminology, critical_spare, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -348,6 +399,10 @@ const createSpare = async (req, res) => {
       JSON.stringify(images),
       Date.now().toString(),
       oem || null,
+      oem_contact_person_id ? parseInt(oem_contact_person_id) : null,
+      parsedOemDetails ? JSON.stringify(parsedOemDetails) : null,
+      supplier_contact_person_id ? parseInt(supplier_contact_person_id) : null,
+      parsedSupplierDetails ? JSON.stringify(parsedSupplierDetails) : null,
       substitute_name || null,
       local_terminology || null,
       isCriticalSpare,
@@ -635,6 +690,10 @@ async function updateSpare(req, res) {
     indian_pattern,
     remarks,
     oem,
+    oem_contact_person_id,
+    oem_contact_person_details,
+    supplier_contact_person_id,
+    supplier_contact_person_details,
     substitute_name,
     local_terminology,
     critical_spare,
@@ -647,6 +706,20 @@ async function updateSpare(req, res) {
 
   // const newImages = req.files?.map((f) => f.filename) || [];
 
+  console.log("Updating with OEM Contact Person ID:", oem_contact_person_id);
+  console.log(
+    "Updating with OEM Contact Person Details:",
+    oem_contact_person_details,
+  );
+  console.log(
+    "Updating with Supplier Contact Person ID:",
+    supplier_contact_person_id,
+  );
+  console.log(
+    "Updating with Supplier Contact Person Details:",
+    supplier_contact_person_details,
+  );
+
   const imageStatus = req.body.imageStatus
     ? JSON.parse(req.body.imageStatus)
     : [];
@@ -658,6 +731,31 @@ async function updateSpare(req, res) {
   }
 
   // let oldImg = null;
+
+  let parsedOemDetails = null;
+  let parsedSupplierDetails = null;
+
+  if (oem_contact_person_details) {
+    try {
+      parsedOemDetails =
+        typeof oem_contact_person_details === "string"
+          ? JSON.parse(oem_contact_person_details)
+          : oem_contact_person_details;
+    } catch (e) {
+      console.error("Error parsing OEM details for update:", e);
+    }
+  }
+
+  if (supplier_contact_person_details) {
+    try {
+      parsedSupplierDetails =
+        typeof supplier_contact_person_details === "string"
+          ? JSON.parse(supplier_contact_person_details)
+          : supplier_contact_person_details;
+    } catch (e) {
+      console.error("Error parsing Supplier details for update:", e);
+    }
+  }
 
   try {
     /* 1️⃣ Fetch current spare */
@@ -805,6 +903,10 @@ async function updateSpare(req, res) {
           remarks = ?,
           images = ?,
           oem = ?,
+          oem_contact_person_id = ?,
+          oem_contact_person_details = ?,
+          supplier_contact_person_id = ?,
+          supplier_contact_person_details = ?,
           substitute_name = ?,
           local_terminology = ?,
           critical_spare = ?,
@@ -830,6 +932,20 @@ async function updateSpare(req, res) {
         remarks || null,
         JSON.stringify(finalImages),
         oem || null,
+        // oem_contact_person_id || null,
+        // oem_contact_person_details
+        //   ? JSON.stringify(oem_contact_person_details)
+        //   : null,
+        // supplier_contact_person_id || null,
+        // supplier_contact_person_details
+        //   ? JSON.stringify(supplier_contact_person_details)
+        //   : null,
+        oem_contact_person_id ? parseInt(oem_contact_person_id) : null,
+        parsedOemDetails ? JSON.stringify(parsedOemDetails) : null,
+        supplier_contact_person_id
+          ? parseInt(supplier_contact_person_id)
+          : null,
+        parsedSupplierDetails ? JSON.stringify(parsedSupplierDetails) : null,
         substitute_name || null,
         local_terminology || null,
         critical_spare,
@@ -2153,11 +2269,11 @@ async function getLowStockSpares(req, res) {
   const offset = (page - 1) * limit;
   const department = req.department;
   try {
-//     let whereClause = `
-//   WHERE obs_authorised > 0
-//   AND IFNULL(obs_held,0) <= (0.51 * obs_maintained)
+    //     let whereClause = `
+    //   WHERE obs_authorised > 0
+    //   AND IFNULL(obs_held,0) <= (0.51 * obs_maintained)
     // `;
-    
+
     let whereClause = `
       WHERE obs_authorised > 0
       AND (
@@ -2252,7 +2368,7 @@ async function getLowStockSpares(req, res) {
 const getAllSpares = async (req, res) => {
   const department = req.department;
   const limit = parseInt(req.query?.limit) || 1000;
-  
+
   try {
     const [spares] = await pool.query(
       `SELECT id, description, indian_pattern, item_code, category, box_no, obs_authorised
@@ -2260,15 +2376,23 @@ const getAllSpares = async (req, res) => {
        WHERE department = ?
        ORDER BY description ASC
        LIMIT ?`,
-      [department.id, limit]
+      [department.id, limit],
     );
-    
-    res.status(200).json(
-      new ApiResponse(200, { items: spares }, "Spares retrieved successfully")
-    );
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { items: spares },
+          "Spares retrieved successfully",
+        ),
+      );
   } catch (error) {
     console.error("Error fetching all spares:", error);
-    res.status(500).json(new ApiErrorResponse(500, {}, "Internal server error"));
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
   }
 };
 
@@ -2287,5 +2411,5 @@ module.exports = {
   generateExcel,
   getLowStockSpares,
   getAddSurveySpares,
-  getAllSpares
+  getAllSpares,
 };

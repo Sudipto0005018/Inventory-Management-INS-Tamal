@@ -149,6 +149,14 @@ const Spares = ({ type = "" }) => {
     { key: "edit", header: "Actions", width: "max-w-[35px]" },
   ]);
 
+  // Add oem state variables
+  const [selectedOEMIndividual, setSelectedOEMIndividual] = useState(null);
+  const [selectedSupplierIndividual, setSelectedSupplierIndividual] =
+    useState(null);
+  const [selectedEditOEMIndividual, setSelectedEditOEMIndividual] =
+    useState(null);
+  const [selectedEditSupplierIndividual, setSelectedEditSupplierIndividual] =
+    useState(null);
   const [open, setOpen] = useState(false);
   const [originalObsAuthorised, setOriginalObsAuthorised] = useState(null);
   const [maintainConfirm, setMaintainConfirm] = useState({
@@ -316,6 +324,56 @@ const Spares = ({ type = "" }) => {
       console.error("Failed to fetch OEM details", error);
       return null;
     }
+  };
+
+  const fetchOEMContactPersons = async (oemId) => {
+    try {
+      const res = await apiService.get(`/oem/${oemId}/contact-persons`);
+      return res.data || [];
+    } catch (error) {
+      console.error("Failed to fetch OEM contact persons", error);
+      return [];
+    }
+  };
+
+  // Fetch contact persons for a specific Supplier
+  const fetchSupplierContactPersons = async (supplierId) => {
+    try {
+      const res = await apiService.get(
+        `/supplier/${supplierId}/contact-persons`,
+      );
+      return res.data || [];
+    } catch (error) {
+      console.error("Failed to fetch Supplier contact persons", error);
+      return [];
+    }
+  };
+
+  // Handle when an individual is selected from OEM
+  // Update handleOEMIndividualChange
+  const handleOEMIndividualChange = (individual) => {
+    console.log("OEM Individual selected:", individual);
+    setSelectedOEMIndividual(individual);
+    // Store the selected individual details in the inputs
+    setInputs((prev) => ({
+      ...prev,
+      oem_contact_person_id:
+        individual?.id !== undefined ? individual.id : null,
+      oem_contact_person_details: individual || null,
+    }));
+  };
+
+  // Update handleSupplierIndividualChange
+  const handleSupplierIndividualChange = (individual) => {
+    console.log("Supplier Individual selected:", individual);
+    setSelectedSupplierIndividual(individual);
+    // Store the selected individual details in the inputs
+    setInputs((prev) => ({
+      ...prev,
+      supplier_contact_person_id:
+        individual?.id !== undefined ? individual.id : null,
+      supplier_contact_person_details: individual || null,
+    }));
   };
 
   const addToDropdown = async (type, value) => {
@@ -803,6 +861,36 @@ const Spares = ({ type = "" }) => {
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append("critical_spare", inputs.critical_spare || 0);
       formData.append("supplier", inputs.supplier || "");
+      formData.append(
+        "oem_contact_person_id",
+        inputs.oem_contact_person_id || "",
+      );
+      formData.append(
+        "oem_contact_person_details",
+        inputs.oem_contact_person_details
+          ? JSON.stringify(inputs.oem_contact_person_details)
+          : "",
+      );
+      formData.append(
+        "supplier_contact_person_id",
+        inputs.supplier_contact_person_id || "",
+      );
+      formData.append(
+        "supplier_contact_person_details",
+        inputs.supplier_contact_person_details
+          ? JSON.stringify(inputs.supplier_contact_person_details)
+          : "",
+      );
+
+      console.log("Sending OEM Contact Person:", {
+        id: inputs.oem_contact_person_id,
+        details: inputs.oem_contact_person_details,
+      });
+      console.log("Sending Supplier Contact Person:", {
+        id: inputs.supplier_contact_person_id,
+        details: inputs.supplier_contact_person_details,
+      });
+
       const response = await apiService.post("/spares", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -1059,6 +1147,29 @@ const Spares = ({ type = "" }) => {
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("critical_spare", selectedRow.critical_spare);
       formData.append("supplier", selectedRow.supplier || "");
+      // console.log(inputs);
+
+      formData.append(
+        "oem_contact_person_id",
+        inputs.oem_contact_person_id || "",
+      );
+      formData.append(
+        "oem_contact_person_details",
+        inputs.oem_contact_person_details
+          ? JSON.stringify(inputs.oem_contact_person_details)
+          : "",
+      );
+      formData.append(
+        "supplier_contact_person_id",
+        inputs.supplier_contact_person_id || "",
+      );
+      formData.append(
+        "supplier_contact_person_details",
+        inputs.supplier_contact_person_details
+          ? JSON.stringify(inputs.supplier_contact_person_details)
+          : "",
+      );
+
       const response = await apiService.post(
         "/spares/update/" + selectedRow.id,
         formData,
@@ -1557,7 +1668,7 @@ const Spares = ({ type = "" }) => {
         </div>
         <div
           className={cn(
-            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
+            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-262px)]",
             !panelProduct.description && "flex justify-center items-center",
           )}
         >
@@ -1574,7 +1685,7 @@ const Spares = ({ type = "" }) => {
                   image={panelProduct.images}
                 />
               </div>
-              <div className="max-h-[calc(100vh-295px)] overflow-y-auto description-table">
+              <div className="max-h-[calc(100vh-480px)] overflow-y-auto description-table">
                 <Table className="mt-2">
                   <TableBody className="">
                     <TableRow>
@@ -2108,7 +2219,7 @@ const Spares = ({ type = "" }) => {
                 />
               </div>
               <div className="w-full mt-6 grid grid-cols-2 gap-4">
-                <div>
+                {/* <div>
                   <Label className="ms-2 mb-1">OEM Details</Label>
 
                   <AsyncSelectBox
@@ -2125,9 +2236,43 @@ const Spares = ({ type = "" }) => {
                     AddNewModal={OEMFirm}
                     onDelete={onDeleteOem}
                   />
-                </div>
+                </div> */}
 
+                {/* OEM Details with Individual Selection */}
                 <div>
+                  <Label className="ms-2 mb-1">OEM Details</Label>
+                  <AsyncSelectBox
+                    label="OEM"
+                    value={
+                      selectedOem
+                        ? {
+                            id: selectedOem,
+                            name: inputs.oem,
+                            selectedIndividual: selectedOEMIndividual,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      setSelectedOem(val.id);
+                      setInputs((prev) => ({ ...prev, oem: val.name }));
+                      // Reset individual selection when OEM changes
+                      setSelectedOEMIndividual(null);
+                      setInputs((prev) => ({
+                        ...prev,
+                        oem_contact_person_id: null,
+                        oem_contact_person_details: null,
+                      }));
+                    }}
+                    fetchOptions={fetchOemOptions}
+                    fetchDetails={fetchSigleOem}
+                    AddNewModal={OEMFirm}
+                    onDelete={onDeleteOem}
+                    showIndividualSelect={true}
+                    fetchIndividuals={fetchOEMContactPersons}
+                    onIndividualChange={handleOEMIndividualChange}
+                  />
+                </div>
+                {/* <div>
                   <Label className="ms-2 mb-1">
                     Vendor / Third Party Supplier
                   </Label>
@@ -2146,6 +2291,43 @@ const Spares = ({ type = "" }) => {
                     fetchDetails={fetchSupplierDetails}
                     AddNewModal={SupplierFirm}
                     onDelete={onDeleteSupplier}
+                  />
+                </div> */}
+
+                {/* Vendor/Supplier with Individual Selection */}
+                <div>
+                  <Label className="ms-2 mb-1">
+                    Vendor / Third Party Supplier
+                  </Label>
+                  <AsyncSelectBox
+                    label="Vendor/ Third Party Supplier"
+                    value={
+                      selectedAddSupplier
+                        ? {
+                            id: selectedAddSupplier,
+                            name: inputs.supplier,
+                            selectedIndividual: selectedSupplierIndividual,
+                          }
+                        : null
+                    }
+                    onChange={(val) => {
+                      setSelectedAddSupplier(val.id);
+                      setInputs((prev) => ({ ...prev, supplier: val.name }));
+                      // Reset individual selection when Supplier changes
+                      setSelectedSupplierIndividual(null);
+                      setInputs((prev) => ({
+                        ...prev,
+                        supplier_contact_person_id: null,
+                        supplier_contact_person_details: null,
+                      }));
+                    }}
+                    fetchOptions={fetchSupplierOptions}
+                    fetchDetails={fetchSupplierDetails}
+                    AddNewModal={SupplierFirm}
+                    onDelete={onDeleteSupplier}
+                    showIndividualSelect={true}
+                    fetchIndividuals={fetchSupplierContactPersons}
+                    onIndividualChange={handleSupplierIndividualChange}
                   />
                 </div>
               </div>
@@ -2669,7 +2851,7 @@ const Spares = ({ type = "" }) => {
                 </div>
 
                 <div className="w-full mt-6 grid grid-cols-2 gap-4">
-                  <div>
+                  {/* <div>
                     <Label className="ms-2 mb-1">OEM Details</Label>
                     <AsyncSelectBox
                       label="OEM"
@@ -2703,8 +2885,65 @@ const Spares = ({ type = "" }) => {
                       AddNewModal={OEMFirm}
                       onDelete={onDeleteOem}
                     />
-                  </div>
+                  </div> */}
+
+                  {/* OEM Details with Individual Selection */}
                   <div>
+                    <Label className="ms-2 mb-1">OEM Details</Label>
+                    <AsyncSelectBox
+                      label="OEM"
+                      value={
+                        selectedRow.oem
+                          ? {
+                              id: oemList.find(
+                                (item) => item.name === selectedRow.oem,
+                              )?.id,
+                              name: selectedRow.oem,
+                              selectedIndividual:
+                                selectedEditOEMIndividual ||
+                                selectedRow.oem_contact_person_details,
+                            }
+                          : null
+                      }
+                      onChange={(val) => {
+                        setInputs((prev) => ({
+                          ...prev,
+                          oem_contact_person_id: val.id,
+                          oem_contact_person_details: val,
+                        }));
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          oem: val.name,
+                        }));
+                        // Reset individual selection when OEM changes
+                        setSelectedEditOEMIndividual(null);
+                      }}
+                      fetchOptions={fetchOemOptions}
+                      fetchDetails={async (id) => {
+                        if (!id) return null;
+                        try {
+                          const res = await apiService.get(`/oem/${id}`);
+                          return res.data;
+                        } catch (error) {
+                          console.error("Failed to fetch OEM details", error);
+                          return null;
+                        }
+                      }}
+                      AddNewModal={OEMFirm}
+                      onDelete={onDeleteOem}
+                      showIndividualSelect={true}
+                      fetchIndividuals={fetchOEMContactPersons}
+                      onIndividualChange={(individual) => {
+                        setSelectedEditOEMIndividual(individual);
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          oem_contact_person_id: individual?.id || null,
+                          oem_contact_person_details: individual || null,
+                        }));
+                      }}
+                    />
+                  </div>
+                  {/* <div>
                     <Label className="ms-2 mb-1">
                       Vendor / Third Party Supplier
                     </Label>
@@ -2730,6 +2969,56 @@ const Spares = ({ type = "" }) => {
                       fetchDetails={fetchSupplierDetails}
                       AddNewModal={SupplierFirm}
                       onDelete={onDeleteSupplier}
+                    />
+                  </div> */}
+
+                  {/* Vendor/Supplier with Individual Selection */}
+                  <div>
+                    <Label className="ms-2 mb-1">
+                      Vendor / Third Party Supplier
+                    </Label>
+                    <AsyncSelectBox
+                      label="Vendor/ Third Party Supplier"
+                      value={
+                        selectedRow.supplier
+                          ? {
+                              id: supplierList.find(
+                                (item) => item.name === selectedRow.supplier,
+                              )?.id,
+                              name: selectedRow.supplier,
+                              selectedIndividual:
+                                selectedEditSupplierIndividual ||
+                                selectedRow.supplier_contact_person_details,
+                            }
+                          : null
+                      }
+                      onChange={(val) => {
+                        setInputs((prev) => ({
+                          ...prev,
+                          supplier_contact_person_id: val.id,
+                          supplier_contact_person_details: val,
+                        }));
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          supplier: val.name,
+                        }));
+                        // Reset individual selection when Supplier changes
+                        setSelectedEditSupplierIndividual(null);
+                      }}
+                      fetchOptions={fetchSupplierOptions}
+                      fetchDetails={fetchSupplierDetails}
+                      AddNewModal={SupplierFirm}
+                      onDelete={onDeleteSupplier}
+                      showIndividualSelect={true}
+                      fetchIndividuals={fetchSupplierContactPersons}
+                      onIndividualChange={(individual) => {
+                        setSelectedEditSupplierIndividual(individual);
+                        setSelectedRow((prev) => ({
+                          ...prev,
+                          supplier_contact_person_id: individual?.id || null,
+                          supplier_contact_person_details: individual || null,
+                        }));
+                      }}
                     />
                   </div>
                 </div>

@@ -300,6 +300,10 @@ const createTool = async (req, res) => {
     indian_pattern,
     remarks,
     oem,
+    oem_contact_person_id, // Add this
+    oem_contact_person_details, // Add this
+    supplier_contact_person_id, // Add this
+    supplier_contact_person_details, // Add this
     substitute_name,
     local_terminology,
     critical_tool,
@@ -324,9 +328,12 @@ const createTool = async (req, res) => {
 
     const query = `
             INSERT INTO tools
-                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern, remarks, department, images, uid, oem, substitute_name, local_terminology, critical_tool, sub_component, price_unit, supplier)
+                (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held,
+                 b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern,
+                 remarks, department, images, uid, oem, oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details,
+                  substitute_name, local_terminology, critical_tool, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -347,6 +354,14 @@ const createTool = async (req, res) => {
       JSON.stringify(images),
       Date.now().toString(),
       oem || null,
+      oem_contact_person_id || null,
+      oem_contact_person_details
+        ? JSON.stringify(oem_contact_person_details)
+        : null,
+      supplier_contact_person_id || null,
+      supplier_contact_person_details
+        ? JSON.stringify(supplier_contact_person_details)
+        : null,
       substitute_name || null,
       local_terminology || null,
       isCriticalTool,
@@ -543,6 +558,10 @@ async function updateTool(req, res) {
     indian_pattern,
     remarks,
     oem,
+    oem_contact_person_id, // Add this
+    oem_contact_person_details, // Add this
+    supplier_contact_person_id, // Add this
+    supplier_contact_person_details, // Add this
     substitute_name,
     local_terminology,
     critical_tool,
@@ -723,6 +742,10 @@ async function updateTool(req, res) {
           remarks = ?,
           images = ?,
           oem = ?,
+          oem_contact_person_id = ?,
+          oem_contact_person_details = ?,
+          supplier_contact_person_id = ?,
+          supplier_contact_person_details = ?,
           substitute_name = ?,
           local_terminology = ?,
           critical_tool = ?,
@@ -747,6 +770,14 @@ async function updateTool(req, res) {
         remarks || null,
         JSON.stringify(finalImages),
         oem || null,
+        oem_contact_person_id || null,
+        oem_contact_person_details
+          ? JSON.stringify(oem_contact_person_details)
+          : null,
+        supplier_contact_person_id || null,
+        supplier_contact_person_details
+          ? JSON.stringify(supplier_contact_person_details)
+          : null,
         substitute_name || null,
         local_terminology || null,
         critical_tool,

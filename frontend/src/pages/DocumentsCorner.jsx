@@ -1196,7 +1196,7 @@ const DocumentsCorner = ({ type = "" }) => {
       </div>
       <div
         className={cn(
-          "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
+          "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-262px)]",
           !panelProduct.description && "flex justify-center items-center",
         )}
       >
@@ -1213,7 +1213,7 @@ const DocumentsCorner = ({ type = "" }) => {
                 image={panelProduct.images}
               />
             </div>
-            <div className="max-h-[calc(100%-288px)] overflow-y-auto description-table">
+            <div className="max-h-[calc(100%-400px)] overflow-y-auto description-table">
               <Table className="mt-2">
                 <TableBody className="">
                   {panelProduct.obs_held && (

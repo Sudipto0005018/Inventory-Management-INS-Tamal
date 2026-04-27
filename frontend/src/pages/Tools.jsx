@@ -838,6 +838,35 @@ const Tools = ({ type = "" }) => {
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append("critical_tool", inputs.critical_tool || 0);
       formData.append("supplier", inputs.supplier || "");
+       formData.append(
+         "oem_contact_person_id",
+         inputs.oem_contact_person_id || "",
+       );
+       formData.append(
+         "oem_contact_person_details",
+         inputs.oem_contact_person_details
+           ? JSON.stringify(inputs.oem_contact_person_details)
+           : "",
+       );
+       formData.append(
+         "supplier_contact_person_id",
+         inputs.supplier_contact_person_id || "",
+       );
+       formData.append(
+         "supplier_contact_person_details",
+         inputs.supplier_contact_person_details
+           ? JSON.stringify(inputs.supplier_contact_person_details)
+           : "",
+      );
+      
+      console.log("Sending OEM Contact Person:", {
+        id: inputs.oem_contact_person_id,
+        details: inputs.oem_contact_person_details,
+      });
+      console.log("Sending Supplier Contact Person:", {
+        id: inputs.supplier_contact_person_id,
+        details: inputs.supplier_contact_person_details,
+      });
       console.log(selectedRow.category);
 
       const response = await apiService.post("/tools", formData, {
@@ -1096,6 +1125,27 @@ const Tools = ({ type = "" }) => {
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("critical_tool", selectedRow.critical_tool);
       formData.append("supplier", selectedRow.supplier || "");
+      formData.append(
+        "oem_contact_person_id",
+        inputs.oem_contact_person_id || "",
+      );
+      formData.append(
+        "oem_contact_person_details",
+        inputs.oem_contact_person_details
+          ? JSON.stringify(inputs.oem_contact_person_details)
+          : "",
+      );
+      formData.append(
+        "supplier_contact_person_id",
+        inputs.supplier_contact_person_id || "",
+      );
+      formData.append(
+        "supplier_contact_person_details",
+        inputs.supplier_contact_person_details
+          ? JSON.stringify(inputs.supplier_contact_person_details)
+          : "",
+      );
+
       const response = await apiService.post(
         "/tools/update/" + selectedRow.id,
         formData,
@@ -1577,7 +1627,7 @@ const Tools = ({ type = "" }) => {
         </div>
         <div
           className={cn(
-            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-185px)]",
+            "w-[308px] shrink-0 border border-black bg-white p-2 rounded-md ms-2 h-[calc(115vh-262px)]",
             !panelProduct.description && "flex justify-center items-center",
           )}
         >
@@ -1594,7 +1644,7 @@ const Tools = ({ type = "" }) => {
                   image={panelProduct.images}
                 />
               </div>
-              <div className="max-h-[calc(100vh-295px)] overflow-y-auto description-table">
+              <div className="max-h-[calc(100vh-480px)] overflow-y-auto description-table">
                 <Table className="mt-2">
                   <TableBody className="">
                     <TableRow>
@@ -2704,6 +2754,11 @@ const Tools = ({ type = "" }) => {
                           : null
                       }
                       onChange={(val) => {
+                         setInputs((prev) => ({
+                           ...prev,
+                           oem_contact_person_id: val.id,
+                           oem_contact_person_details: val,
+                         }));
                         setSelectedRow((prev) => ({
                           ...prev,
                           oem: val.name,
@@ -2741,6 +2796,11 @@ const Tools = ({ type = "" }) => {
                           : null
                       }
                       onChange={(val) => {
+                         setInputs((prev) => ({
+                           ...prev,
+                           supplier_contact_person_id: val.id,
+                           supplier_contact_person_details: val,
+                         }));
                         setSelectedRow((prev) => ({
                           ...prev,
                           supplier: val.name,

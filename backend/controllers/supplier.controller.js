@@ -182,6 +182,155 @@ async function getSupplierById(req, res) {
   }
 }
 
+
+async function getSupplierWithContacts(req, res) {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT 
+        id, 
+        name, 
+        address, 
+        contacts, 
+        details 
+      FROM supplier 
+      WHERE id = ?
+    `;
+    const [rows] = await pool.query(query, [id]);
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiErrorResponse(404, {}, "Supplier not found"));
+    }
+
+    // Parse the details JSON to get contact persons
+    let contactPersons = [];
+    if (rows[0].details) {
+      try {
+        contactPersons =
+          typeof rows[0].details === "string"
+            ? JSON.parse(rows[0].details)
+            : rows[0].details;
+      } catch (e) {
+        contactPersons = [];
+      }
+    }
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          ...rows[0],
+          contact_persons: contactPersons,
+        },
+        "Supplier details retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.log("Error getting Supplier details: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
+// Add function to get all Suppliers with their contact persons for selection
+async function getAllSuppliersWithContacts(req, res) {
+  try {
+    const query = "SELECT id, name, details FROM supplier";
+    const [rows] = await pool.query(query);
+
+    const formattedRows = rows.map((row) => {
+      let contactPersons = [];
+      if (row.details) {
+        try {
+          contactPersons =
+            typeof row.details === "string"
+              ? JSON.parse(row.details)
+              : row.details;
+        } catch (e) {
+          contactPersons = [];
+        }
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        contact_persons: contactPersons.map((person, index) => ({
+          id: index,
+          prefix: person.prefix,
+          name: person.name,
+          designation: person.designation,
+          phone: person.phone,
+          displayName: `${person.prefix} ${person.name} (${person.designation})`,
+        })),
+      };
+    });
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, formattedRows, "Suppliers retrieved successfully"));
+  } catch (error) {
+    console.log("Error getting Suppliers with contacts: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
+// In supplier.controller.js
+async function getSupplierContactPersons(req, res) {
+  try {
+    const { id } = req.params;
+    const query = "SELECT details FROM supplier WHERE id = ?";
+    const [rows] = await pool.query(query, [id]);
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiErrorResponse(404, {}, "Supplier not found"));
+    }
+
+    let contactPersons = [];
+    if (rows[0].details) {
+      try {
+        contactPersons =
+          typeof rows[0].details === "string"
+            ? JSON.parse(rows[0].details)
+            : rows[0].details;
+      } catch (e) {
+        contactPersons = [];
+      }
+    }
+
+    // Add display names and IDs for each person
+    const formattedPersons = contactPersons.map((person, index) => ({
+      id: index,
+      prefix: person.prefix,
+      name: person.name,
+      designation: person.designation,
+      phone: person.phone,
+      displayName: `${person.prefix} ${person.name} - ${person.designation}`,
+      fullName: `${person.prefix} ${person.name}`,
+    }));
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          formattedPersons,
+          "Contact persons retrieved successfully",
+        ),
+      );
+  } catch (error) {
+    console.log("Error getting contact persons: ", error);
+    res
+      .status(500)
+      .json(new ApiErrorResponse(500, {}, "Internal server error"));
+  }
+}
+
 module.exports = {
   addSupplier,
   getSupplierList,
@@ -189,4 +338,7 @@ module.exports = {
   updateSupplier,
   deleteSupplier,
   getSupplierById,
+  getSupplierWithContacts,
+  getAllSuppliersWithContacts,
+  getSupplierContactPersons,
 };
