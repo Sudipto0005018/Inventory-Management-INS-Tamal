@@ -57,14 +57,14 @@ const PendingSurvey = () => {
     { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
     {
       key: "withdrawl_date_str",
-      header: "Withdrawal Date",
+      header: "Withdrawal Date / Survey Date",
       width: "max-w-[40px] px-0",
     },
     { key: "service_no", header: "Service No.", width: "max-w-[40px] px-0" },
     { key: "issue_to", header: "Issued To", width: "max-w-[30px] px-0" },
     {
       key: "withdrawl_qty",
-      header: <span>Withdrawal Qty</span>,
+      header: <span>Withdrawal Qty / Survey Qty</span>,
       width: "max-w-[30px] px-0",
     },
     {
@@ -109,6 +109,18 @@ const PendingSurvey = () => {
   const [itemsList, setItemsList] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [withdrawlQty, setWithdrawlQty] = useState("");
+  // Add this with your other state declarations
+  const [manualSurveyDate, setManualSurveyDate] = useState(new Date());
+
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
+  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
+  // Add these with your other state declarations
+  const [initialItems, setInitialItems] = useState([]);
+  const [initialItemsPage, setInitialItemsPage] = useState(1);
+  const [hasMoreInitial, setHasMoreInitial] = useState(true);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(false);
+  const [isSearchingItems, setIsSearchingItems] = useState(false);
+  const [searchedItems, setSearchedItems] = useState([]);
 
   //for survey-stockin
   const [repairStatus, setRepairStatus] = useState(null);
@@ -175,6 +187,70 @@ const PendingSurvey = () => {
     }
   };
 
+  // search
+  const fetchInitialItems = async (page = 1) => {
+    if (isLoadingInitial) return;
+
+    setIsLoadingInitial(true);
+    try {
+      const response = await apiService.get("/survey/items", {
+        params: { page, limit: 200 },
+      });
+
+      if (page === 1) {
+        setInitialItems(response.data.items || []);
+      } else {
+        setInitialItems((prev) => [...prev, ...(response.data.items || [])]);
+      }
+
+      setHasMoreInitial(response.data.currentPage < response.data.totalPages);
+      setInitialItemsPage(page);
+    } catch (error) {
+      console.error("Error fetching initial items:", error);
+      toaster("error", "Failed to load items");
+    } finally {
+      setIsLoadingInitial(false);
+    }
+  };
+
+  const searchSurveyItems = async (searchTerm) => {
+    if (!searchTerm.trim() || searchTerm.length < 2) {
+      setSearchedItems([]);
+      return;
+    }
+
+    setIsSearchingItems(true);
+    try {
+      const response = await apiService.get("/survey/items", {
+        params: { search: searchTerm },
+      });
+      setSearchedItems(response.data.items || []);
+    } catch (error) {
+      console.error("Error searching items:", error);
+      setSearchedItems([]);
+    } finally {
+      setIsSearchingItems(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen.addSurvey && initialItems.length === 0) {
+      fetchInitialItems(1);
+    }
+  }, [isOpen.addSurvey]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (isItemDropdownOpen && itemSearchTerm) {
+        searchSurveyItems(itemSearchTerm);
+      } else if (!itemSearchTerm) {
+        setSearchedItems([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [itemSearchTerm, isItemDropdownOpen]);
+
   const resetSurveyDialog = () => {
     setRepairStatus(null);
 
@@ -188,6 +264,34 @@ const PendingSurvey = () => {
 
     setSelectedRow({});
   };
+
+  // const filteredItems = useMemo(() => {
+  //   if (!itemSearchTerm.trim()) return itemsList;
+
+  //   const searchLower = itemSearchTerm.toLowerCase().trim();
+  //   return itemsList.filter(
+  //     (item) =>
+  //       item.description?.toLowerCase().includes(searchLower) ||
+  //       item.indian_pattern?.toLowerCase().includes(searchLower) ||
+  //       item.item_code?.toLowerCase().includes(searchLower) ||
+  //       item.equipment_system?.toLowerCase().includes(searchLower),
+  //   );
+  // }, [itemsList, itemSearchTerm]);
+
+  // Remove or comment out the old filteredItems and replace with:
+  const displayItems = itemSearchTerm ? searchedItems : initialItems;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isItemDropdownOpen && !event.target.closest(".relative")) {
+        setIsItemDropdownOpen(false);
+        setItemSearchTerm("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isItemDropdownOpen]);
 
   const addToDropdown = async (type, value) => {
     try {
@@ -339,7 +443,9 @@ const PendingSurvey = () => {
         ...row,
         survey_quantity: row.survey_quantity || "0",
         issue_date: getFormatedDate(row.issue_date),
-        withdrawl_date_str: getFormatedDate(row.withdrawl_date),
+        withdrawl_date_str: row.withdrawl_date
+          ? getFormatedDate(row.withdrawl_date)
+          : "---",
         created_at: getTimeDate(row.created_at),
         status:
           row.status?.toLowerCase() == "pending" ? (
@@ -803,11 +909,17 @@ const PendingSurvey = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Survey Dialog */}
+      {/* Add Survey Dialog - With Search and 200 Initial Items */}
       <Dialog
         open={isOpen.addSurvey}
         onOpenChange={(open) => {
-          if (!open) resetAddSurveyDialog();
+          if (!open) {
+            resetAddSurveyDialog();
+            setItemSearchTerm("");
+            setSearchedItems([]);
+            setIsItemDropdownOpen(false);
+            setManualSurveyDate(new Date());
+          }
           setIsOpen((prev) => ({ ...prev, addSurvey: open }));
         }}
       >
@@ -820,23 +932,301 @@ const PendingSurvey = () => {
         >
           <DialogTitle>Add Survey Item</DialogTitle>
 
-          {/* Select Item - Always visible */}
+          {/* Select Item - Searchable Combobox */}
           <div className="mt-4">
             <Label>
               Select Item <span className="text-red-500">*</span>
             </Label>
-            <ComboBox
-              className="w-full mt-1"
-              options={itemsList.map((item) => ({
-                id: item.id,
-                name: `${item.description} (${item.category}) - ${item.type}`,
-                raw: item,
-              }))}
-              placeholder="Search and select item.."
-              onSelect={(value) => {
-                setSelectedItem(value.raw);
-              }}
-            />
+
+            <div className="relative mt-1">
+              {/* Custom Combobox */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
+                  className="w-full p-2 border rounded-md bg-white text-left flex justify-between items-center hover:bg-gray-50"
+                >
+                  <span
+                    className={selectedItem ? "text-gray-900" : "text-gray-400"}
+                  >
+                    {selectedItem
+                      ? `${selectedItem.description} (${selectedItem.category}) - ${selectedItem.type === "spare" ? "SPARE" : "TOOL"}`
+                      : "Search and Select Items..."}
+                  </span>
+                  <ChevronDownIcon
+                    className={`size-4 transition-transform ${isItemDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Dropdown with search */}
+                {isItemDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg">
+                    {/* Search input inside dropdown */}
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search by description, part no., item code, or equipment..."
+                          className="w-full p-2 pl-8 border rounded-md"
+                          value={itemSearchTerm}
+                          onChange={(e) => setItemSearchTerm(e.target.value)}
+                          autoFocus
+                        />
+                        <FaMagnifyingGlass className="absolute left-2 top-3 text-gray-400 size-4" />
+                        {itemSearchTerm && (
+                          <button
+                            onClick={() => setItemSearchTerm("")}
+                            className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Search mode */}
+                    {itemSearchTerm && (
+                      <div className="max-h-60 overflow-y-auto">
+                        {isSearchingItems && (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                            Searching...
+                          </div>
+                        )}
+
+                        {!isSearchingItems && (
+                          <>
+                            {searchedItems.length === 0 ? (
+                              <div className="p-4 text-center text-gray-500 text-sm">
+                                No items found matching "{itemSearchTerm}"
+                              </div>
+                            ) : (
+                              <>
+                                <div className="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-b sticky top-0">
+                                  Search Results ({searchedItems.length})
+                                </div>
+                                {searchedItems.map((item) => (
+                                  <div
+                                    key={`${item.type}-${item.id}`}
+                                    className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                    onClick={() => {
+                                      setSelectedItem(item);
+                                      setIsItemDropdownOpen(false);
+                                      setItemSearchTerm("");
+                                      setSearchedItems([]);
+                                    }}
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium">
+                                        {item.description}
+                                        <span className="ml-2 text-xs text-gray-500">
+                                          ({item.category})
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1 space-x-2">
+                                        <span className="font-semibold">
+                                          Type:
+                                        </span>
+                                        <span className="text-blue-600 font-semibold">
+                                          {item.type === "spare"
+                                            ? "SPARE"
+                                            : "TOOL"}
+                                        </span>
+                                        {item.indian_pattern && (
+                                          <>
+                                            <span className="mx-1">•</span>
+                                            <span className="font-semibold">
+                                              IN Part No.:
+                                            </span>
+                                            <span className="font-mono">
+                                              {item.indian_pattern}
+                                            </span>
+                                          </>
+                                        )}
+                                        {item.item_code && (
+                                          <>
+                                            <span className="mx-1">•</span>
+                                            <span className="font-semibold">
+                                              Item Code:
+                                            </span>
+                                            <span className="font-mono">
+                                              {item.item_code}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {item.equipment_system && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          <span className="font-semibold">
+                                            Equipment/System:
+                                          </span>
+                                          <span className="ml-1">
+                                            {item.equipment_system}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Initial items mode (no search) */}
+                    {!itemSearchTerm && (
+                      <div className="max-h-60 overflow-y-auto">
+                        {initialItems.length === 0 && isLoadingInitial ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                            Loading items...
+                          </div>
+                        ) : (
+                          <>
+                            <div className="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-b sticky top-0">
+                              Popular Items (First {initialItems.length} of{" "}
+                              {initialItems.length}+)
+                            </div>
+                            {initialItems.map((item) => (
+                              <div
+                                key={`${item.type}-${item.id}`}
+                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                onClick={() => {
+                                  setSelectedItem(item);
+                                  setIsItemDropdownOpen(false);
+                                  setItemSearchTerm("");
+                                }}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {item.description}
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({item.category})
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1 space-x-2">
+                                    <span className="font-semibold">Type:</span>
+                                    <span className="text-blue-600 font-semibold">
+                                      {item.type === "spare" ? "SPARE" : "TOOL"}
+                                    </span>
+                                    {item.indian_pattern && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span className="font-semibold">
+                                          IN Part No.:
+                                        </span>
+                                        <span className="font-mono">
+                                          {item.indian_pattern}
+                                        </span>
+                                      </>
+                                    )}
+                                    {item.item_code && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span className="font-semibold">
+                                          Item Code:
+                                        </span>
+                                        <span className="font-mono">
+                                          {item.item_code}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                  {item.equipment_system && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <span className="font-semibold">
+                                        Equipment/System:
+                                      </span>
+                                      <span className="ml-1">
+                                        {item.equipment_system}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+
+                            {hasMoreInitial && (
+                              <div className="p-2 text-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    fetchInitialItems(initialItemsPage + 1)
+                                  }
+                                  disabled={isLoadingInitial}
+                                  className="text-xs"
+                                >
+                                  {isLoadingInitial
+                                    ? "Loading..."
+                                    : "Load More (200 more)"}
+                                </Button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Selected item details panel */}
+            {selectedItem && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-xs text-green-800 mb-2 font-medium flex items-center gap-2">
+                  <span>✓ Selected Item Details:</span>
+                  <span className="px-2 py-0.5 bg-green-200 rounded text-xs font-semibold">
+                    {selectedItem.type === "spare" ? "SPARE" : "TOOL"}
+                  </span>
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="col-span-2">
+                    <span className="font-semibold text-gray-600">
+                      Description:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedItem.description || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      Category:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedItem.category || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      IN Part No.:
+                    </span>
+                    <span className="ml-2 text-gray-700 font-mono text-xs">
+                      {selectedItem.indian_pattern || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      Item Code:
+                    </span>
+                    <span className="ml-2 text-gray-700 font-mono text-xs">
+                      {selectedItem.item_code || "--"}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="font-semibold text-gray-600">
+                      Equipment/System:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedItem.equipment_system || "--"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Qty to be surveyed - Always visible */}
@@ -853,6 +1243,45 @@ const PendingSurvey = () => {
               className="mt-1"
             />
           </div>
+          <div>
+            <Label className="mt-4 mb-1">
+              To be Surveyed Date <span className="text-red-500">*</span>
+            </Label>
+
+            <Popover
+              open={isOpen.survey_calender}
+              onOpenChange={(set) =>
+                setIsOpen((prev) => ({ ...prev, survey_calender: set }))
+              }
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between font-normal"
+                >
+                  {manualSurveyDate
+                    ? getFormatedDate(manualSurveyDate)
+                    : "Select date"}
+                  <ChevronDownIcon />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={manualSurveyDate}
+                  captionLayout="dropdown"
+                  onSelect={(date) => {
+                    setManualSurveyDate(date);
+                    setIsOpen((prev) => ({
+                      ...prev,
+                      survey_calender: false,
+                    }));
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">
@@ -861,6 +1290,10 @@ const PendingSurvey = () => {
               onClick={() => {
                 resetAddSurveyDialog();
                 setIsOpen((prev) => ({ ...prev, addSurvey: false }));
+                setItemSearchTerm("");
+                setSelectedItem(null);
+                setIsItemDropdownOpen(false);
+                setSearchedItems([]);
               }}
             >
               Cancel
@@ -880,6 +1313,10 @@ const PendingSurvey = () => {
                   );
                 }
 
+                 if (!manualSurveyDate) {
+                   return toaster("error", "Please select a survey date");
+                 }
+
                 try {
                   await apiService.post("/survey/manual-add", {
                     spare_id:
@@ -887,12 +1324,18 @@ const PendingSurvey = () => {
                     tool_id:
                       selectedItem.type === "tool" ? selectedItem.id : null,
                     withdrawl_qty: parseInt(withdrawlQty),
+                    survey_date: formatDate(manualSurveyDate),
                   });
 
                   toaster("success", "Survey item added successfully");
 
                   resetAddSurveyDialog();
                   setIsOpen((prev) => ({ ...prev, addSurvey: false }));
+                  setItemSearchTerm("");
+                  setSelectedItem(null);
+                  setIsItemDropdownOpen(false);
+                  setSearchedItems([]);
+                  setManualSurveyDate(new Date());
                   fetchdata();
                 } catch (error) {
                   console.error("Error adding survey item:", error);
@@ -911,6 +1354,6 @@ const PendingSurvey = () => {
       </Dialog>
     </div>
   );
-};
+};;
 
 export default PendingSurvey;

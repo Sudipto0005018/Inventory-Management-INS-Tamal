@@ -13,7 +13,7 @@ async function createSurvey(req, res) {
     service_no,
     name,
     issue_to,
-    remarks_survey
+    remarks_survey,
   } = req.body;
 
   const connection = await pool.getConnection();
@@ -566,25 +566,25 @@ async function getLogSurveys(req, res) {
   const search = req.query.search ? req.query.search.trim() : "";
   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
 
-const columnMap = {
-  equipment_system: ["sp.equipment_system", "t.equipment_system"],
-  description: ["sp.description", "t.description"],
-  indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
-  item_type: ["s.spare_id", "s.tool_id"],
-  category: ["sp.category", "t.category"],
-  denos: ["sp.denos", "t.denos"],
-  survey_quantity: ["s.survey_quantity"],
-  reason_for_survey: ["d.reason_for_survey"],
-  survey_voucher_no: ["d.survey_voucher_no"],
-  survey_date: ["d.survey_date"],
-  remarks: ["d.remarks"],
-  remarks_survey: ["s.remarks_survey"],
-  withdrawl_qty: ["s.withdrawl_qty"],
-  withdrawl_date: ["s.withdrawl_date"],
-  service_no: ["s.service_no"],
-  issue_to: ["s.issue_to"],
-  created_at: ["s.created_at"],
-};
+  const columnMap = {
+    equipment_system: ["sp.equipment_system", "t.equipment_system"],
+    description: ["sp.description", "t.description"],
+    indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+    item_type: ["s.spare_id", "s.tool_id"],
+    category: ["sp.category", "t.category"],
+    denos: ["sp.denos", "t.denos"],
+    survey_quantity: ["s.survey_quantity"],
+    reason_for_survey: ["d.reason_for_survey"],
+    survey_voucher_no: ["d.survey_voucher_no"],
+    survey_date: ["d.survey_date"],
+    remarks: ["d.remarks"],
+    remarks_survey: ["s.remarks_survey"],
+    withdrawl_qty: ["s.withdrawl_qty"],
+    withdrawl_date: ["s.withdrawl_date"],
+    service_no: ["s.service_no"],
+    issue_to: ["s.issue_to"],
+    created_at: ["s.created_at"],
+  };
 
   const connection = await pool.getConnection();
 
@@ -1066,9 +1066,8 @@ async function revertSurvey(req, res) {
   }
 }
 
-
 async function manualAddSurvey(req, res) {
-  const { spare_id, tool_id, withdrawl_qty } = req.body;
+  const { spare_id, tool_id, withdrawl_qty, survey_date } = req.body; // Add survey_date
 
   const { id: created_by } = req.user;
 
@@ -1099,6 +1098,12 @@ async function manualAddSurvey(req, res) {
         .json(new ApiErrorResponse(400, {}, "Withdrawal quantity required"));
     }
 
+    if (!survey_date) {
+      return res
+        .status(400)
+        .json(new ApiErrorResponse(400, {}, "Survey date is required"));
+    }
+
     await pool.query(
       `INSERT INTO survey (
         transaction_id,
@@ -1106,21 +1111,23 @@ async function manualAddSurvey(req, res) {
         tool_id,
         issue_to,
         withdrawl_qty,
+        withdrawl_date,  -- This will now store the survey date for manual additions
         box_no,
         service_no,
         name,
         created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         transactionId,
         spare_id || null,
         tool_id || null,
-        "MANUAL",
-        withdrawl_qty, 
+        "---",
+        withdrawl_qty,
+        survey_date, // Use the provided survey date instead of null
         JSON.stringify([]),
-        "MANUAL",
-        "MANUAL",
+        "---",
+        "---",
         created_by,
       ],
     );
@@ -1138,25 +1145,96 @@ async function manualAddSurvey(req, res) {
 
 async function getSurveyItems(req, res) {
   try {
-    const [rows] = await pool.query(`
-      SELECT id, description, category, 'spare' AS type 
+    const { search = "", limit = 200, page = 1 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = `
+      SELECT 
+        id, 
+        description, 
+        category, 
+        'spare' AS type,
+        indian_pattern,
+        item_code,
+        equipment_system
       FROM spares 
       WHERE category IN ('P', 'R')
-
+      
       UNION ALL
-
-      SELECT id, description, category, 'tool' AS type 
+      
+      SELECT 
+        id, 
+        description, 
+        category, 
+        'tool' AS type,
+        indian_pattern,
+        item_code,
+        equipment_system
       FROM tools 
       WHERE category IN ('P', 'R')
+    `;
 
-      ORDER BY description ASC
-    `);
+    // Add search condition if search term provided
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = `
+        SELECT * FROM (
+          ${query}
+        ) AS combined
+        WHERE description LIKE ? 
+           OR indian_pattern LIKE ? 
+           OR item_code LIKE ? 
+           OR equipment_system LIKE ?
+      `;
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(200, { items: rows }, "Items fetched successfully"),
+      const [rows] = await pool.query(query, [
+        searchTerm,
+        searchTerm,
+        searchTerm,
+        searchTerm,
+      ]);
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: rows.slice(0, 500), // Max 500 search results
+            totalItems: rows.length,
+            hasMore: rows.length > 500,
+          },
+          "Items fetched successfully",
+        ),
       );
+    }
+
+    // Without search, return first 200 items
+    query += ` ORDER BY description ASC LIMIT ? OFFSET ?`;
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total FROM (
+        SELECT id FROM spares WHERE category IN ('P', 'R')
+        UNION ALL
+        SELECT id FROM tools WHERE category IN ('P', 'R')
+      ) AS combined
+    `;
+    const [countResult] = await pool.query(countQuery);
+    const totalItems = countResult[0].total;
+
+    const [rows] = await pool.query(query, [parseInt(limit), offset]);
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems,
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalItems / parseInt(limit)),
+        },
+        "Items fetched successfully",
+      ),
+    );
   } catch (error) {
     console.log(error);
     res
@@ -1171,5 +1249,5 @@ module.exports = {
   getLogSurveys,
   revertSurvey,
   manualAddSurvey,
-  getSurveyItems
+  getSurveyItems,
 };

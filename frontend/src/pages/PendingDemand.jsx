@@ -62,12 +62,12 @@ const PendingDemand = () => {
     },
     {
       key: "survey_qty",
-      header: <span>Surveyed Qty</span>,
+      header: "Surveyed Qty / Utilised Qty",
       width: "max-w-[28px] px-0",
     },
     {
       key: "survey_date",
-      header: <span>Surveyed Date</span>,
+      header: "Surveyed Date / Utilised Date",
       width: "max-w-[35px] px-0",
     },
     { key: "remarks", header: "Remarks", width: "max-w-[45px]" },
@@ -119,6 +119,10 @@ const PendingDemand = () => {
   const [addDemandItems, setAddDemandItems] = useState([]);
   const [selectedDemandItem, setSelectedDemandItem] = useState(null);
   const [demandQty, setDemandQty] = useState("");
+  // Add this with your other state declarations
+  const [manualDemandDate, setManualDemandDate] = useState(new Date());
+  // Add a separate state for add demand calendar
+  const [isAddDemandCalendarOpen, setIsAddDemandCalendarOpen] = useState(false);
 
   const [selectedValues, setSelectedValues] = useState([]);
   const [tableData, setTableData] = useState([]);
@@ -150,6 +154,92 @@ const PendingDemand = () => {
     addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
+
+  //add demand states
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
+  const [isItemDropdownOpen, setIsItemDropdownOpen] = useState(false);
+  const [isSearchingItems, setIsSearchingItems] = useState(false);
+  const [filteredItems, setFilteredItems] = useState([]);
+
+  // Add these with your other state declarations
+  const [initialItems, setInitialItems] = useState([]);
+  const [initialItemsPage, setInitialItemsPage] = useState(1);
+  const [hasMoreInitial, setHasMoreInitial] = useState(true);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(false);
+
+  const fetchInitialItems = async (page = 1) => {
+    if (isLoadingInitial) return;
+
+    setIsLoadingInitial(true);
+    try {
+      const response = await apiService.get("/demand/items", {
+        params: { page, limit: 200 },
+      });
+
+      if (page === 1) {
+        setInitialItems(response.data.items || []);
+      } else {
+        setInitialItems((prev) => [...prev, ...(response.data.items || [])]);
+      }
+
+      setHasMoreInitial(response.data.currentPage < response.data.totalPages);
+      setInitialItemsPage(page);
+    } catch (error) {
+      console.error("Error fetching initial items:", error);
+      toaster("error", "Failed to load items");
+    } finally {
+      setIsLoadingInitial(false);
+    }
+  };
+
+  const searchDemandItems = async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setFilteredItems([]);
+      return;
+    }
+
+    setIsSearchingItems(true);
+    try {
+      const response = await apiService.get("/demand/items", {
+        params: { search: searchTerm },
+      });
+      setFilteredItems(response.data.items || []);
+    } catch (error) {
+      console.error("Error searching items:", error);
+      toaster("error", "Failed to search items");
+      setFilteredItems([]);
+    } finally {
+      setIsSearchingItems(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen.addDemand && initialItems.length === 0) {
+      fetchInitialItems(1);
+    }
+  }, [isOpen.addDemand]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (isItemDropdownOpen) {
+        searchDemandItems(itemSearchTerm);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [itemSearchTerm, isItemDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isItemDropdownOpen && !event.target.closest(".demand-combobox")) {
+        setIsItemDropdownOpen(false);
+        setItemSearchTerm("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isItemDropdownOpen]);
 
   const handleRollback = (row) => {
     setRollbackRow(row);
@@ -296,7 +386,7 @@ const PendingDemand = () => {
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
-      survey_date: getFormatedDate(row.survey_date),
+      survey_date: row.survey_date ? getFormatedDate(row.survey_date) : "---",
       created_at: getTimeDate(row.created_at),
       processed: (
         <Button
@@ -629,10 +719,17 @@ const PendingDemand = () => {
       </Dialog>
 
       {/* Add Demand Dialog - Modified */}
+      {/* Add Demand Dialog - With Search and 200 Initial Items */}
       <Dialog
         open={isOpen.addDemand}
         onOpenChange={(open) => {
-          if (!open) resetAddDemandDialog();
+          if (!open) {
+            resetAddDemandDialog();
+            setItemSearchTerm("");
+            setFilteredItems([]);
+            setIsItemDropdownOpen(false);
+            setManualDemandDate(new Date());
+          }
           setIsOpen((prev) => ({ ...prev, addDemand: open }));
         }}
       >
@@ -645,26 +742,307 @@ const PendingDemand = () => {
         >
           <DialogTitle>Add Demand Item</DialogTitle>
 
-          {/* Select Item - Always visible with search */}
+          {/* Select Item - Searchable Combobox */}
           <div className="mt-4">
             <Label>
               Select Item <span className="text-red-500">*</span>
             </Label>
-            <ComboBox
-              className="w-full mt-1"
-              options={addDemandItems.map((item) => ({
-                id: item.id,
-                name: `${item.description} (${item.category}) - ${item.type}`,
-                raw: item,
-              }))}
-              placeholder="Search and select item..."
-              onSelect={(value) => {
-                setSelectedDemandItem(value.raw);
-              }}
-            />
+
+            <div className="demand-combobox relative mt-1">
+              {/* Dropdown button */}
+              <button
+                type="button"
+                onClick={() => setIsItemDropdownOpen(!isItemDropdownOpen)}
+                className="w-full p-2 border rounded-md bg-white text-left flex justify-between items-center hover:bg-gray-50"
+              >
+                <span
+                  className={
+                    selectedDemandItem ? "text-gray-900" : "text-gray-400"
+                  }
+                >
+                  {selectedDemandItem
+                    ? `${selectedDemandItem.description} (${selectedDemandItem.category}) - ${selectedDemandItem.type === "spare" ? "SPARE" : "TOOL"}`
+                    : "Search and Select Items..."}
+                </span>
+                <ChevronDownIcon
+                  className={`size-4 transition-transform ${isItemDropdownOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Dropdown with search */}
+              {isItemDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg">
+                  {/* Search input inside dropdown */}
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search by description, part no., item code, or equipment..."
+                        className="w-full p-2 pl-8 border rounded-md"
+                        value={itemSearchTerm}
+                        onChange={(e) => setItemSearchTerm(e.target.value)}
+                        autoFocus
+                      />
+                      <FaMagnifyingGlass className="absolute left-2 top-3 text-gray-400 size-4" />
+                      {itemSearchTerm && (
+                        <button
+                          onClick={() => setItemSearchTerm("")}
+                          className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Show search results or initial items */}
+                  <div className="max-h-60 overflow-y-auto">
+                    {/* Search mode */}
+                    {itemSearchTerm && (
+                      <>
+                        {isSearchingItems && (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                            Searching...
+                          </div>
+                        )}
+
+                        {!isSearchingItems && (
+                          <>
+                            {filteredItems.length === 0 ? (
+                              <div className="p-4 text-center text-gray-500 text-sm">
+                                No items found matching "{itemSearchTerm}"
+                              </div>
+                            ) : (
+                              <>
+                                <div className="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-b">
+                                  Search Results ({filteredItems.length})
+                                </div>
+                                {filteredItems.map((item) => (
+                                  <div
+                                    key={`${item.type}-${item.id}`}
+                                    className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                    onClick={() => {
+                                      setSelectedDemandItem(item);
+                                      setIsItemDropdownOpen(false);
+                                      setItemSearchTerm("");
+                                      setFilteredItems([]);
+                                    }}
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium">
+                                        {item.description}
+                                        <span className="ml-2 text-xs text-gray-500">
+                                          ({item.category})
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1 space-x-2">
+                                        <span className="font-semibold">
+                                          Type:
+                                        </span>
+                                        <span className="text-blue-600 font-semibold">
+                                          {item.type === "spare"
+                                            ? "SPARE"
+                                            : "TOOL"}
+                                        </span>
+                                        {item.indian_pattern && (
+                                          <>
+                                            <span className="mx-1">•</span>
+                                            <span className="font-semibold">
+                                              IN Part No.:
+                                            </span>
+                                            <span className="font-mono">
+                                              {item.indian_pattern}
+                                            </span>
+                                          </>
+                                        )}
+                                        {item.item_code && (
+                                          <>
+                                            <span className="mx-1">•</span>
+                                            <span className="font-semibold">
+                                              Item Code:
+                                            </span>
+                                            <span className="font-mono">
+                                              {item.item_code}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {item.equipment_system && (
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          <span className="font-semibold">
+                                            Equipment/System:
+                                          </span>
+                                          <span className="ml-1">
+                                            {item.equipment_system}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Initial items mode (no search) */}
+                    {!itemSearchTerm && (
+                      <>
+                        {initialItems.length === 0 && isLoadingInitial ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                            Loading items...
+                          </div>
+                        ) : (
+                          <>
+                            <div className="px-3 py-2 bg-gray-50 text-xs text-gray-500 border-b sticky top-0">
+                              Popular Items (First {initialItems.length} of{" "}
+                              {initialItems.length}+)
+                            </div>
+                            {initialItems.map((item) => (
+                              <div
+                                key={`${item.type}-${item.id}`}
+                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                onClick={() => {
+                                  setSelectedDemandItem(item);
+                                  setIsItemDropdownOpen(false);
+                                  setItemSearchTerm("");
+                                }}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {item.description}
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({item.category})
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1 space-x-2">
+                                    <span className="font-semibold">Type:</span>
+                                    <span className="text-blue-600 font-semibold">
+                                      {item.type === "spare" ? "SPARE" : "TOOL"}
+                                    </span>
+                                    {item.indian_pattern && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span className="font-semibold">
+                                          IN Part No.:
+                                        </span>
+                                        <span className="font-mono">
+                                          {item.indian_pattern}
+                                        </span>
+                                      </>
+                                    )}
+                                    {item.item_code && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span className="font-semibold">
+                                          Item Code:
+                                        </span>
+                                        <span className="font-mono">
+                                          {item.item_code}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                  {item.equipment_system && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      <span className="font-semibold">
+                                        Equipment/System:
+                                      </span>
+                                      <span className="ml-1">
+                                        {item.equipment_system}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+
+                            {hasMoreInitial && (
+                              <div className="p-2 text-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    fetchInitialItems(initialItemsPage + 1)
+                                  }
+                                  disabled={isLoadingInitial}
+                                  className="text-xs"
+                                >
+                                  {isLoadingInitial
+                                    ? "Loading..."
+                                    : "Load More (200 more)"}
+                                </Button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Selected item details panel */}
+            {selectedDemandItem && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-xs text-green-800 mb-2 font-medium flex items-center gap-2">
+                  <span>✓ Selected Item Details:</span>
+                  <span className="px-2 py-0.5 bg-green-200 rounded text-xs font-semibold">
+                    {selectedDemandItem.type === "spare" ? "SPARE" : "TOOL"}
+                  </span>
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="col-span-2">
+                    <span className="font-semibold text-gray-600">
+                      Description:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedDemandItem.description || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      Category:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedDemandItem.category || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      IN Part No.:
+                    </span>
+                    <span className="ml-2 text-gray-700 font-mono text-xs">
+                      {selectedDemandItem.indian_pattern || "--"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">
+                      Item Code:
+                    </span>
+                    <span className="ml-2 text-gray-700 font-mono text-xs">
+                      {selectedDemandItem.item_code || "--"}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="font-semibold text-gray-600">
+                      Equipment/System:
+                    </span>
+                    <span className="ml-2 text-gray-700">
+                      {selectedDemandItem.equipment_system || "--"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Qty to be demanded - Always visible */}
+          {/* Qty to be demanded */}
           <div className="mt-4">
             <Label>
               Qty to be demanded <span className="text-red-500">*</span>
@@ -672,11 +1050,48 @@ const PendingDemand = () => {
             <Input
               type="number"
               min="1"
-              placeholder="Enter quantity"
+              placeholder="Enter Demand Qty"
               value={demandQty}
               onChange={(e) => setDemandQty(e.target.value)}
               className="mt-1"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="demand_date" className="mb-2 mt-6 gap-1">
+              To be Demanded Date<span className="text-red-500">*</span>
+            </Label>
+            <Popover
+              open={isAddDemandCalendarOpen}
+              onOpenChange={setIsAddDemandCalendarOpen}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  id="demand_date"
+                  className="w-full justify-between font-normal"
+                >
+                  {manualDemandDate
+                    ? getFormatedDate(manualDemandDate)
+                    : "Select date"}
+                  <ChevronDownIcon />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto overflow-hidden p-0"
+                align="start"
+              >
+                <Calendar
+                  mode="single"
+                  selected={manualDemandDate}
+                  captionLayout="dropdown"
+                  onSelect={(date) => {
+                    setManualDemandDate(date);
+                    setIsAddDemandCalendarOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Action Buttons */}
@@ -686,6 +1101,10 @@ const PendingDemand = () => {
               onClick={() => {
                 resetAddDemandDialog();
                 setIsOpen((prev) => ({ ...prev, addDemand: false }));
+                setItemSearchTerm("");
+                setSelectedDemandItem(null);
+                setIsItemDropdownOpen(false);
+                setFilteredItems([]);
               }}
             >
               Cancel
@@ -702,6 +1121,10 @@ const PendingDemand = () => {
                   return toaster("error", "Quantity must be greater than 0");
                 }
 
+                if (!manualDemandDate) {
+                  return toaster("error", "Please select a demand date");
+                }
+
                 setIsLoading((prev) => ({ ...prev, addDemand: true }));
 
                 try {
@@ -715,12 +1138,18 @@ const PendingDemand = () => {
                         ? selectedDemandItem.id
                         : null,
                     survey_qty: Number(demandQty),
+                    survey_date: formatDate(manualDemandDate),
                   });
 
                   toaster("success", "Demand item added successfully");
 
                   resetAddDemandDialog();
                   setIsOpen((prev) => ({ ...prev, addDemand: false }));
+                  setItemSearchTerm("");
+                  setSelectedDemandItem(null);
+                  setIsItemDropdownOpen(false);
+                  setFilteredItems([]);
+                  setManualDemandDate(new Date());
                   fetchdata();
                 } catch (error) {
                   console.error("Error adding demand item:", error);
@@ -736,64 +1165,6 @@ const PendingDemand = () => {
               disabled={isLoading.addDemand}
             >
               {isLoading.addDemand ? "Submitting..." : "Submit"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ADD SPARE */}
-      <Dialog
-        open={isOpen.addSpare}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addSpare: open }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Add Spare</DialogTitle>
-
-          <p>Reuse your existing Add Spare form here.</p>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsOpen((prev) => ({ ...prev, addSpare: false }));
-                navigate("/spares", {
-                  state: {
-                    add_spare: true,
-                  },
-                });
-              }}
-            >
-              Open
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ADD TOOL */}
-      <Dialog
-        open={isOpen.addTool}
-        onOpenChange={(open) =>
-          setIsOpen((prev) => ({ ...prev, addTool: open }))
-        }
-      >
-        <DialogContent>
-          <DialogTitle>Add Tool</DialogTitle>
-
-          <p>Reuse your existing Add Tool form here.</p>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsOpen((prev) => ({ ...prev, addTool: false }));
-                navigate("/tools", {
-                  state: {
-                    add_tool: true,
-                  },
-                });
-              }}
-            >
-              Open
             </Button>
           </div>
         </DialogContent>

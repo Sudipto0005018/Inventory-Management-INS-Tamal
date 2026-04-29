@@ -1678,65 +1678,89 @@ const Spares = ({ type = "" }) => {
             </div>
           )}
           {panelProduct.description && (
-            <div className="h-full">
-              <div className="w-full justify-center flex">
+            <div className="h-full overflow-hidden flex flex-col">
+              <div className="w-full justify-center flex shrink-0">
                 <ImagePreviewDialog
                   className="w-80 h-80 object-contain rounded-md border"
                   image={panelProduct.images}
                 />
               </div>
-              <div className="max-h-[calc(100vh-480px)] overflow-y-auto description-table">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 <Table className="mt-2">
-                  <TableBody className="">
+                  <TableBody>
                     <TableRow>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         Item Code<span className="text-red-500">*</span>
                       </TableCell>
-                      <TableCell>{panelProduct.item_code || "--"}</TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        {panelProduct.item_code || "--"}
+                      </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         Sub Component<span className="text-red-500">*</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         {panelProduct.sub_component || "--"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Substitute Part No.</TableCell>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Substitute Part No.
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         {panelProduct.substitute_name || "--"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Local Terminology</TableCell>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Local Terminology
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         {panelProduct.local_terminology || "--"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Critical Spare</TableCell>
-                      <TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Critical Spare
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
                         {panelProduct.critical_spare ? "Yes" : "No"}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Price</TableCell>
-                      <TableCell>{panelProduct.price_unit || "--"}</TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Price
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        {panelProduct.price_unit || "--"}
+                      </TableCell>
                     </TableRow>
                     {panelProduct.obs_held && (
                       <TableRow>
-                        <TableCell>OEM Details</TableCell>
-                        <TableCell>{panelProduct.oem || "--"}</TableCell>
+                        <TableCell className="align-top whitespace-normal break-words">
+                          OEM Details
+                        </TableCell>
+                        <TableCell className="align-top whitespace-normal break-words">
+                          {panelProduct.oem || "--"}
+                        </TableCell>
                       </TableRow>
                     )}
                     <TableRow>
-                      <TableCell>Vendor/ Third Party Supplier</TableCell>
-                      <TableCell>{panelProduct.supplier || "--"}</TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Vendor/ Third Party Supplier
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        {panelProduct.supplier || "--"}
+                      </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Remarks</TableCell>
-                      <TableCell>{panelProduct.remarks || "--"}</TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        Remarks
+                      </TableCell>
+                      <TableCell className="align-top whitespace-normal break-words">
+                        {panelProduct.remarks || "--"}
+                      </TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

@@ -180,7 +180,6 @@ async function getDemands(req, res) {
         ? "WHERE " + whereConditions.join(" AND ")
         : "";
 
-
     const [totalCountRows] = await connection.query(
       `SELECT COUNT(*) as count 
              FROM demand d 
@@ -773,7 +772,7 @@ async function getDemandLogs(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     category: ["sp.category", "t.category"],
     denos: ["sp.denos", "t.denos"],
-    remarks_survey:["d.remarks_survey"],
+    remarks_survey: ["d.remarks_survey"],
 
     demand_quantity: ["pi.demand_quantity"],
     quote_authority: ["pi.quote_authority"],
@@ -942,9 +941,8 @@ LIMIT ? OFFSET ?`,
   }
 }
 
-
 async function manualAddDemand(req, res) {
-  const { spare_id, tool_id, survey_qty } = req.body;
+  const { spare_id, tool_id, survey_qty, survey_date } = req.body;
   const { id: created_by } = req.user;
 
   try {
@@ -992,11 +990,11 @@ async function manualAddDemand(req, res) {
       [
         spare_id || null,
         tool_id || null,
-        "MANUAL",
+        "---",
         transactionId,
         survey_qty,
-        "MANUAL",
-        new Date(),
+        "---",
+        survey_date,
         created_by,
       ],
     );
@@ -1013,26 +1011,98 @@ async function manualAddDemand(req, res) {
   }
 }
 
-
 async function getDemandItems(req, res) {
   try {
-    const [rows] = await pool.query(`
-      SELECT id, description, category, 'spare' AS type 
+    const { search = "", limit = 200, page = 1 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let query = `
+      SELECT 
+        id, 
+        description, 
+        category, 
+        'spare' AS type,
+        indian_pattern,
+        item_code,
+        equipment_system
       FROM spares 
-
+      WHERE category IN ('P', 'R', 'C', 'LP')
+      
       UNION ALL
+      
+      SELECT 
+        id, 
+        description, 
+        category, 
+        'tool' AS type,
+        indian_pattern,
+        item_code,
+        equipment_system
+      FROM tools
+      WHERE category IN ('P', 'R', 'C', 'LP')
+    `;
 
-      SELECT id, description, category, 'tool' AS type 
-      FROM tools 
+    const queryParams = [];
 
-      ORDER BY description ASC
-    `);
+    // Add search condition if search term provided
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = `
+        SELECT * FROM (
+          ${query}
+        ) AS combined
+        WHERE description LIKE ? 
+           OR indian_pattern LIKE ? 
+           OR item_code LIKE ? 
+           OR equipment_system LIKE ?
+      `;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(200, { items: rows }, "Items fetched successfully"),
+      // For search results, return all matches (no limit initially)
+      const [rows] = await pool.query(query, queryParams);
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            items: rows.slice(0, 500), // Max 500 search results
+            totalItems: rows.length,
+            hasMore: rows.length > 500,
+          },
+          "Items fetched successfully",
+        ),
       );
+    }
+
+    // Without search, return first 200 items
+    query += ` ORDER BY description ASC LIMIT ? OFFSET ?`;
+    queryParams.push(parseInt(limit), offset);
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total FROM (
+        SELECT id FROM spares WHERE category IN ('P', 'R', 'C', 'LP')
+        UNION ALL
+        SELECT id FROM tools WHERE category IN ('P', 'R', 'C', 'LP')
+      ) AS combined
+    `;
+    const [countResult] = await pool.query(countQuery);
+    const totalItems = countResult[0].total;
+
+    const [rows] = await pool.query(query, queryParams);
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          items: rows,
+          totalItems,
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalItems / parseInt(limit)),
+        },
+        "Items fetched successfully",
+      ),
+    );
   } catch (error) {
     console.log(error);
     res
@@ -1040,6 +1110,7 @@ async function getDemandItems(req, res) {
       .json(new ApiErrorResponse(500, {}, "Internal server error"));
   }
 }
+
 module.exports = {
   createDemand,
   getDemands,
@@ -1051,5 +1122,5 @@ module.exports = {
   revertPendingIssue,
   createRepairStock,
   manualAddDemand,
-  getDemandItems
+  getDemandItems,
 };
