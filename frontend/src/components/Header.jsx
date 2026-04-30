@@ -20,6 +20,7 @@ import { FiLogOut } from "react-icons/fi";
 import { getISTTimestamp } from "../utils/helperFunctions";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 import { MdDashboard } from "react-icons/md";
+import { FaUsers } from "react-icons/fa";
 
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
@@ -363,9 +364,9 @@ const Header = ({ onSidebarOpen }) => {
                   className="flex items-center justify-center 
              px-2 py-1 h-8 
              rounded-lg 
-             bg-green-900 
+             bg-sky-500/60
              text-white
-             hover:bg-green-900 
+             hover:bg-sky-500/50
              hover:text-white
              transition-all duration-200"
                   onClick={exportExcel}
@@ -379,6 +380,34 @@ const Header = ({ onSidebarOpen }) => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          
+          {user?.role === "officer" && isDashboard && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="primary"
+                    className="flex items-center justify-center 
+           px-2 py-1 h-8 
+           rounded-lg 
+           bg-blue-900 
+           text-white
+           hover:bg-blue-900 
+           hover:text-white
+           transition-all duration-200"
+                    onClick={() => navigate("/nominal-roll")}
+                  >
+                    <FaUsers className="size-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent side="bottom">
+                  <p>Nominal Roll</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <Popover
             open={isOpen.popOver}
             onOpenChange={(val) =>

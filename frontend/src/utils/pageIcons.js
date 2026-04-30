@@ -6,6 +6,7 @@ import { BsClockHistory } from "react-icons/bs";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { IoDocumentSharp } from "react-icons/io5";
 import { SiPhpmyadmin } from "react-icons/si";
+import { GiTiedScroll } from "react-icons/gi";
 import { GoLog } from "react-icons/go";
 import { User } from "lucide-react";
 
@@ -22,6 +23,8 @@ export const pageIcons = {
   "/documents": IoDocumentSharp,
   "/documents/issue": IoDocumentSharp,
   "/documents/completed": IoDocumentSharp,
+
+  "/nominal-roll": GiTiedScroll,
 
   "/temporary/temporary-issue": FaCartPlus,
   "/temporary/completed": FaCartPlus,

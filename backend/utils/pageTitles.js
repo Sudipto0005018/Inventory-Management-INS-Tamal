@@ -1,6 +1,7 @@
 export const pageTitles = {
   // "/dashboard": "Dashboard",
 
+  "/nominal-roll": "Nominal Roll",
   "/spares": "Spares",
   "/spares/critical": "Critical Spare",
   "/spares/routine": "Spares for Routines",

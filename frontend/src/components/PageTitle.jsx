@@ -112,7 +112,7 @@ const PageTitle = () => {
         "
       >
         {title}
-        {pathname !== "/dashboard" && (
+        {pathname !== "/dashboard" && pathname !=="/succession-board" && (
           <div className="h-[2px] w-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-1 mx-auto" />
         )}
       </motion.h1>

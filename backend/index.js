@@ -70,6 +70,8 @@ app.use("/api/v1/sync", require("./routes/sync.routes"));
 app.use("/api/v1/backup", require("./routes/backup.routes"));
 app.use("/api/v1/routines", require("./routes/routines.routes"));
 app.use("/api/v1/routinesTool", require("./routes/routinesTool.routes"));
+app.use("/api/v1/nominal-roll", require("./routes/nominalRoll.routes"));
+app.use("/api/v1/succession-board", require("./routes/successionBoard.routes"));
 
 // syncAssets("spares");
 syncTyLoan();

@@ -118,19 +118,19 @@ const menuItems = [
 
   {
     name: "Successor Board",
-    path: "/successor-board",
+    path: "/succession-board",
     icon: <LuNotebookPen size={20} />,
     roles: ["admin", "user", "officer"],
-    submenu: [
-      {
-        name: "Officer Incharge",
-        path: "/successor-board/officer-incharge",
-      },
-      {
-        name: "Storekeeper Incharge",
-        path: "/successor-board/storekeeper-incharge",
-      },
-    ],
+    // submenu: [
+    //   {
+    //     name: "Officer Incharge",
+    //     path: "/succession-board",
+    //   },
+    //   {
+    //     name: "Storekeeper Incharge",
+    //     path: "/succession-board",
+    //   },
+    // ],
   },
   {
     name: "Documents Corner",

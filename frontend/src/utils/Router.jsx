@@ -49,6 +49,8 @@ import PtsSpecial from "../pages/PtsSpecial";
 import StordemSpecial from "../pages/StordemSpecial";
 import SparesForRoutines from "../pages/SparesRoutine";
 import ToolsRoutine from "../pages/ToolsRoutine";
+import NominalRoll from "../components/NominalRoll";
+import SuccessionBoard from "../components/SuccessionBoard";
 
 const Router = () => {
   const navigate = useNavigate();
@@ -76,6 +78,15 @@ const Router = () => {
           }
         />
       </Route>
+
+      <Route element={<HomeLayout />}>
+        <Route path="/succession-board" element={<SuccessionBoard />} />
+      </Route>
+
+      <Route element={<HomeLayout />}>
+        <Route path="/nominal-roll" element={<NominalRoll />} />
+      </Route>
+
       <Route element={<HomeLayout />}>
         <Route
           path="/spares"

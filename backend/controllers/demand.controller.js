@@ -104,6 +104,9 @@ async function getDemands(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     survey_qty: ["d.survey_qty"],
     remarks: ["d.remarks"],
+    service_no: ["d.service_no"],
+    issue_to: ["d.issue_to"],
+    name: ["d.name"],
     survey_date: ["d.survey_date"],
     survey_voucher_no: ["d.survey_voucher_no"],
   };
@@ -772,6 +775,9 @@ async function getDemandLogs(req, res) {
     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
     category: ["sp.category", "t.category"],
     denos: ["sp.denos", "t.denos"],
+    service_no: ["d.service_no"],
+    issue_to: ["d.issue_to"],
+    name: ["d.name"],
     remarks_survey: ["d.remarks_survey"],
 
     demand_quantity: ["pi.demand_quantity"],
