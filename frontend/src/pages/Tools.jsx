@@ -825,7 +825,7 @@ const Tools = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", selectedRow.category || "P");
+      formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");
@@ -1346,9 +1346,27 @@ const Tools = ({ type = "" }) => {
       )
         ?.map((box) => box.qtyHeld)
         ?.join(", "),
-      location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
-        ?.map((box) => box.location)
-        ?.join(", "),
+      // location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
+      //   ?.map((box) => box.location)
+      //   ?.join(", "),
+
+      // Updated location logic: Show unique locations only
+      location: (() => {
+        const boxes = row.box_no ? JSON.parse(row.box_no) : [];
+        if (!boxes.length) return "";
+
+        // Extract unique locations
+        const uniqueLocations = [
+          ...new Set(boxes.map((box) => box.location).filter(Boolean)),
+        ];
+
+        // If all locations are the same (only 1 unique location), return just that location
+        if (uniqueLocations.length === 1) {
+          return uniqueLocations[0];
+        }
+        // Otherwise return all unique locations joined by commas
+        return uniqueLocations.join(", ");
+      })(),
 
       edit: (
         <ActionIcons

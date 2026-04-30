@@ -848,7 +848,7 @@ const Spares = ({ type = "" }) => {
       formData.append("obs_maintained", inputs.obs_maintained || "");
       formData.append("obs_held", inputs.obs_held || "");
       formData.append("b_d_authorised", inputs.b_d_authorised || "");
-      formData.append("category", selectedRow.category || "P");
+      formData.append("category", selectedRow.category || "");
       formData.append("box_no", JSON.stringify(boxNo));
       formData.append("storage_location", inputs.storage_location || "");
       formData.append("item_code", inputs.item_code || "");
@@ -1354,6 +1354,87 @@ const Spares = ({ type = "" }) => {
     };
   }, [image.preview]);
 
+  // useEffect(() => {
+  //   const t = fetchedData.items.map((row) => ({
+  //     ...row,
+  //     imgUrl: imageBaseURL + row.image,
+  //     image: row.image ? (
+  //       <ImagePreviewDialog image={imageBaseURL + row.image} />
+  //     ) : null,
+  //     boxNo: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
+  //       ?.map((box) => box.no)
+  //       ?.join(", "),
+  //     itemDistribution: (row.box_no
+  //       ? JSON.parse(row.box_no)
+  //       : [{ no: "", qn: "" }]
+  //     )
+  //       ?.map((box) => box.qtyHeld)
+  //       ?.join(", "),
+  //     location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
+  //       ?.map((box) => box.location)
+  //       ?.join(", "),
+
+  //     edit: (
+  //       <ActionIcons
+  //         row={row}
+  //         onEdit={(row) => {
+  //           if (row.image) {
+  //             setImage((prev) => ({
+  //               ...prev,
+  //               previewEdit: imageBaseURL + row.image,
+  //             }));
+  //           }
+  //           row.obs_authorised_old = row.obs_authorised;
+  //           setSelectedRow(row);
+  //           setSavedRow(JSON.parse(JSON.stringify(row)));
+  //           setSavedHeld(Number(row.obs_held || 0));
+  //           setIsOpen((prev) => ({ ...prev, editSpare: true }));
+  //         }}
+  //         onWithdraw={(row) => {
+  //           if (row.image) {
+  //             setImage((prev) => ({
+  //               ...prev,
+  //               previewEdit: imageBaseURL + row.image,
+  //             }));
+  //           }
+  //           setSelectedRow(row);
+
+  //           setBoxNo(JSON.parse(row.box_no));
+  //           setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
+  //         }}
+  //         onShowQR={(row) => {
+  //           setSelectedRow(row);
+  //           setIsOpen((prev) => ({ ...prev, qrDialog: true }));
+  //         }}
+  //       />
+  //     ),
+
+  //     // delete: (
+  //     //     <Button
+  //     //         variant="ghost"
+  //     //         className="text-red-600 hover:text-red-700 hover:bg-red-100"
+  //     //         onClick={() => {
+  //     //             setSelectedRow(row);
+  //     //             setIsOpen({ ...isOpen, deleteSpare: true });
+  //     //         }}
+  //     //     >
+  //     //         <HiTrash />
+  //     //     </Button>
+  //     // ),
+  //   }));
+
+  //   console.log("Transformed table data:", t);
+  //   setTableData(t);
+  //   // ✅ Always select first row if available
+  //   if (t.length > 0) {
+  //     setSelectedRowIndex(0);
+  //     setPanelProduct(t[0]); // also update right-side panel immediately
+  //   } else {
+  //     setSelectedRowIndex(null);
+  //     setPanelProduct({ critical_spare: "no" });
+  //   }
+  // }, [fetchedData]);
+
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
@@ -1370,10 +1451,23 @@ const Spares = ({ type = "" }) => {
       )
         ?.map((box) => box.qtyHeld)
         ?.join(", "),
-      location: (row.box_no ? JSON.parse(row.box_no) : [{ no: "", qn: "" }])
-        ?.map((box) => box.location)
-        ?.join(", "),
+      // Updated location logic: Show unique locations only
+      location: (() => {
+        const boxes = row.box_no ? JSON.parse(row.box_no) : [];
+        if (!boxes.length) return "";
 
+        // Extract unique locations
+        const uniqueLocations = [
+          ...new Set(boxes.map((box) => box.location).filter(Boolean)),
+        ];
+
+        // If all locations are the same (only 1 unique location), return just that location
+        if (uniqueLocations.length === 1) {
+          return uniqueLocations[0];
+        }
+        // Otherwise return all unique locations joined by commas
+        return uniqueLocations.join(", ");
+      })(),
       edit: (
         <ActionIcons
           row={row}
@@ -1398,7 +1492,6 @@ const Spares = ({ type = "" }) => {
               }));
             }
             setSelectedRow(row);
-
             setBoxNo(JSON.parse(row.box_no));
             setIsOpen((prev) => ({ ...prev, withdrawSpare: true }));
           }}
@@ -1408,19 +1501,6 @@ const Spares = ({ type = "" }) => {
           }}
         />
       ),
-
-      // delete: (
-      //     <Button
-      //         variant="ghost"
-      //         className="text-red-600 hover:text-red-700 hover:bg-red-100"
-      //         onClick={() => {
-      //             setSelectedRow(row);
-      //             setIsOpen({ ...isOpen, deleteSpare: true });
-      //         }}
-      //     >
-      //         <HiTrash />
-      //     </Button>
-      // ),
     }));
 
     console.log("Transformed table data:", t);
@@ -1434,7 +1514,7 @@ const Spares = ({ type = "" }) => {
       setPanelProduct({ critical_spare: "no" });
     }
   }, [fetchedData]);
-
+  
   useEffect(() => {
     if (obsDialog.open) {
       const box = JSON.parse(selectedRow.box_no || "[]");

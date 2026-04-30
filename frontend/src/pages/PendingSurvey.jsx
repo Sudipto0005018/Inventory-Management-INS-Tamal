@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DialogFooter,
 } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
 import { Calendar } from "../components/ui/calendar";
@@ -38,48 +39,74 @@ import { useNavigate } from "react-router";
 const PendingSurvey = () => {
   const { config, user, surveyReason, fetchSurveyReason } = useContext(Context);
   const navigate = useNavigate();
-  const columns = useMemo(() => [
-    {
-      key: "description",
-      header: "Item Description",
-      width: "max-w-[90px] px-0",
-    },
-    {
-      key: "indian_pattern",
-      header: (
-        <span>
-          <i>IN</i> Part No.
-        </span>
-      ),
-      width: "max-w-[80px] px-0",
-    },
-    { key: "category", header: "Category", width: "max-w-[20px] px-0" },
-    { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
-    {
-      key: "withdrawl_date_str",
-      header: "Withdrawal Date / Survey Date",
-      width: "max-w-[40px] px-0",
-    },
-    { key: "service_no", header: "Service No.", width: "max-w-[40px] px-0" },
-    { key: "issue_to", header: "Issued To", width: "max-w-[30px] px-0" },
-    {
-      key: "withdrawl_qty",
-      header: <span>Withdrawal Qty / Survey Qty</span>,
-      width: "max-w-[30px] px-0",
-    },
-    {
-      key: "survey_quantity",
-      header: "Surveyed Qty",
-      width: "max-w-[30px]",
-    },
-    { key: "remarks_survey", header: "Remarks", width: "max-w-[45px]" },
-    ...(user.role != "user"
-      ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
-      : []),
-    ...(user.role === "officer"
-      ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
-      : []),
-  ]);
+
+   const proceedWithSurvey = (row) => {
+     setSelectedRow(row);
+     setIsOpen((prev) => ({ ...prev, survey: true }));
+   };
+
+   const handleProceedWithCategoryCheck = (row) => {
+     // Check if category is null, undefined, or empty
+     if (!row.category || row.category === "" || row.category === null) {
+       // Open category selection dialog
+       setCategoryDialog({
+         open: true,
+         selectedRow: row,
+         selectedCategory: "",
+       });
+     } else {
+       // Category exists, proceed directly
+       proceedWithSurvey(row);
+     }
+  };
+  
+  const columns = useMemo(
+    () => [
+      {
+        key: "description",
+        header: "Item Description",
+        width: "max-w-[90px] px-0",
+      },
+      {
+        key: "indian_pattern",
+        header: (
+          <span>
+            <i>IN</i> Part No.
+          </span>
+        ),
+        width: "max-w-[80px] px-0",
+      },
+      { key: "category", header: "Category", width: "max-w-[20px] px-0" },
+      { key: "denos", header: "Denos.", width: "max-w-[20px] px-0" },
+      {
+        key: "withdrawl_date_str",
+        header: "Withdrawal Date / Survey Date",
+        width: "max-w-[40px] px-0",
+      },
+      { key: "service_no", header: "Service No.", width: "max-w-[40px] px-0" },
+      { key: "issue_to", header: "Issued To", width: "max-w-[30px] px-0" },
+      {
+        key: "withdrawl_qty",
+        header: <span>Withdrawal Qty / Survey Qty</span>,
+        width: "max-w-[30px] px-0",
+      },
+      {
+        key: "survey_quantity",
+        header: "Surveyed Qty",
+        width: "max-w-[30px]",
+      },
+      { key: "remarks_survey", header: "Remarks", width: "max-w-[45px]" },
+
+      ...(user.role != "user"
+        ? [{ key: "processed", header: "Proceed", width: "max-w-[25px] px-0" }]
+        : []),
+
+      ...(user.role === "officer"
+        ? [{ key: "rollback", header: "Rollback", width: "max-w-[45px] px-0" }]
+        : []),
+    ],
+    [user.role],
+  );
   const options = [
     { value: "description", label: "Item Description" },
     {
@@ -155,6 +182,100 @@ const PendingSurvey = () => {
     addTool: false,
   });
   const [selectedRow, setSelectedRow] = useState({});
+
+  //new state variable for category
+  // Add these state variables with your other state declarations
+  const [categoryDialog, setCategoryDialog] = useState({
+    open: false,
+    selectedRow: null,
+    selectedCategory: "",
+  });
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+
+const handleCategoryUpdateAndRoute = async () => {
+  const { selectedRow, selectedCategory } = categoryDialog;
+
+  if (!selectedCategory) {
+    toaster("error", "Please select a category");
+    return;
+  }
+
+  setIsUpdatingCategory(true);
+
+  try {
+    // Determine item type and ID
+    const itemId = selectedRow.spare_id || selectedRow.tool_id;
+    const itemType = selectedRow.spare_id ? "spare" : "tool";
+
+    // Update the item's category using dedicated endpoint
+    const updateResponse = await apiService.post("/survey/update-category", {
+      item_id: itemId,
+      item_type: itemType,
+      category: selectedCategory.toUpperCase(),
+    });
+
+    if (!updateResponse.success) {
+      throw new Error(updateResponse.message || "Failed to update category");
+    }
+
+    toaster("success", `Category updated to ${selectedCategory.toUpperCase()}`);
+
+    // Check if category is C or LP - these go to demand/procurement
+    if (
+      selectedCategory.toUpperCase() === "C" ||
+      selectedCategory.toUpperCase() === "LP"
+    ) {
+      // Move to pending for demand/procurement
+      const moveResponse = await apiService.post("/survey/move-from-survey", {
+        survey_id: selectedRow.id,
+        category: selectedCategory.toUpperCase(),
+      });
+
+      if (!moveResponse.success) {
+        throw new Error(moveResponse.message || "Failed to move to demand");
+      }
+
+      toaster("success", "Item moved to Pending for Demand/Procurement");
+
+      // Refresh the table to remove this item from survey list
+      await fetchdata(currentPage, actualSearch, selectedValues);
+
+      // Close dialog
+      setCategoryDialog({
+        open: false,
+        selectedRow: null,
+        selectedCategory: "",
+      });
+    } else if (
+      selectedCategory.toUpperCase() === "P" ||
+      selectedCategory.toUpperCase() === "R"
+    ) {
+      // Close dialog first
+      setCategoryDialog({
+        open: false,
+        selectedRow: null,
+        selectedCategory: "",
+      });
+
+      // Refresh to show updated category
+      await fetchdata(currentPage, actualSearch, selectedValues);
+
+      // Now proceed with normal survey flow
+      setSelectedRow(selectedRow);
+      setIsOpen((prev) => ({ ...prev, survey: true }));
+    }
+  } catch (error) {
+    console.error("Error updating category:", error);
+    toaster(
+      "error",
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to update category",
+    );
+  } finally {
+    setIsUpdatingCategory(false);
+  }
+};
 
   const handleRollback = (issueId, description) => {
     setRollbackIssueId(issueId);
@@ -435,55 +556,51 @@ const PendingSurvey = () => {
     fetchdata(currentPage, actualSearch, selectedValues);
   }, [currentPage]);
 
-  useEffect(() => {
-    const t = fetchedData.items.map((row) => {
-      console.log("SOURCE TYPE:", row.source_type, row);
+useEffect(() => {
+  const t = fetchedData.items.map((row) => {
+    console.log("SOURCE TYPE:", row.source_type, row);
 
-      return {
-        ...row,
-        survey_quantity: row.survey_quantity || "0",
-        issue_date: getFormatedDate(row.issue_date),
-        withdrawl_date_str: row.withdrawl_date
-          ? getFormatedDate(row.withdrawl_date)
-          : "---",
-        created_at: getTimeDate(row.created_at),
-        status:
-          row.status?.toLowerCase() == "pending" ? (
-            <Chip text="Pending" varient="info" />
-          ) : (
-            <Chip text="Completed" varient="success" />
-          ),
-        processed: (
-          <Button
-            size="icon"
-            disabled={row.issue_to?.toLowerCase() === "special_demand"}
-            className={`bg-white text-black shadow-md border hover:bg-gray-100
-      ${row.source_type?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
-            onClick={() => {
-              if (row.issue_to?.toLowerCase() === "special_demand") return;
-
-              setSelectedRow(row);
-              setIsOpen((prev) => ({ ...prev, survey: true }));
-            }}
-          >
-            <FaChevronRight />
-          </Button>
+    return {
+      ...row,
+      survey_quantity: row.survey_quantity || "0",
+      issue_date: getFormatedDate(row.issue_date),
+      withdrawl_date_str: row.withdrawl_date
+        ? getFormatedDate(row.withdrawl_date)
+        : "---",
+      created_at: getTimeDate(row.created_at),
+      status:
+        row.status?.toLowerCase() == "pending" ? (
+          <Chip text="Pending" varient="info" />
+        ) : (
+          <Chip text="Completed" varient="success" />
         ),
-        rollback:
-          user.role === "officer" ? (
-            <Button
-              variant="destructive"
-              className="bg-red-600 text-white hover:bg-red-700"
-              size="sm"
-              onClick={() => handleRollback(row.id, row.description)}
-            >
-              Rollback
-            </Button>
-          ) : null,
-      };
-    });
-    setTableData(t);
-  }, [fetchedData]);
+      // Add the processed button directly here instead of using column render
+      processed: (
+        <Button
+          size="icon"
+          disabled={row.issue_to?.toLowerCase() === "special_demand"}
+          className={`bg-white text-black shadow-md border hover:bg-gray-100
+            ${row.issue_to?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
+          onClick={() => handleProceedWithCategoryCheck(row)}
+        >
+          <FaChevronRight />
+        </Button>
+      ),
+      rollback:
+        user.role === "officer" ? (
+          <Button
+            variant="destructive"
+            className="bg-red-600 text-white hover:bg-red-700"
+            size="sm"
+            onClick={() => handleRollback(row.id, row.description)}
+          >
+            Rollback
+          </Button>
+        ) : null,
+    };
+  });
+  setTableData(t);
+}, [fetchedData]);
 
   if (isLoading.table) {
     return <Spinner />;
@@ -1313,9 +1430,9 @@ const PendingSurvey = () => {
                   );
                 }
 
-                 if (!manualSurveyDate) {
-                   return toaster("error", "Please select a survey date");
-                 }
+                if (!manualSurveyDate) {
+                  return toaster("error", "Please select a survey date");
+                }
 
                 try {
                   await apiService.post("/survey/manual-add", {
@@ -1352,8 +1469,91 @@ const PendingSurvey = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Category Selection Dialog for Items with Null/Unknown Category */}
+      <Dialog
+        open={categoryDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCategoryDialog({
+              open: false,
+              selectedRow: null,
+              selectedCategory: "",
+            });
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogTitle>Select Category</DialogTitle>
+          <DialogDescription>
+            This item doesn't have a category assigned. Please select a category
+            to proceed.
+          </DialogDescription>
+
+          <div className="mt-4">
+            <Label className="mb-2 block">
+              Category <span className="text-red-500">*</span>
+            </Label>
+            <select
+              className="w-full border rounded-md px-3 py-2"
+              value={categoryDialog.selectedCategory}
+              onChange={(e) =>
+                setCategoryDialog((prev) => ({
+                  ...prev,
+                  selectedCategory: e.target.value,
+                }))
+              }
+            >
+              <option value="">Select</option>
+              <option value="P">P</option>
+              <option value="R">R</option>
+              <option value="C">C</option>
+              <option value="LP">LP</option>
+            </select>
+
+            <div className="mt-3 text-sm text-gray-600">
+              <p className="font-semibold">Note:</p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>
+                  If you select <span className="font-semibold">C or LP</span>:
+                  Item will be moved to{" "}
+                  <span className="font-semibold">
+                    Pending for Demand
+                  </span>
+                </li>
+                <li>
+                  If you select <span className="font-semibold">P or R</span>:
+                  Item will remain in Survey with the updated category
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() =>
+                setCategoryDialog({
+                  open: false,
+                  selectedRow: null,
+                  selectedCategory: "",
+                })
+              }
+            >
+              Cancel
+            </Button>
+            <SpinnerButton
+              loading={isUpdatingCategory}
+              disabled={isUpdatingCategory || !categoryDialog.selectedCategory}
+              loadingText="Processing..."
+              onClick={handleCategoryUpdateAndRoute}
+            >
+              Proceed
+            </SpinnerButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};;
+};
 
 export default PendingSurvey;

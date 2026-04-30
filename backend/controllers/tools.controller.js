@@ -333,7 +333,7 @@ const createTool = async (req, res) => {
                  remarks, department, images, uid, oem, oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details,
                   substitute_name, local_terminology, critical_tool, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,

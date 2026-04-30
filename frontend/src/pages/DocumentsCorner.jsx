@@ -1028,7 +1028,23 @@ const DocumentsCorner = ({ type = "" }) => {
         ) : null,
         boxNo: boxNo?.map((box) => box.no)?.join(", "),
         itemDistribution: boxNo?.map((box) => box.qtyHeld)?.join(", "),
-        location: boxNo?.map((box) => box.location)?.join(", "),
+        // location: boxNo?.map((box) => box.location)?.join(", "),
+        
+        location: (() => {
+          if (!boxNo?.length) return "";
+
+          // Extract unique locations, filtering out empty/undefined values
+          const uniqueLocations = [
+            ...new Set(boxNo.map((box) => box.location).filter(Boolean)),
+          ];
+
+          // If all locations are the same (only 1 unique location), return just that location
+          if (uniqueLocations.length === 1) {
+            return uniqueLocations[0];
+          }
+          // Otherwise return all unique locations joined by commas
+          return uniqueLocations.join(", ");
+        })(),
 
         edit: (
           <ActionIconDocuments

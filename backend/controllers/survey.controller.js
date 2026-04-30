@@ -96,14 +96,16 @@ async function createSurvey(req, res) {
     if (category === "c" || category === "lp") {
       await connection.query(
         `INSERT INTO demand (
-          spare_id, tool_id, issue_to, transaction_id,
+          spare_id, tool_id, issue_to, service_no, name, transaction_id,
           survey_qty, survey_voucher_no, survey_date,
           created_at, created_by, status, remarks_survey
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           spare_id || null,
           tool_id || null,
           issue_to,
+          service_no,
+          name,
           transactionId,
           withdrawl_qty,
           null,
@@ -583,6 +585,7 @@ async function getLogSurveys(req, res) {
     withdrawl_date: ["s.withdrawl_date"],
     service_no: ["s.service_no"],
     issue_to: ["s.issue_to"],
+    name: ["s.name"],
     created_at: ["s.created_at"],
   };
 
@@ -1243,6 +1246,143 @@ async function getSurveyItems(req, res) {
   }
 }
 
+async function moveFromSurveyToDemand(req, res) {
+  const { survey_id, category } = req.body;
+  const connection = await pool.getConnection();
+
+  try {
+    // Validate input
+    if (!survey_id) {
+      return new ApiErrorResponse(400, {}, "survey_id is required").send(res);
+    }
+
+    if (!category) {
+      return new ApiErrorResponse(400, {}, "category is required").send(res);
+    }
+
+    await connection.beginTransaction();
+
+    // Get the survey record
+    const [[survey]] = await connection.query(
+      `SELECT * FROM survey WHERE id = ? FOR UPDATE`,
+      [survey_id],
+    );
+
+    if (!survey) {
+      await connection.rollback();
+      return new ApiErrorResponse(404, {}, "Survey record not found").send(res);
+    }
+
+    // Check if already processed
+    if (survey.status === "completed") {
+      await connection.rollback();
+      return new ApiErrorResponse(400, {}, "Survey already completed").send(
+        res,
+      );
+    }
+
+    // Update survey status to completed
+    await connection.query(
+      `UPDATE survey SET status = 'completed' WHERE id = ?`,
+      [survey_id],
+    );
+
+    // Insert into demand table for C or LP categories
+    const transactionId = "DEM-" + Date.now();
+
+    await connection.query(
+      `INSERT INTO demand (
+        spare_id, 
+        tool_id, 
+        issue_to, 
+        transaction_id,
+        survey_qty, 
+        survey_voucher_no, 
+        survey_date,
+        created_at, 
+        created_by, 
+        status, 
+        reason_for_survey
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        survey.spare_id || null,
+        survey.tool_id || null,
+        survey.issue_to,
+        transactionId,
+        survey.withdrawl_qty,
+        null,
+        survey.withdrawl_date,
+        getSQLTimestamp(),
+        req.user.id,
+        "pending",
+        `Moved from survey due to category ${category}`,
+      ],
+    );
+
+    await connection.commit();
+
+    return new ApiResponse(
+      200,
+      {
+        message: "Item moved to demand successfully",
+        demand_id: transactionId,
+      },
+      "Item moved to demand successfully",
+    ).send(res);
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error moving survey to demand:", error);
+    return new ApiErrorResponse(
+      500,
+      {},
+      error.message || "Internal server error",
+    ).send(res);
+  } finally {
+    connection.release();
+  }
+}
+
+async function updateItemCategory(req, res) {
+  const { item_id, item_type, category } = req.body;
+  const connection = await pool.getConnection();
+
+  try {
+    // Validate input
+    if (!item_id || !item_type || !category) {
+      return new ApiErrorResponse(
+        400,
+        {},
+        "item_id, item_type, and category are required",
+      ).send(res);
+    }
+
+    const tableName = item_type === "spare" ? "spares" : "tools";
+
+    // Verify the item exists
+    const [[item]] = await connection.query(
+      `SELECT id FROM ${tableName} WHERE id = ?`,
+      [item_id],
+    );
+
+    if (!item) {
+      return new ApiErrorResponse(404, {}, `${item_type} not found`).send(res);
+    }
+
+    // Update only the category
+    await connection.query(
+      `UPDATE ${tableName} SET category = ? WHERE id = ?`,
+      [category.toUpperCase(), item_id],
+    );
+
+    return new ApiResponse(200, {}, "Category updated successfully").send(res);
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   createSurvey,
   getSurveys,
@@ -1250,4 +1390,6 @@ module.exports = {
   revertSurvey,
   manualAddSurvey,
   getSurveyItems,
+  moveFromSurveyToDemand,
+  updateItemCategory,
 };

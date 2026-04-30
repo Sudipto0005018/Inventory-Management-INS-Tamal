@@ -16,8 +16,6 @@ import Spinner from "../components/Spinner";
 const PendingDemand = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
-    { key: "demand_no", header: "Demand No." },
-    { key: "demand_date", header: "Demand Date" },
     { key: "description", header: "Item Description" },
     {
       key: "indian_pattern",
@@ -35,13 +33,16 @@ const PendingDemand = () => {
     // },
     { key: "category", header: "Category", width: "min-w-[40px]" },
     { key: "denos", header: "Denos.", width: "min-w-[40px]" },
+    { key: "issue_to", header: "Issued To" },
+    { key: "service_no", header: "Service No." },
+    { key: "name", header: "Name" },
+    { key: "demand_no", header: "Demand No." },
+    { key: "demand_date", header: "Demand Date" },
     { key: "demand_quantity", header: "Qty Demanded", width: "min-w-[40px]" },
     { key: "remarks", header: "Remarks", width: "min-w-[40px]" },
   ]);
 
   const options = [
-    { value: "demand_no", label: "Demand No.", width: "min-w-[40px]" },
-    { value: "demand_date", label: "Demand Date", width: "min-w-[40px]" },
     { value: "description", label: "Item Description", width: "min-w-[40px]" },
     {
       value: "indian_pattern",
@@ -54,6 +55,8 @@ const PendingDemand = () => {
     },
     { value: "category", label: "Category", width: "min-w-[40px]" },
     { value: "denos", label: "Denos.", width: "min-w-[40px]" },
+    { value: "demand_no", label: "Demand No.", width: "min-w-[40px]" },
+    { value: "demand_date", label: "Demand Date", width: "min-w-[40px]" },
     { value: "remarks", label: "Remarks", width: "min-w-[40px]" },
   ];
   const [selectedValues, setSelectedValues] = useState([]);

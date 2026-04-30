@@ -93,25 +93,6 @@ const menuItems = [
     ],
   },
   {
-    name: "Departments",
-    path: "/departments",
-    icon: <FaPeopleRoof />,
-    roles: ["superadmin"],
-  },
-  { name: "Users", path: "/users", icon: <User />, roles: ["superadmin"] },
-  {
-    name: "Approvals",
-    path: "/approvals",
-    icon: <IoMdCheckmarkCircleOutline size={20} />,
-    roles: ["superadmin"],
-  },
-  {
-    name: "History",
-    path: "/history",
-    icon: <BsClockHistory size={20} />,
-    roles: ["superadmin"],
-  },
-  {
     name: "Temporary Issue",
     path: "/temporary/temporary-issue",
     icon: <FaCartPlus size={20} />,
@@ -135,21 +116,22 @@ const menuItems = [
     ],
   },
 
-  // {
-  //   name: "Successor Board",
-  //   path: "/successor-board",
-  //   icon: <LuNotebookPen />,
-  //   submenu: [
-  //     {
-  //       name: "Officer Incharge",
-  //       path: "/successor-board/officer-incharge",
-  //     },
-  //     {
-  //       name: "Storekeeper Incharge",
-  //       path: "/successor-board/storekeeper-incharge",
-  //     },
-  //   ],
-  // },
+  {
+    name: "Successor Board",
+    path: "/successor-board",
+    icon: <LuNotebookPen size={20} />,
+    roles: ["admin", "user", "officer"],
+    submenu: [
+      {
+        name: "Officer Incharge",
+        path: "/successor-board/officer-incharge",
+      },
+      {
+        name: "Storekeeper Incharge",
+        path: "/successor-board/storekeeper-incharge",
+      },
+    ],
+  },
   {
     name: "Documents Corner",
     path: "/documents",
@@ -208,6 +190,7 @@ const menuItems = [
     icon: <FaUserTie size={20} />,
     roles: ["officer"],
     submenu: [
+      { name: "Departments", path: "/departments", icon: <FaPeopleRoof /> },
       { name: "Users", path: "/users", icon: <User /> },
       {
         name: "Approvals",
@@ -265,7 +248,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       </div>
 
       {/* Menu */}
-      <nav className="p-2 overflow-y-auto flex-1">
+      <nav className="p-2 overflow-y-auto flex-1 pb-[64px]">
         {menuItems.map((item) => {
           if (!item.roles?.includes(user?.role)) return null;
 
@@ -365,7 +348,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           );
         })}
       </nav>
-      <div className="fixed bottom-0 left-0 right-0 w-full bg-white/5 p-2">
+      <div className="fixed bottom-0 left-0 right-0 w-full bg-[#1e243d] p-2 z-20">
         <div
           className="flex items-center gap-3 justify-center cursor-pointer"
           onClick={() => setDialogIsOpen(true)}
