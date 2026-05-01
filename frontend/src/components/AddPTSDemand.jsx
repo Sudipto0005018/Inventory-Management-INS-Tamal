@@ -620,7 +620,13 @@ const AddPTSDemand = ({ open, onOpenChange, onSuccess }) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        showCloseButton
+        onPointerDownOutside={(e) => {
+          e.preventDefault();
+        }}
+        className="max-w-2xl"
+      >
         <DialogTitle className="text-lg font-semibold">
           {step === 1
             ? "Add PTS Demand - Select Item"
@@ -955,135 +961,138 @@ const AddPTSDemand = ({ open, onOpenChange, onSuccess }) => {
             </div>
           </div>
         ) : (
-  <div className="space-y-4">
-    <div className="bg-gray-50 p-3 rounded mb-4">
-      <p>
-        <strong>Item:</strong> {selectedItem?.description}
-      </p>
-      <p>
-        <strong>Category:</strong> {selectedItem?.category}
-      </p>
-      <p>
-        <strong>Quantity:</strong> {formData.quantity}
-      </p>
-    </div>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded mb-4">
+              <p>
+                <strong>Item:</strong> {selectedItem?.description}
+              </p>
+              <p>
+                <strong>Category:</strong> {selectedItem?.category}
+              </p>
+              <p>
+                <strong>Quantity:</strong> {formData.quantity}
+              </p>
+            </div>
 
-    {/* Internal Demand No. - Always shown */}
-    <div className="flex gap-4 w-full">
-      <div className="w-full">
-        <Label htmlFor="internal_demand_no" className="ms-2 mb-2 mt-4">
-          Internal Demand No. <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          type="text"
-          id="internal_demand_no"
-          value={formData.internal_demand_no}
-          placeholder="Internal Demand No."
-          onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              internal_demand_no: e.target.value.toUpperCase(),
-            }))
-          }
-        />
-      </div>
-      <div className="w-full mt-3">
-        <FormattedDatePicker
-          label="Internal Demand Date"
-          value={formData.internal_demand_date}
-          onChange={(date) =>
-            setFormData((prev) => ({
-              ...prev,
-              internal_demand_date: date,
-            }))
-          }
-        />
-      </div>
-    </div>
+            {/* Internal Demand No. - Always shown */}
+            <div className="flex gap-4 w-full">
+              <div className="w-full">
+                <Label htmlFor="internal_demand_no" className="ms-2 mb-2 mt-4">
+                  Internal Demand No. <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  id="internal_demand_no"
+                  value={formData.internal_demand_no}
+                  placeholder="Internal Demand No."
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      internal_demand_no: e.target.value.toUpperCase(),
+                    }))
+                  }
+                />
+              </div>
+              <div className="w-full mt-3">
+                <FormattedDatePicker
+                  label="Internal Demand Date"
+                  value={formData.internal_demand_date}
+                  onChange={(date) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      internal_demand_date: date,
+                    }))
+                  }
+                />
+              </div>
+            </div>
 
-    {/* Requisition No. - Shows only if Internal Demand No. and Date are filled */}
-    {formData.internal_demand_no && formData.internal_demand_date && (
-      <div className="flex gap-4 w-full">
-        <div className="w-full">
-          <Label htmlFor="requisition_no" className="ms-2 mb-2 mt-5">
-            Requisition No.
-          </Label>
-          <Input
-            type="text"
-            id="requisition_no"
-            value={formData.requisition_no}
-            placeholder="Requisition No."
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                requisition_no: e.target.value.toUpperCase(),
-              }))
-            }
-          />
-        </div>
-        <div className="w-full mt-4">
-          <FormattedDatePicker
-            label="Requisition Date"
-            value={formData.requisition_date}
-            onChange={(date) =>
-              setFormData((prev) => ({ ...prev, requisition_date: date }))
-            }
-          />
-        </div>
-      </div>
-    )}
+            {/* Requisition No. - Shows only if Internal Demand No. and Date are filled */}
+            {formData.internal_demand_no && formData.internal_demand_date && (
+              <div className="flex gap-4 w-full">
+                <div className="w-full">
+                  <Label htmlFor="requisition_no" className="ms-2 mb-2 mt-5">
+                    Requisition No.
+                  </Label>
+                  <Input
+                    type="text"
+                    id="requisition_no"
+                    value={formData.requisition_no}
+                    placeholder="Requisition No."
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        requisition_no: e.target.value.toUpperCase(),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="w-full mt-4">
+                  <FormattedDatePicker
+                    label="Requisition Date"
+                    value={formData.requisition_date}
+                    onChange={(date) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        requisition_date: date,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
-    {/* MO Demand No. - Shows only if Requisition No. and Date are filled */}
-    {formData.requisition_no && formData.requisition_date && (
-      <div className="flex gap-4 w-full">
-        <div className="w-full">
-          <Label htmlFor="mo_demand_no" className="ms-2 mb-2 mt-7">
-            MO Demand No.
-          </Label>
-          <Input
-            type="text"
-            id="mo_demand_no"
-            value={formData.mo_demand_no}
-            placeholder="MO Demand No."
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                mo_demand_no: e.target.value.toUpperCase(),
-              }))
-            }
-          />
-        </div>
-        <div className="w-full mt-6">
-          <FormattedDatePicker
-            label="MO Demand Date"
-            value={formData.mo_demand_date}
-            onChange={(date) =>
-              setFormData((prev) => ({ ...prev, mo_demand_date: date }))
-            }
-          />
-        </div>
-      </div>
-    )}
+            {/* MO Demand No. - Shows only if Requisition No. and Date are filled */}
+            {formData.requisition_no && formData.requisition_date && (
+              <div className="flex gap-4 w-full">
+                <div className="w-full">
+                  <Label htmlFor="mo_demand_no" className="ms-2 mb-2 mt-7">
+                    MO Demand No.
+                  </Label>
+                  <Input
+                    type="text"
+                    id="mo_demand_no"
+                    value={formData.mo_demand_no}
+                    placeholder="MO Demand No."
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        mo_demand_no: e.target.value.toUpperCase(),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="w-full mt-6">
+                  <FormattedDatePicker
+                    label="MO Demand Date"
+                    value={formData.mo_demand_date}
+                    onChange={(date) =>
+                      setFormData((prev) => ({ ...prev, mo_demand_date: date }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
-    <div className="flex justify-between gap-4 mt-6">
-      <Button variant="outline" onClick={() => setStep(1)}>
-        Back
-      </Button>
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={handleClose}>
-          Cancel
-        </Button>
-        <SpinnerButton
-          loading={isLoading}
-          disabled={isLoading || !formData.internal_demand_no}
-          onClick={handleSubmit}
-        >
-          Submit
-        </SpinnerButton>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="flex justify-between gap-4 mt-6">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                Back
+              </Button>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <SpinnerButton
+                  loading={isLoading}
+                  disabled={isLoading || !formData.internal_demand_no}
+                  onClick={handleSubmit}
+                >
+                  Submit
+                </SpinnerButton>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

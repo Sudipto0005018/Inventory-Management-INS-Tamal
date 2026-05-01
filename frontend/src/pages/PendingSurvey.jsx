@@ -2202,7 +2202,12 @@ const PendingSurvey = () => {
           setIsOpen((prev) => ({ ...prev, survey: open }));
         }}
       >
-        <DialogContent className="unbounded w-full !max-w-2xl">
+        <DialogContent
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          className="unbounded w-full !max-w-2xl"
+        >
           <div className="sticky top-0 z-10 bg-background grid grid-cols-2 items-center pb-2 border-b">
             <DialogTitle className="capitalize">
               Issue {selectedRow.spare_id ? "spare" : "tool"}

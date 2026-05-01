@@ -392,7 +392,11 @@ const PendingPTS = () => {
         open={isOpen.amend}
         onOpenChange={(set) => setIsOpen((prev) => ({ ...prev, amend: set }))}
       >
-        <DialogContent>
+        <DialogContent
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <div className="sticky top-0 z-10 bg-background grid grid-cols-2 items-center pb-2 border-b">
             <DialogTitle className="text-lg font-semibold">
               Amend PTS Demand
