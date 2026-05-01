@@ -660,14 +660,16 @@ const Spares = ({ type = "" }) => {
       [name]: value.toUpperCase(),
     }));
   };
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    if (value.indexOf("-") >= 0) return;
-    setSelectedRow((prev) => ({
-      ...prev,
-      [name]: value.toUpperCase(),
-    }));
+ const handleEditChange = (e) => {
+   const { name, value } = e.target;
+
+   setSelectedRow((prev) => ({
+     ...prev,
+     [name]: value.toUpperCase(),
+   }));
   };
+  
+  
   // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
   //   try {
   //     const response = await apiService.get(
@@ -3714,7 +3716,6 @@ const Spares = ({ type = "" }) => {
                     <div>
                       <Label className="mb-2">
                         <i>IN</i> Part No.
-                        <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         readOnly
@@ -3728,9 +3729,7 @@ const Spares = ({ type = "" }) => {
                     </div>
 
                     <div>
-                      <Label className="mb-2">
-                        Category<span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="mb-2">Category</Label>
                       <Input
                         readOnly
                         name="category"
@@ -3839,7 +3838,12 @@ const Spares = ({ type = "" }) => {
                     {/* Withdrawal Date */}
                     <div className="w-full">
                       <FormattedDatePicker
-                        label="Withdrawal Date *"
+                        label={
+                          <>
+                            Withdrawal Date{" "}
+                            <span className="text-red-500">*</span>
+                          </>
+                        }
                         value={date}
                         onChange={setDate}
                       />
@@ -3913,7 +3917,6 @@ const Spares = ({ type = "" }) => {
                     <div>
                       <Label className="mb-2">
                         <i>IN</i> Part No.{" "}
-                        <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         readOnly
@@ -3942,9 +3945,7 @@ const Spares = ({ type = "" }) => {
                       />
                     </div>
                     <div>
-                      <Label className="mb-2">
-                        Category<span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="mb-2">Category</Label>
                       <Input
                         readOnly
                         name="category"
@@ -4052,7 +4053,11 @@ const Spares = ({ type = "" }) => {
                     {/* Withdrawal Date */}
                     <div className="w-full">
                       <FormattedDatePicker
-                        label="Issue Date *"
+                        label={
+                          <>
+                            Issue Date <span className="text-red-500">*</span>
+                          </>
+                        }
                         value={date}
                         onChange={setDate}
                       />
@@ -4145,7 +4150,6 @@ const Spares = ({ type = "" }) => {
                     <div>
                       <Label className="mb-2">
                         <i>IN</i> Part No.{" "}
-                        <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         readOnly
@@ -4159,9 +4163,7 @@ const Spares = ({ type = "" }) => {
                     </div>
 
                     <div>
-                      <Label className="mb-2">
-                        Category<span className="text-red-500">*</span>
-                      </Label>
+                      <Label className="mb-2">Category</Label>
                       <Input
                         readOnly
                         name="category"
@@ -4252,7 +4254,12 @@ const Spares = ({ type = "" }) => {
                     {/* Withdrawal Date */}
                     <div className="w-full">
                       <FormattedDatePicker
-                        label="Withdrawal Date *"
+                        label={
+                          <>
+                            Withdrawal Date{" "}
+                            <span className="text-red-500">*</span>
+                          </>
+                        }
                         value={date}
                         onChange={setDate}
                       />
@@ -4366,11 +4373,6 @@ const Spares = ({ type = "" }) => {
                 onClick={() => {
                   if (!selectedRow.description?.trim()) {
                     toaster("error", "Item Description is required");
-                    return;
-                  }
-
-                  if (!selectedRow.indian_pattern?.trim()) {
-                    toaster("error", "IN Part No. is required");
                     return;
                   }
 

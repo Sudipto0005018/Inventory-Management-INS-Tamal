@@ -72,6 +72,7 @@ app.use("/api/v1/routines", require("./routes/routines.routes"));
 app.use("/api/v1/routinesTool", require("./routes/routinesTool.routes"));
 app.use("/api/v1/nominal-roll", require("./routes/nominalRoll.routes"));
 app.use("/api/v1/succession-board", require("./routes/successionBoard.routes"));
+app.use("/api/v1/pts", require("./routes/pts.routes"));
 
 // syncAssets("spares");
 syncTyLoan();

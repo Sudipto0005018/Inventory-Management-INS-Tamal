@@ -1246,7 +1246,7 @@ async function getSurveyItems(req, res) {
   }
 }
 
-async function moveFromSurveyToDemand(req, res) {
+async function moveFromSurveyToDestination(req, res) {
   const { survey_id, category } = req.body;
   const connection = await pool.getConnection();
 
@@ -1262,9 +1262,15 @@ async function moveFromSurveyToDemand(req, res) {
 
     await connection.beginTransaction();
 
-    // Get the survey record
+    // Get the survey record with all necessary fields
     const [[survey]] = await connection.query(
-      `SELECT * FROM survey WHERE id = ? FOR UPDATE`,
+      `SELECT s.*, 
+              COALESCE(sp.description, t.description) as description,
+              COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
+       FROM survey s
+       LEFT JOIN spares sp ON s.spare_id = sp.id
+       LEFT JOIN tools t ON s.tool_id = t.id
+       WHERE s.id = ? FOR UPDATE`,
       [survey_id],
     );
 
@@ -1287,24 +1293,39 @@ async function moveFromSurveyToDemand(req, res) {
       [survey_id],
     );
 
-    // Insert into demand table for C or LP categories
-    const transactionId = "DEM-" + Date.now();
+    const transactionId = "SUR-" + Date.now();
+    const categoryUpper = category.toUpperCase();
 
-    await connection.query(
-      `INSERT INTO demand (
-        spare_id, 
-        tool_id, 
-        issue_to, 
-        transaction_id,
-        survey_qty, 
-        survey_voucher_no, 
-        survey_date,
-        created_at, 
-        created_by, 
-        status, 
-        reason_for_survey
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
+    if (categoryUpper === "C") {
+      // First, check the actual structure of demand table
+      try {
+        const [columns] = await connection.query(`SHOW COLUMNS FROM demand`);
+        console.log(
+          "Demand table columns:",
+          columns.map((c) => c.Field),
+        );
+      } catch (err) {
+        console.log("Error checking columns:", err.message);
+      }
+
+      // Prepare the insert query based on available fields
+      let insertQuery = `
+        INSERT INTO demand (
+          spare_id, 
+          tool_id, 
+          issue_to, 
+          transaction_id,
+          survey_qty, 
+          survey_voucher_no, 
+          survey_date,
+          created_at, 
+          created_by, 
+          status, 
+          reason_for_survey,
+          remarks
+      `;
+
+      let insertValues = [
         survey.spare_id || null,
         survey.tool_id || null,
         survey.issue_to,
@@ -1315,23 +1336,141 @@ async function moveFromSurveyToDemand(req, res) {
         getSQLTimestamp(),
         req.user.id,
         "pending",
-        `Moved from survey due to category ${category}`,
-      ],
-    );
+        `Moved from survey due to category C`,
+        survey.remarks_survey || null,
+      ];
 
-    await connection.commit();
+      // Check if service_no column exists and add it
+      const [columns] = await connection.query(`SHOW COLUMNS FROM demand`);
+      const hasServiceNo = columns.some((col) => col.Field === "service_no");
+      const hasItemDescription = columns.some(
+        (col) => col.Field === "item_description",
+      );
+      const hasIndianPattern = columns.some(
+        (col) => col.Field === "indian_pattern",
+      );
 
-    return new ApiResponse(
-      200,
-      {
-        message: "Item moved to demand successfully",
-        demand_id: transactionId,
-      },
-      "Item moved to demand successfully",
-    ).send(res);
+      if (hasServiceNo) {
+        insertQuery += `, service_no`;
+        insertValues.push(survey.service_no || null);
+      }
+
+      if (hasItemDescription) {
+        insertQuery += `, item_description`;
+        insertValues.push(survey.description || null);
+      }
+
+      if (hasIndianPattern) {
+        insertQuery += `, indian_pattern`;
+        insertValues.push(survey.indian_pattern || null);
+      }
+
+      insertQuery += `) VALUES (${insertValues.map(() => "?").join(", ")})`;
+
+      await connection.query(insertQuery, insertValues);
+
+      await connection.commit();
+
+      return new ApiResponse(
+        200,
+        {
+          message: "Item moved to Demand successfully",
+          destination: "demand",
+          transaction_id: transactionId,
+        },
+        "Item moved to Demand successfully",
+      ).send(res);
+    } else if (categoryUpper === "LP") {
+      // Handle box_no properly - ensure it's valid JSON or NULL
+      let boxNoValue = null;
+      if (survey.box_no) {
+        if (typeof survey.box_no === "string") {
+          boxNoValue = survey.box_no;
+        } else if (typeof survey.box_no === "object") {
+          boxNoValue = JSON.stringify(survey.box_no);
+        }
+      }
+
+      // Check procurement table structure
+      const [procColumns] = await connection.query(
+        `SHOW COLUMNS FROM procurement`,
+      );
+      const hasServiceNo = procColumns.some(
+        (col) => col.Field === "service_no",
+      );
+      const hasItemDescription = procColumns.some(
+        (col) => col.Field === "item_description",
+      );
+
+      let insertQuery = `
+        INSERT INTO procurement (
+          spare_id,
+          tool_id,
+          box_no,
+          nac_qty,
+          nac_no,
+          nac_date,
+          validity,
+          rate_unit,
+          issue_date,
+          qty_received,
+          created_by,
+          created_at,
+          status,
+          transaction_id
+      `;
+
+      let insertValues = [
+        survey.spare_id || null,
+        survey.tool_id || null,
+        boxNoValue,
+        survey.withdrawl_qty,
+        null,
+        null,
+        null,
+        null,
+        survey.withdrawl_date,
+        0,
+        req.user.id,
+        getSQLTimestamp(),
+        "pending",
+        transactionId,
+      ];
+
+      if (hasServiceNo) {
+        insertQuery += `, service_no`;
+        insertValues.push(survey.service_no || null);
+      }
+
+      if (hasItemDescription) {
+        insertQuery += `, item_description`;
+        insertValues.push(survey.description || null);
+      }
+
+      insertQuery += `) VALUES (${insertValues.map(() => "?").join(", ")})`;
+
+      await connection.query(insertQuery, insertValues);
+
+      await connection.commit();
+
+      return new ApiResponse(
+        200,
+        {
+          message: "Item moved to Procurement successfully",
+          destination: "procurement",
+          transaction_id: transactionId,
+        },
+        "Item moved to Procurement successfully",
+      ).send(res);
+    } else {
+      await connection.rollback();
+      return new ApiErrorResponse(400, {}, "Invalid category for routing").send(
+        res,
+      );
+    }
   } catch (error) {
     await connection.rollback();
-    console.error("Error moving survey to demand:", error);
+    console.error("Error moving survey to destination:", error);
     return new ApiErrorResponse(
       500,
       {},
@@ -1390,6 +1529,6 @@ module.exports = {
   revertSurvey,
   manualAddSurvey,
   getSurveyItems,
-  moveFromSurveyToDemand,
+  moveFromSurveyToDestination,
   updateItemCategory,
 };

@@ -382,7 +382,7 @@ const Header = ({ onSidebarOpen }) => {
           </TooltipProvider>
 
           
-          {user?.role === "officer" && isDashboard && (
+          {user?.role === "officer" && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
