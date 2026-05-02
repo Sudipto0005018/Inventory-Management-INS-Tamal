@@ -97,7 +97,8 @@ const PendingDemand = () => {
           page,
           search,
           cols: selectedValues.join(","),
-          limit: config.row_per_page,
+          // limit: config.row_per_page,
+          limit: 40,
         },
       });
       console.log("API DATA:", response.data.items);
@@ -225,7 +226,7 @@ const PendingDemand = () => {
           pageSize={fetchedData.items?.length || 10}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
-          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
+          className="h-[calc(95vh-210px)] w-[calc(100vw-35px)]"
         />
       </div>
     </div>

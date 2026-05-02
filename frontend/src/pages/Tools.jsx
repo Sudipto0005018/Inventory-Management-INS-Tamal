@@ -626,7 +626,8 @@ const Tools = ({ type = "" }) => {
       const params = {
         page,
         search: searchValue,
-        limit: config.row_per_page,
+        limit: 40,
+        // limit: config.row_per_page,
       };
       if (fields && fields.length) {
         // send as CSV

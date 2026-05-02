@@ -275,7 +275,8 @@ const PermanentPendings = () => {
       const res = await apiService.get("/issue/pending-issue", {
         params: {
           page,
-          limit: config.row_per_page,
+          // limit: config.row_per_page,
+          limit: 40,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -525,7 +526,7 @@ const PermanentPendings = () => {
           pageSize={config.row_per_page}
           totalPages={fetchedData.totalPages}
           onPageChange={setCurrentPage}
-          className="h-[calc(100vh-230px)]"
+          className="h-[calc(94vh-210px)]"
         />
       </div>
 

@@ -1,3 +1,402 @@
+// import { useState, useContext } from "react";
+// import { NavLink } from "react-router";
+// import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
+// import { FaInfoCircle, FaRegClipboard, FaTools } from "react-icons/fa";
+// import { BsClockHistory } from "react-icons/bs";
+// import { FaUserTie } from "react-icons/fa6";
+// import { MdFolderSpecial } from "react-icons/md";
+// import { PiClockCountdownBold } from "react-icons/pi";
+
+// import { FaGears, FaPeopleRoof, FaRegClock, FaCartPlus } from "react-icons/fa6";
+// import { LuNotebookPen } from "react-icons/lu";
+// import { User } from "lucide-react";
+// import { IoMdCheckmarkCircleOutline } from "react-icons/io";
+// import { IoDocumentSharp } from "react-icons/io5";
+// import { SiPhpmyadmin } from "react-icons/si";
+
+// import logo1 from "../assets/logo1.png";
+// import { GoLog } from "react-icons/go";
+
+// import { cn } from "@/lib/utils";
+// import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+// import { Context } from "../utils/Context";
+// import { Dialog, DialogContent, DialogFooter, DialogTitle } from "./ui/dialog";
+
+// const menuItems = [
+//   {
+//     name: "Dashboard",
+//     path: "/dashboard",
+//     icon: <FaRegClipboard size={20} />,
+//     roles: ["admin", "user", "officer"],
+//   },
+//   {
+//     name: "Spares",
+//     path: "/spares",
+//     icon: <FaGears size={22} />,
+//     roles: ["admin", "user", "officer"],
+//     parentClickable: true,
+//     submenu: [
+//       { name: "Critical Spare", path: "/spares/critical" },
+//       { name: "Spares for Routines", path: "/spares/routine" },
+//     ],
+//   },
+//   {
+//     name: "Tools & Accessories",
+//     path: "/tools",
+//     icon: <FaTools size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     parentClickable: true,
+//     submenu: [
+//       { name: "Critical / Special Tool", path: "/tools/critical" },
+//       { name: "Tools for Routines", path: "/tools/routine" },
+//     ],
+//   },
+//   // { name: "Search", path: "/search", icon: <FaMagnifyingGlass /> },
+//   // { name: "Handheld Details", path: "/handheld", icon: <FaMobileAlt /> },
+//   {
+//     name: "Permanent Issue",
+//     path: "/permanent/pending-survey",
+//     icon: <FaRegClock size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     submenu: [
+//       { name: "Pending for Survey", path: "/permanent/pending-survey" },
+//       { name: "Pending for Demand", path: "/permanent/pending-demand" },
+//       { name: "Pending for MO Issue", path: "/permanent/pending-issue" },
+//       { name: "Pending for Stock Update", path: "/permanent/stock-update" },
+//       { name: "Pending for Procurement", path: "/permanent/procurement" },
+//       // { name: "D787 Amendment Demand", path: "/permanent/special-demand" },
+//       // { name: "Completed", path: "/permanent/complete" },
+//     ],
+//   },
+//   //Special Demand New Tab
+//   {
+//     name: "Special Demand",
+//     path: "/users",
+//     icon: <MdFolderSpecial size={20} />,
+//     roles: ["officer", "admin", "user"],
+//     submenu: [
+//       {
+//         name: "D787 Amendment Demand",
+//         path: "/special/special-demand",
+//         icon: <PiClockCountdownBold size={20} />,
+//       },
+//       {
+//         name: "PTS",
+//         path: "/special/pts",
+//         icon: <PiClockCountdownBold size={20} />,
+//       },
+//       {
+//         name: "STOREDEM / OPDEM",
+//         path: "/special/stordem",
+//         icon: <PiClockCountdownBold size={20} />,
+//       },
+//     ],
+//   },
+//   {
+//     name: "Temporary Issue",
+//     path: "/temporary/temporary-issue",
+//     icon: <FaCartPlus size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     submenu: [
+//       { name: "Pending", path: "/temporary/temporary-issue" },
+//       // {
+//       //   name: "Completed",
+//       //   path: "/temporary/completed",
+//       // },
+//     ],
+//   },
+//   {
+//     name: "TY Loan",
+//     path: "/temp-loan/pending",
+//     icon: <FaCartPlus size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     submenu: [
+//       { name: "Pending", path: "/temp-loan/pending" },
+//       { name: "Completed", path: "/temp-loan/complete" },
+//     ],
+//   },
+
+//   {
+//     name: "Successor Board",
+//     path: "/succession-board",
+//     icon: <LuNotebookPen size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     // submenu: [
+//     //   {
+//     //     name: "Officer Incharge",
+//     //     path: "/succession-board",
+//     //   },
+//     //   {
+//     //     name: "Storekeeper Incharge",
+//     //     path: "/succession-board",
+//     //   },
+//     // ],
+//   },
+//   {
+//     name: "Documents Corner",
+//     path: "/documents",
+//     icon: <IoDocumentSharp size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     parentClickable: true,
+//     submenu: [
+//       // {
+//       //   name: "Documents Master",
+//       //   path: "/documents",
+//       // },
+//       {
+//         name: "Pending",
+//         path: "/documents/issue",
+//       },
+//       {
+//         name: "Completed",
+//         path: "/documents/completed",
+//       },
+//     ],
+//   },
+//   {
+//     name: "Permanent Issue Logs",
+//     path: "/logs/pending-survey",
+//     icon: <GoLog size={20} />,
+//     roles: ["admin", "user", "officer"],
+//     submenu: [
+//       { name: "Survey Logs", path: "/logs/pending-survey" },
+//       { name: "Demand Logs", path: "/logs/pending-demand" },
+//       { name: "MO Issue Logs", path: "/logs/pending-issue" },
+//       { name: "NAC Logs", path: "/logs/nac" },
+//       { name: "Procurement Logs", path: "/logs/procurement" },
+//       { name: "Stock Update Logs", path: "/logs/stock-update" },
+//       { name: "Special Demand Logs", path: "/logs/special-demand" },
+//     ],
+//   },
+//   {
+//     name: "D787",
+//     path: "/d787/original",
+//     icon: <SiPhpmyadmin size={25} />,
+//     roles: ["admin", "user", "officer"],
+//     submenu: [
+//       {
+//         name: "D787 Original",
+//         path: "/d787/original",
+//       },
+//       {
+//         name: "D787 Amendment",
+//         path: "/d787/amendment",
+//       },
+//     ],
+//   },
+//   {
+//     name: "OIC",
+//     path: "/users",
+//     icon: <FaUserTie size={20} />,
+//     roles: ["officer"],
+//     submenu: [
+//       { name: "Departments", path: "/departments", icon: <FaPeopleRoof /> },
+//       { name: "Users", path: "/users", icon: <User /> },
+//       {
+//         name: "Approvals",
+//         path: "/approvals",
+//         icon: <IoMdCheckmarkCircleOutline size={20} />,
+//       },
+//       {
+//         name: "History",
+//         path: "/history",
+//         icon: <BsClockHistory size={20} />,
+//       },
+//     ],
+//   },
+//   {
+//     name: "Departments",
+//     path: "/departments",
+//     icon: <FaPeopleRoof />,
+//     roles: ["superadmin"],
+//   },
+//   { name: "Users", path: "/users", icon: <User />, roles: ["superadmin"] },
+//   {
+//     name: "Approvals",
+//     path: "/approvals",
+//     icon: <IoMdCheckmarkCircleOutline size={20} />,
+//     roles: ["superadmin"],
+//   },
+//   {
+//     name: "History",
+//     path: "/history",
+//     icon: <BsClockHistory size={20} />,
+//     roles: ["superadmin"],
+//   },
+// ];
+
+// const Sidebar = ({ isOpen, setIsOpen }) => {
+//   const { user } = useContext(Context);
+//   const [openMenu, setOpenMenu] = useState(null);
+//   const [isDialogOpen, setDialogIsOpen] = useState(false);
+
+//   return (
+//     <aside
+//       className={cn(
+//         "fixed top-0 left-0 h-full w-64 bg-[#0a1025] text-white z-50",
+//         "transform transition-transform duration-300 ease-in-out flex flex-col",
+//         isOpen ? "translate-x-0" : "-translate-x-full",
+//       )}
+//     >
+//       {/* Header */}
+//       <div className="flex items-center justify-between px-4 h-16 border-b border-white/10">
+//         {/* <img src="/logo.png" className="h-10" /> */}
+//         <img src={logo1} className="h-10" />
+//         <button onClick={() => setIsOpen(false)}>
+//           <FiX size={22} />
+//         </button>
+//       </div>
+
+//       {/* Menu */}
+//       <nav className="p-2 overflow-y-auto flex-1 pb-[64px]">
+//         {menuItems.map((item) => {
+//           if (!item.roles?.includes(user?.role)) return null;
+
+//           if (item.submenu) {
+//             return (
+//               <Collapsible
+//                 key={item.name}
+//                 open={openMenu === item.name}
+//                 onOpenChange={() =>
+//                   setOpenMenu(openMenu === item.name ? null : item.name)
+//                 }
+//               >
+//                 <div className="flex items-center justify-between p-3 rounded-md hover:bg-blue-700">
+//                   {/* Parent navigation old logic*/}
+//                   {/* <NavLink
+//                     to={item.path}
+//                     onClick={() => setIsOpen(false)}
+//                     className={({ isActive }) =>
+//                       cn(
+//                         "flex gap-3 items-center text-sm w-full",
+//                         isActive && "text-primary",
+//                       )
+//                     }
+//                   >
+//                     {item.icon}
+//                     {item.name}
+//                   </NavLink> */}
+
+//                   {item.parentClickable ? (
+//                     <NavLink
+//                       to={item.path}
+//                       onClick={() => setIsOpen(false)}
+//                       className="flex gap-3 items-center text-sm w-full"
+//                     >
+//                       {item.icon}
+//                       {item.name}
+//                     </NavLink>
+//                   ) : (
+//                     <div className="flex gap-3 items-center text-sm w-full">
+//                       {item.icon}
+//                       {item.name}
+//                     </div>
+//                   )}
+
+//                   {/* <div className="flex gap-3 items-center text-sm w-full">
+//                     {item.icon}
+//                     {item.name}
+//                   </div> */}
+
+//                   {/* Chevron toggle */}
+//                   <button
+//                     onClick={(e) => {
+//                       e.stopPropagation();
+//                       setOpenMenu(openMenu === item.name ? null : item.name);
+//                     }}
+//                     className="ml-2"
+//                   >
+//                     {openMenu === item.name ? (
+//                       <FiChevronDown />
+//                     ) : (
+//                       <FiChevronRight />
+//                     )}
+//                   </button>
+//                 </div>
+
+//                 <CollapsibleContent className="pl-8">
+//                   {item.submenu.map((sub) => (
+//                     <NavLink
+//                       key={sub.path}
+//                       to={sub.path}
+//                       className="block py-2 text-sm hover:text-primary"
+//                       onClick={() => setIsOpen(false)}
+//                     >
+//                       {sub.name}
+//                     </NavLink>
+//                   ))}
+//                 </CollapsibleContent>
+//               </Collapsible>
+//             );
+//           }
+
+//           return (
+//             <NavLink
+//               key={item.path}
+//               to={item.path}
+//               onClick={() => setIsOpen(false)}
+//               className={({ isActive }) =>
+//                 cn(
+//                   "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-blue-700",
+//                   isActive && "bg-primary",
+//                 )
+//               }
+//             >
+//               {item.icon}
+//               {item.name}
+//             </NavLink>
+//           );
+//         })}
+//       </nav>
+//       <div className="fixed bottom-0 left-0 right-0 w-full bg-[#1e243d] p-2 z-20">
+//         <div
+//           className="flex items-center gap-3 justify-center cursor-pointer"
+//           onClick={() => setDialogIsOpen(true)}
+//         >
+//           <FaInfoCircle className="text-white" />
+//           <p className="text-white text-lg font-bold">V 1.0.0</p>
+//         </div>
+//       </div>
+//       <Dialog open={isDialogOpen} onOpenChange={setDialogIsOpen}>
+//         <DialogContent
+//           className=""
+//           onPointerDownOutside={() => setDialogIsOpen(false)}
+//         >
+//           <DialogTitle>About</DialogTitle>
+
+//           <div className="w-full bg-white p-2">
+//             <p className="text-xs">
+//               This Solution has been developed by{" "}
+//               <a
+//                 className="text-primary font-semibold"
+//                 href="http://gbtsolutions.in/"
+//                 target="_blank"
+//               >
+//                 GBT Tech Solutions Private Limited
+//               </a>
+//               .
+//             </p>
+//             <br />
+//             <p className="text-xs">
+//               For any query please drop a mail to our softwere support team:
+//               <a
+//                 className="text-primary font-semibold"
+//                 href="mailto:softwere.support@gbtsolutions.in"
+//               >
+//                 {" "}
+//                 softwere.support@gbtsolutions.in
+//               </a>
+//             </p>
+//           </div>
+//         </DialogContent>
+//       </Dialog>
+//     </aside>
+//   );
+// };
+
+// export default Sidebar;
+
+
 import { useState, useContext } from "react";
 import { NavLink } from "react-router";
 import { FiX, FiChevronDown, FiChevronRight } from "react-icons/fi";
@@ -240,7 +639,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-white/10">
-        {/* <img src="/logo.png" className="h-10" /> */}
         <img src={logo1} className="h-10" />
         <button onClick={() => setIsOpen(false)}>
           <FiX size={22} />
@@ -254,79 +652,67 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
           if (item.submenu) {
             return (
-              <Collapsible
-                key={item.name}
-                open={openMenu === item.name}
-                onOpenChange={() =>
-                  setOpenMenu(openMenu === item.name ? null : item.name)
-                }
-              >
-                <div className="flex items-center justify-between p-3 rounded-md hover:bg-blue-700">
-                  {/* Parent navigation old logic*/}
-                  {/* <NavLink
-                    to={item.path}
-                    onClick={() => setIsOpen(false)}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex gap-3 items-center text-sm w-full",
-                        isActive && "text-primary",
-                      )
-                    }
-                  >
-                    {item.icon}
-                    {item.name}
-                  </NavLink> */}
-
-                  {item.parentClickable ? (
-                    <NavLink
-                      to={item.path}
-                      onClick={() => setIsOpen(false)}
-                      className="flex gap-3 items-center text-sm w-full"
-                    >
-                      {item.icon}
-                      {item.name}
-                    </NavLink>
-                  ) : (
-                    <div className="flex gap-3 items-center text-sm w-full">
-                      {item.icon}
-                      {item.name}
-                    </div>
-                  )}
-
-                  {/* <div className="flex gap-3 items-center text-sm w-full">
-                    {item.icon}
-                    {item.name}
-                  </div> */}
-
-                  {/* Chevron toggle */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenMenu(openMenu === item.name ? null : item.name);
-                    }}
-                    className="ml-2"
-                  >
-                    {openMenu === item.name ? (
-                      <FiChevronDown />
+              <div key={item.name} className="mb-1">
+                <Collapsible
+                  open={openMenu === item.name}
+                  onOpenChange={() =>
+                    setOpenMenu(openMenu === item.name ? null : item.name)
+                  }
+                >
+                  <div className="flex items-center justify-between p-3 rounded-md hover:bg-blue-700">
+                    {item.parentClickable ? (
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setIsOpen(false)}
+                        className="flex gap-3 items-center text-sm w-full"
+                      >
+                        {item.icon}
+                        {item.name}
+                      </NavLink>
                     ) : (
-                      <FiChevronRight />
+                      <div className="flex gap-3 items-center text-sm w-full">
+                        {item.icon}
+                        {item.name}
+                      </div>
                     )}
-                  </button>
-                </div>
 
-                <CollapsibleContent className="pl-8">
-                  {item.submenu.map((sub) => (
-                    <NavLink
-                      key={sub.path}
-                      to={sub.path}
-                      className="block py-2 text-sm hover:text-primary"
-                      onClick={() => setIsOpen(false)}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenu(openMenu === item.name ? null : item.name);
+                      }}
+                      className="ml-2"
                     >
-                      {sub.name}
-                    </NavLink>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
+                      {openMenu === item.name ? (
+                        <FiChevronDown />
+                      ) : (
+                        <FiChevronRight />
+                      )}
+                    </button>
+                  </div>
+
+                  <CollapsibleContent className="ml-4 pl-4 border-l border-white/20 mt-1 mb-1">
+                    {item.submenu.map((sub) => (
+                      <NavLink
+                        key={sub.path}
+                        to={sub.path}
+                        className={({ isActive }) =>
+                          cn(
+                            "block py-2 px-3 text-sm rounded-md hover:bg-blue-700/50 transition-colors",
+                            isActive && "bg-primary/20 text-primary",
+                          )
+                        }
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {sub.icon && (
+                          <span className="mr-2 inline-block">{sub.icon}</span>
+                        )}
+                        {sub.name}
+                      </NavLink>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
             );
           }
 
@@ -337,7 +723,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-blue-700",
+                  "flex items-center gap-3 p-3 rounded-md text-sm hover:bg-blue-700 mb-1",
                   isActive && "bg-primary",
                 )
               }
@@ -348,6 +734,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           );
         })}
       </nav>
+
       <div className="fixed bottom-0 left-0 right-0 w-full bg-[#1e243d] p-2 z-20">
         <div
           className="flex items-center gap-3 justify-center cursor-pointer"
@@ -357,6 +744,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <p className="text-white text-lg font-bold">V 1.0.0</p>
         </div>
       </div>
+
       <Dialog open={isDialogOpen} onOpenChange={setDialogIsOpen}>
         <DialogContent
           className=""
@@ -378,13 +766,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </p>
             <br />
             <p className="text-xs">
-              For any query please drop a mail to our softwere support team:
+              For any query please drop a mail to our software support team:
               <a
                 className="text-primary font-semibold"
-                href="mailto:softwere.support@gbtsolutions.in"
+                href="mailto:software.support@gbtsolutions.in"
               >
                 {" "}
-                softwere.support@gbtsolutions.in
+                software.support@gbtsolutions.in
               </a>
             </p>
           </div>

@@ -202,7 +202,8 @@ const PendingTempLoan = ({ type = "" }) => {
         {
           params: {
             page,
-            limit: config.row_per_page,
+            limit: 40,
+            // limit: config.row_per_page,
             search: inputs.search || "",
             cols: selectedValues.join(","),
           },
@@ -772,7 +773,7 @@ const PendingTempLoan = ({ type = "" }) => {
           </Button>
         </div>
         <PaginationTable
-          className="h-[calc(100vh-230px)] w-[calc(100vw-35px)]"
+          className="h-[calc(95vh-210px)] w-[calc(100vw-35px)]"
           data={tableData}
           columns={columns}
           currentPage={fetchedData.currentPage || 1}

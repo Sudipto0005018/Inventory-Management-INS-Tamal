@@ -3,11 +3,92 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
-/**
- * Create a new routine for tools
- */
+
+// const createRoutine = async (req, res) => {
+//   const { name, description, equipment_system, tool_ids = [] } = req.body;
+//   const department = req.department;
+
+//   try {
+//     if (!name || !equipment_system) {
+//       return res
+//         .status(400)
+//         .json(
+//           new ApiErrorResponse(
+//             400,
+//             {},
+//             "Routine name and equipment system are required",
+//           ),
+//         );
+//     }
+
+//     // Check if routine already exists for this equipment
+//     const [existing] = await pool.query(
+//       `SELECT id FROM routines_check WHERE name = ? AND equipment_system = ? AND department_id = ?`,
+//       [name, equipment_system, department.id],
+//     );
+
+//     if (existing.length > 0) {
+//       return res
+//         .status(400)
+//         .json(
+//           new ApiErrorResponse(
+//             400,
+//             {},
+//             "Routine with this name already exists for this equipment",
+//           ),
+//         );
+//     }
+
+//     // Insert routine into routines_check table
+//     const [result] = await pool.query(
+//       `INSERT INTO routines_check (name, description, equipment_system, department_id, created_by)
+//        VALUES (?, ?, ?, ?, ?)`,
+//       [
+//         name,
+//         description || null,
+//         equipment_system,
+//         department.id,
+//         req.user?.id || null,
+//       ],
+//     );
+
+//     const routineId = result.insertId;
+
+//     // Insert tools into routine_tools table
+//     if (tool_ids && tool_ids.length > 0) {
+//       const toolValues = tool_ids.map((toolId) => [routineId, toolId]);
+//       await pool.query(
+//         `INSERT INTO routine_tools (routine_id, tool_id) VALUES ?`,
+//         [toolValues],
+//       );
+//     }
+
+//     const [routine] = await pool.query(
+//       `SELECT * FROM routines_check WHERE id = ?`,
+//       [routineId],
+//     );
+
+//     res.status(201).json(
+//       new ApiResponse(
+//         201,
+//         {
+//           ...routine[0],
+//           tool_ids,
+//         },
+//         "Tool routine created successfully",
+//       ),
+//     );
+//   } catch (error) {
+//     console.error("Error creating tool routine:", error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// };
+
+
 const createRoutine = async (req, res) => {
-  const { name, description, equipment_system, tool_ids = [] } = req.body;
+  const { name, description, equipment_system, tools = [] } = req.body;
   const department = req.department;
 
   try {
@@ -23,7 +104,6 @@ const createRoutine = async (req, res) => {
         );
     }
 
-    // Check if routine already exists for this equipment
     const [existing] = await pool.query(
       `SELECT id FROM routines_check WHERE name = ? AND equipment_system = ? AND department_id = ?`,
       [name, equipment_system, department.id],
@@ -41,7 +121,6 @@ const createRoutine = async (req, res) => {
         );
     }
 
-    // Insert routine into routines_check table
     const [result] = await pool.query(
       `INSERT INTO routines_check (name, description, equipment_system, department_id, created_by) 
        VALUES (?, ?, ?, ?, ?)`,
@@ -56,11 +135,15 @@ const createRoutine = async (req, res) => {
 
     const routineId = result.insertId;
 
-    // Insert tools into routine_tools table
-    if (tool_ids && tool_ids.length > 0) {
-      const toolValues = tool_ids.map((toolId) => [routineId, toolId]);
+    // Insert tools with quantities
+    if (tools && tools.length > 0) {
+      const toolValues = tools.map(({ id, quantity_required = 1 }) => [
+        routineId,
+        id,
+        quantity_required,
+      ]);
       await pool.query(
-        `INSERT INTO routine_tools (routine_id, tool_id) VALUES ?`,
+        `INSERT INTO routine_tools (routine_id, tool_id, quantity_required) VALUES ?`,
         [toolValues],
       );
     }
@@ -75,7 +158,7 @@ const createRoutine = async (req, res) => {
         201,
         {
           ...routine[0],
-          tool_ids,
+          tools,
         },
         "Tool routine created successfully",
       ),
@@ -88,9 +171,6 @@ const createRoutine = async (req, res) => {
   }
 };
 
-/**
- * Get all tool routines for a specific equipment
- */
 const getRoutinesByEquipment = async (req, res) => {
   const { equipmentName } = req.params;
   const department = req.department;
@@ -120,15 +200,52 @@ const getRoutinesByEquipment = async (req, res) => {
   }
 };
 
-/**
- * Get all tools assigned to a routine
- */
+// const getRoutineTools = async (req, res) => {
+//   const { routineId } = req.params;
+//   const department = req.department;
+
+//   try {
+//     // Verify routine exists in routines_check table
+//     const [routineCheck] = await pool.query(
+//       `SELECT id FROM routines_check WHERE id = ? AND department_id = ?`,
+//       [routineId, department.id],
+//     );
+
+//     if (routineCheck.length === 0) {
+//       return res
+//         .status(404)
+//         .json(new ApiErrorResponse(404, {}, "Tool routine not found"));
+//     }
+
+//     // Get tools assigned to this routine
+//     const [tools] = await pool.query(
+//       `SELECT t.*
+//        FROM tools t
+//        INNER JOIN routine_tools rt ON t.id = rt.tool_id
+//        WHERE rt.routine_id = ?
+//        ORDER BY t.description ASC`,
+//       [routineId],
+//     );
+
+//     res
+//       .status(200)
+//       .json(
+//         new ApiResponse(200, tools, "Routine tools retrieved successfully"),
+//       );
+//   } catch (error) {
+//     console.error("Error fetching routine tools:", error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// };
+
+
 const getRoutineTools = async (req, res) => {
   const { routineId } = req.params;
   const department = req.department;
 
   try {
-    // Verify routine exists in routines_check table
     const [routineCheck] = await pool.query(
       `SELECT id FROM routines_check WHERE id = ? AND department_id = ?`,
       [routineId, department.id],
@@ -140,9 +257,8 @@ const getRoutineTools = async (req, res) => {
         .json(new ApiErrorResponse(404, {}, "Tool routine not found"));
     }
 
-    // Get tools assigned to this routine
     const [tools] = await pool.query(
-      `SELECT t.* 
+      `SELECT t.*, rt.quantity_required 
        FROM tools t
        INNER JOIN routine_tools rt ON t.id = rt.tool_id
        WHERE rt.routine_id = ?
@@ -163,16 +279,67 @@ const getRoutineTools = async (req, res) => {
   }
 };
 
-/**
- * Update routine details
- */
+// const updateRoutine = async (req, res) => {
+//   const { routineId } = req.params;
+//   const { name, description, equipment_system, tool_ids = [] } = req.body;
+//   const department = req.department;
+
+//   try {
+//     // Verify routine exists in routines_check table
+//     const [routine] = await pool.query(
+//       `SELECT id FROM routines_check WHERE id = ? AND department_id = ?`,
+//       [routineId, department.id],
+//     );
+
+//     if (routine.length === 0) {
+//       return res
+//         .status(404)
+//         .json(new ApiErrorResponse(404, {}, "Tool routine not found"));
+//     }
+
+//     // Update routine details
+//     await pool.query(
+//       `UPDATE routines_check SET name = ?, description = ?, equipment_system = ?, updated_at = NOW() WHERE id = ?`,
+//       [name, description || null, equipment_system, routineId],
+//     );
+
+//     // Update tools - delete existing and insert new
+//     await pool.query(`DELETE FROM routine_tools WHERE routine_id = ?`, [
+//       routineId,
+//     ]);
+
+//     if (tool_ids && tool_ids.length > 0) {
+//       const toolValues = tool_ids.map((toolId) => [routineId, toolId]);
+//       await pool.query(
+//         `INSERT INTO routine_tools (routine_id, tool_id) VALUES ?`,
+//         [toolValues],
+//       );
+//     }
+
+//     res
+//       .status(200)
+//       .json(
+//         new ApiResponse(
+//           200,
+//           { id: routineId, name, description, equipment_system, tool_ids },
+//           "Tool routine updated successfully",
+//         ),
+//       );
+//   } catch (error) {
+//     console.error("Error updating tool routine:", error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// };
+
+
 const updateRoutine = async (req, res) => {
   const { routineId } = req.params;
-  const { name, description, equipment_system, tool_ids = [] } = req.body;
+  const { name, description, equipment_system, tools = [] } = req.body;
   const department = req.department;
 
   try {
-    // Verify routine exists in routines_check table
     const [routine] = await pool.query(
       `SELECT id FROM routines_check WHERE id = ? AND department_id = ?`,
       [routineId, department.id],
@@ -184,7 +351,6 @@ const updateRoutine = async (req, res) => {
         .json(new ApiErrorResponse(404, {}, "Tool routine not found"));
     }
 
-    // Update routine details
     await pool.query(
       `UPDATE routines_check SET name = ?, description = ?, equipment_system = ?, updated_at = NOW() WHERE id = ?`,
       [name, description || null, equipment_system, routineId],
@@ -195,10 +361,14 @@ const updateRoutine = async (req, res) => {
       routineId,
     ]);
 
-    if (tool_ids && tool_ids.length > 0) {
-      const toolValues = tool_ids.map((toolId) => [routineId, toolId]);
+    if (tools && tools.length > 0) {
+      const toolValues = tools.map(({ id, quantity_required = 1 }) => [
+        routineId,
+        id,
+        quantity_required,
+      ]);
       await pool.query(
-        `INSERT INTO routine_tools (routine_id, tool_id) VALUES ?`,
+        `INSERT INTO routine_tools (routine_id, tool_id, quantity_required) VALUES ?`,
         [toolValues],
       );
     }
@@ -208,7 +378,7 @@ const updateRoutine = async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          { id: routineId, name, description, equipment_system, tool_ids },
+          { id: routineId, name, description, equipment_system, tools },
           "Tool routine updated successfully",
         ),
       );
@@ -220,9 +390,6 @@ const updateRoutine = async (req, res) => {
   }
 };
 
-/**
- * Delete a routine
- */
 const deleteRoutine = async (req, res) => {
   const { routineId } = req.params;
   const department = req.department;
@@ -254,9 +421,7 @@ const deleteRoutine = async (req, res) => {
   }
 };
 
-/**
- * Add tools to a routine
- */
+
 const addToolsToRoutine = async (req, res) => {
   const { routineId } = req.params;
   const { tool_ids = [] } = req.body;
@@ -299,9 +464,7 @@ const addToolsToRoutine = async (req, res) => {
   }
 };
 
-/**
- * Remove a tool from a routine
- */
+
 const removeToolFromRoutine = async (req, res) => {
   const { routineId, toolId } = req.params;
   const department = req.department;
@@ -336,9 +499,7 @@ const removeToolFromRoutine = async (req, res) => {
   }
 };
 
-/**
- * Get all tool routines (with pagination)
- */
+
 const getAllRoutines = async (req, res) => {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;

@@ -111,7 +111,8 @@ const PermanentPendings = () => {
       const response = await apiService.get("/stocks/logsStock", {
         params: {
           page,
-          limit: config.row_per_page,
+          limit: 40,
+          // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
           status: "complete",
@@ -295,7 +296,7 @@ const PermanentPendings = () => {
             setCurrentPage(page);
             fetchdata(page);
           }}
-          className="h-[calc(100vh-230px)]"
+          className="h-[calc(95vh-210px)]"
         />
       </div>
     </>

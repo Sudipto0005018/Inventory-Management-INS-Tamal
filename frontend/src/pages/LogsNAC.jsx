@@ -115,7 +115,8 @@ const NACLogs = () => {
       const response = await apiService.get("/stocks/logsNAC", {
         params: {
           page,
-          limit: config.row_per_page,
+          limit: 40,
+          // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
           status: "NAC_GENERATED",
@@ -273,7 +274,7 @@ const NACLogs = () => {
             setCurrentPage(page);
             fetchdata(page);
           }}
-          className="h-[calc(100vh-230px)]"
+          className="h-[calc(94vh-210px)]"
         />
       </div>
     </>

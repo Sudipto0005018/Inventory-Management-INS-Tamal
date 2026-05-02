@@ -201,7 +201,8 @@ const Procurement = () => {
       const response = await apiService.get("/stocks/procurement", {
         params: {
           page,
-          limit: config.row_per_page,
+          // limit: config.row_per_page,
+          limit: 40,
           search: inputs.search || "",
           cols: selectedValues.join(","),
           status: "NAC_GENERATED",
@@ -671,7 +672,7 @@ const Procurement = () => {
             setCurrentPage(page);
             fetchdata(page);
           }}
-          className="h-[calc(100vh-230px)]"
+          className="h-[calc(94vh-210px)]"
         />
       </div>
       <Dialog

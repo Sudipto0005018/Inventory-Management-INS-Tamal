@@ -151,7 +151,8 @@ const PendingPTS = () => {
       const response = await apiService.get("/pts/pts-demand", {
         params: {
           page,
-          limit: config.row_per_page,
+          // limit: config.row_per_page,
+          limit: 40,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -383,7 +384,7 @@ const PendingPTS = () => {
           pageSize={fetchedData.items?.length || 10}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
-          className="w-[calc(100vw-35px)] h-[calc(100vh-230px)]"
+          className="w-[calc(100vw-35px)] h-[calc(95vh-210px)]"
         />
       </div>
 

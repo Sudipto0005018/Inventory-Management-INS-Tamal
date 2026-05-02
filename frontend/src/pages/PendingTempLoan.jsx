@@ -78,7 +78,8 @@ const PendingTempLoan = () => {
         params: {
           page: currentPage,
           search: "",
-          limit: config.row_per_page,
+          limit: 40,
+          // limit: config.row_per_page,
         },
       });
       setFetchedData(response.data);

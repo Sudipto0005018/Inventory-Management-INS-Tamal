@@ -192,7 +192,8 @@ const PendingSpecial = () => {
       const response = await apiService.get("/specialDemand/special-demand", {
         params: {
           page,
-          limit: config.row_per_page,
+          limit: 40,
+          // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -513,7 +514,7 @@ const PendingSpecial = () => {
           pageSize={fetchedData.items?.length || 10}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
-          className=" w-[calc(100vw-35px)] h-[calc(100vh-230px)]"
+          className=" w-[calc(100vw-35px)] h-[calc(94vh-210px)]"
         />
       </div>
 

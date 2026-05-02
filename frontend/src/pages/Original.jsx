@@ -98,7 +98,8 @@ const Original = () => {
       const response = await apiService.get("/specialDemand/d787", {
         params: {
           page,
-          limit: config.row_per_page,
+          // limit: config.row_per_page,
+          limit: 40,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -230,7 +231,7 @@ const Original = () => {
           pageSize={fetchedData.items?.length || 10}
           totalPages={fetchedData.totalPages || 1}
           onPageChange={setCurrentPage}
-          className="h-[calc(100vh-230px)]"
+          className="h-[calc(94vh-210px)]"
         />
       </div>
     </>
