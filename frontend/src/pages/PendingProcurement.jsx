@@ -15,7 +15,7 @@ import { Label } from "../components/ui/label";
 import GenerateStockQR from "../components/GenerateStockQR";
 import { FormattedDatePicker } from "@/components/FormattedDatePicker";
 
-import BoxNoDeposit from "../components/BoxNoDeposit";
+import BoxNoMaintainedQty from "../components/BoxNoMaintainedQty";
 import { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
 import PaginationTable from "../components/PaginationTableTwo";
@@ -465,10 +465,27 @@ const Procurement = () => {
     setTableData(t);
   }, [fetchedData]);
 
+  // const normalizeBoxNoForDeposit = (boxNo = []) => {
+  //   return boxNo.map((item) => ({
+  //     no: item.no || item.box_no || "",
+  //     qn: Number(item.authorised_qty ?? item.qn ?? item.qty ?? 0),
+  //     qtyHeld: Number(item.qty_held ?? item.qtyHeld ?? 0),
+  //     deposit: Number(
+  //       item.deposit ??
+  //         item.deposit_qty ??
+  //         Math.max(
+  //           Number(item.authorised_qty ?? item.qty ?? 0) -
+  //             Number(item.qty_held ?? 0),
+  //           0,
+  //         ),
+  //     ),
+  //   }));
+  // };
+
   const normalizeBoxNoForDeposit = (boxNo = []) => {
     return boxNo.map((item) => ({
       no: item.no || item.box_no || "",
-      qn: Number(item.authorised_qty ?? item.qn ?? item.qty ?? 0),
+      qnMain: Number(item.authorised_qty ?? item.qnMain ?? item.qty ?? 0),
       qtyHeld: Number(item.qty_held ?? item.qtyHeld ?? 0),
       deposit: Number(
         item.deposit ??
@@ -837,7 +854,7 @@ const Procurement = () => {
               <Label className="ms-2 mb-1 mt-6" htmlFor="box_no">
                 Box Wise Segregation
               </Label>
-              <BoxNoDeposit
+              <BoxNoMaintainedQty
                 value={boxNo}
                 onChange={(val) => {
                   setBoxNo(val);

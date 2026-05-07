@@ -1406,6 +1406,122 @@ async function generateExcel(req, res) {
       );
     }
 
+    if (module === "pts") {
+      const whereClause = completed
+        ? `WHERE psd.status = 'complete'
+       AND psd.created_at BETWEEN ? AND ?`
+        : `WHERE psd.status = 'pending'`;
+
+      const args = completed ? [startDate, endDate] : [];
+
+      [rows] = await pool.query(
+        `
+    SELECT 
+      psd.quantity,
+      psd.internal_demand_no,
+      psd.internal_demand_date,
+      psd.requisition_no,
+      psd.requisition_date,
+      psd.mo_demand_no,
+      psd.mo_demand_date,
+      psd.status,
+      psd.created_by_name,
+      psd.created_at,
+      CASE
+        WHEN psd.spare_id IS NOT NULL THEN 'spare'
+        WHEN psd.tool_id IS NOT NULL THEN 'tool'
+        ELSE NULL
+      END AS type,
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos
+    FROM pts_special_demand psd
+    LEFT JOIN spares sp ON psd.spare_id = sp.id
+    LEFT JOIN tools t ON psd.tool_id = t.id
+    ${whereClause}
+    ORDER BY psd.created_at DESC
+    `,
+        args,
+      );
+    }
+
+    if (module === "storedem") {
+      const whereClause = completed
+        ? `WHERE ssd.status IN ('issued', 'completed')
+       AND ssd.created_at BETWEEN ? AND ?`
+        : `WHERE ssd.status = 'pending'`;
+
+      const args = completed ? [startDate, endDate] : [];
+
+      [rows] = await pool.query(
+        `
+    SELECT 
+      ssd.quantity,
+      ssd.demand_type,
+      ssd.mo_demand_no,
+      ssd.mo_demand_date,
+      ssd.status,
+      ssd.created_by_name,
+      ssd.created_at,
+      CASE
+        WHEN ssd.spare_id IS NOT NULL THEN 'spare'
+        WHEN ssd.tool_id IS NOT NULL THEN 'tool'
+        ELSE NULL
+      END AS type,
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos
+    FROM storedem_special_demand ssd
+    LEFT JOIN spares sp ON ssd.spare_id = sp.id
+    LEFT JOIN tools t ON ssd.tool_id = t.id
+    ${whereClause}
+    ORDER BY ssd.created_at DESC
+    `,
+        args,
+      );
+    }
+
+    if (module === "storedem_inventory") {
+      const whereClause = completed
+        ? `WHERE si.created_at BETWEEN ? AND ?`
+        : `WHERE si.status = 'issued'`;
+
+      const args = completed ? [startDate, endDate] : [];
+
+      [rows] = await pool.query(
+        `
+    SELECT 
+      si.quantity,
+      si.box_no,
+      si.status as inventory_status,
+      si.issued_date,
+      si.surveyed_date,
+      sd.demand_type,
+      sd.mo_demand_no,
+      sd.created_by_name,
+      sd.created_at,
+      CASE
+        WHEN sd.spare_id IS NOT NULL THEN 'spare'
+        WHEN sd.tool_id IS NOT NULL THEN 'tool'
+        ELSE NULL
+      END AS type,
+      COALESCE(sp.description, t.description) AS description,
+      COALESCE(sp.indian_pattern, t.indian_pattern) AS indian_pattern,
+      COALESCE(sp.category, t.category) AS category,
+      COALESCE(sp.denos, t.denos) AS denos
+    FROM storedem_inventory si
+    JOIN storedem_special_demand sd ON si.storedem_demand_id = sd.id
+    LEFT JOIN spares sp ON sd.spare_id = sp.id
+    LEFT JOIN tools t ON sd.tool_id = t.id
+    ${whereClause}
+    ORDER BY si.created_at DESC
+    `,
+        args,
+      );
+    }
+
     if (module === "survey") {
       const whereClause = completed
         ? `WHERE s.status = 'complete'
@@ -2013,6 +2129,8 @@ ORDER BY til.created_at DESC;
       d787: D787Headers,
       d787_amendment: D787AmendHeaders,
       nac: NACHeaders,
+      pts: ptsHeaders,
+      storedem: storedemHeaders,
     } = require("../utils/workbookHeaderas");
 
     if (module === "procurement") {
@@ -2045,6 +2163,10 @@ ORDER BY til.created_at DESC;
       worksheet.columns = D787AmendHeaders;
     } else if (module === "nac") {
       worksheet.columns = NACHeaders;
+    } else if (module === "pts") {
+      worksheet.columns = ptsHeaders;
+    } else if (module === "storedem") {
+      worksheet.columns = storedemHeaders;
     }
 
     rows.forEach((row) => {

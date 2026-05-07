@@ -70,6 +70,39 @@ const stock_update = [
   // { header: "Created On", key: "created_at", width: 20 },
 ];
 
+const pts = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 20 },
+  { header: "Denos.", key: "denos", width: 20 },
+  { header: "Qty Demanded", key: "quantity", width: 15 },
+  { header: "Internal Demand No.", key: "internal_demand_no", width: 20 },
+  {
+    header: "Internal Demand Date",
+    key: "internal_demand_date",
+    width: 20,
+  },
+  { header: "Requisition No.", key: "requisition_no", width: 20 },
+  { header: "Requisition Date", key: "requisition_date", width: 20 },
+  { header: "MO Demand No.", key: "mo_demand_no", width: 20 },
+  { header: "MO Demand Date", key: "mo_demand_date", width: 20 },
+  { header: "Status", key: "status", width: 15 },
+];
+
+const storedem = [
+  { header: "Item Description", key: "description", width: 30 },
+  { header: "IN Part No.", key: "indian_pattern", width: 20 },
+  { header: "Category", key: "category", width: 15 },
+  { header: "Denos.", key: "denos", width: 15 },
+  { header: "Qty Demanded", key: "quantity", width: 15 },
+  { header: "Demand Type", key: "demand_type", width: 15 },
+  { header: "DTG (MO Demand No.)", key: "mo_demand_no", width: 20 },
+  { header: "DTG Date", key: "mo_demand_date", width: 20 },
+  { header: "Status", key: "status", width: 15 },
+  { header: "Created By", key: "created_by_name", width: 20 },
+  { header: "Created At", key: "created_at", width: 20 },
+];
+
 const survey = [
   { header: "Item Description", key: "description", width: 30 },
   { header: "IN Part No.", key: "indian_pattern", width: 20 },
@@ -278,4 +311,6 @@ module.exports = {
   d787,
   d787_amendment,
   nac,
+  pts,
+  storedem
 };

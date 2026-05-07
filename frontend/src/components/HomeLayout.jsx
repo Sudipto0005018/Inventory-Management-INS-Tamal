@@ -8,9 +8,13 @@ import { Toaster } from "react-hot-toast";
 import PageTitle from "@/components/PageTitle";
 import ContextProvider, { Context } from "../utils/Context";
 import apiService from "../utils/apiService";
+import { useToastManager } from "../utils/ToastContext";
+import useIsBrowserFullscreen from "../hooks/useIsBrowserFullScreen";
 
 const HomeLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isFullscreen = useIsBrowserFullscreen();
+  const { showToast, dismissToast } = useToastManager();
   const {
     fetchStorageLocation,
     fetchIssueTo,
@@ -18,7 +22,7 @@ const HomeLayout = () => {
     fetchSurveyReason,
     fetchCategory,
     fetchDenos,
-    fetchEquipment
+    fetchEquipment,
   } = useContext(Context);
 
   useEffect(() => {
@@ -30,6 +34,34 @@ const HomeLayout = () => {
     fetchDenos();
     fetchEquipment();
   }, []);
+
+  // useEffect(() => {
+  //   if (isFullscreen) {
+  //     dismissToast();
+  //     return;
+  //   }
+
+  //   showToast(
+  //     (t) => (
+  //       <div className="max-w-md w-full bg-white shadow-lg rounded-lg flex">
+  //         <div className="flex-1 p-4">
+  //           <p className="font-medium">Fullscreen Mode</p>
+  //           <p className="text-sm text-gray-600">
+  //             Press <b>Fn+F11</b> to enter or exit fullscreen
+  //           </p>
+  //         </div>
+
+  //         <button
+  //           onClick={() => dismissToast()}
+  //           className="p-4 text-indigo-600"
+  //         >
+  //           Close
+  //         </button>
+  //       </div>
+  //     ),
+  //     { position: "top-center" },
+  //   );
+  // }, [isFullscreen]);
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">

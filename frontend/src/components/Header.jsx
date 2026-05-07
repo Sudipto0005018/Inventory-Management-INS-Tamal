@@ -50,6 +50,8 @@ const Header = ({ onSidebarOpen }) => {
       "/d787/amendment": "special_demand",
       "/d787/original": "d787",
       "/permanent/nac": "nac",
+      "/special/pts": "pts",
+      "/special/stordem": "storedem",
 
       "/logs/pending-survey": "survey",
       "/logs/pending-demand": "demand",
@@ -109,8 +111,10 @@ const Header = ({ onSidebarOpen }) => {
     "/permanent/procurement",
     "/permanent/stock-update",
     "/special/special-demand",
+    "/special/pts",
     "/temp-loan/pending",
     "/temporary/temporary-issue",
+    "/special/stordem",
   ];
 
   const { user, officer, setUser, setLoading, setConfig } = useContext(Context);

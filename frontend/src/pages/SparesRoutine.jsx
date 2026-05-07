@@ -991,6 +991,13 @@ const SparesForRoutines = () => {
     }
   };
 
+  useEffect(() => {
+    console.log("Selected Equipment:", selectedEquipment);
+    console.log("Equipment Filter:", equipmentFilter);
+    console.log("Available Spares sample:", availableSpares.slice(0, 3));
+    console.log("Filtered Spares count:", filteredAvailableSpares.length);
+  }, [selectedEquipment, equipmentFilter, availableSpares]);
+
   // Fetch spares assigned to a routine with their quantities
   const fetchRoutineSpares = async (routineId) => {
     if (!routineId) return;
@@ -1043,6 +1050,7 @@ const SparesForRoutines = () => {
   };
 
   // Open dialog to add/edit routine
+  // Open dialog to add/edit routine
   const openRoutineDialog = async (routine = null) => {
     setEditingRoutine(routine);
     setNewRoutineName(routine ? routine.name : "");
@@ -1075,13 +1083,17 @@ const SparesForRoutines = () => {
 
     setCurrentStep(1);
     setSearchTerm("");
+
+    // IMPORTANT FIX: Since spares don't have equipment_system field,
+    // we should NOT filter by equipment in the dialog.
+    // Instead, show all spares and let users search/select what they need.
     setEquipmentFilter("all");
+
     setCategoryFilter("all");
     setCurrentPage(1);
     setSelectAllPage(false);
     setIsRoutineDialogOpen(true);
   };
-
   // Toggle spare selection with quantity prompt
   const toggleSpareSelection = (spare) => {
     if (tempSelectedSpares.includes(spare.id)) {
@@ -1486,9 +1498,9 @@ const SparesForRoutines = () => {
                         <TableHead>Qty Required</TableHead>
                         <TableHead>OBS Maintained</TableHead>
                         <TableHead>OBS Held</TableHead>
-                        <TableHead>Box No.</TableHead>
-                        <TableHead>Item Distribution</TableHead>
                         <TableHead>Storage Location</TableHead>
+                        {/* <TableHead>Box No.</TableHead>
+                        <TableHead>Item Distribution</TableHead> */}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1535,12 +1547,12 @@ const SparesForRoutines = () => {
                               "--"
                             )}
                           </TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             {spare.item_distribution || "--"}
                           </TableCell>
                           <TableCell>
                             {spare.storage_location || "--"}
-                          </TableCell>
+                          </TableCell> */}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1636,22 +1648,6 @@ const SparesForRoutines = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
                   />
-                </div>
-
-                <div className="relative">
-                  <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={equipmentFilter}
-                    onChange={(e) => setEquipmentFilter(e.target.value)}
-                    className="w-full border rounded-md pl-9 pr-3 py-2 text-sm"
-                  >
-                    <option value="all">All Equipment</option>
-                    {uniqueEquipment.map((eq) => (
-                      <option key={eq} value={eq}>
-                        {eq}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <select
@@ -1922,6 +1918,6 @@ const SparesForRoutines = () => {
       </Dialog>
     </div>
   );
-};
+};;;
 
 export default SparesForRoutines;
