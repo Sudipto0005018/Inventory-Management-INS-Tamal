@@ -98,7 +98,7 @@ const PendingDemand = () => {
           search,
           cols: selectedValues.join(","),
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
         },
       });
       console.log("API DATA:", response.data.items);

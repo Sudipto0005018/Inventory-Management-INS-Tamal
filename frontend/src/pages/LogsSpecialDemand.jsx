@@ -51,46 +51,46 @@ const PendingSpecial = () => {
       ),
     },
     { key: "quote_authority", header: "Authority" },
-    {
-      key: "demandno",
-      header: (
-        <span>
-          Internal <br />
-          Demand No.
-        </span>
-      ),
-    },
-    {
-      key: "demanddate",
-      header: (
-        <span>
-          Internal <br />
-          Demand Date
-        </span>
-      ),
-    },
-    {
-      key: "requisition",
-      header: (
-        <span>
-          Requisition <br /> No.
-        </span>
-      ),
-    },
-    {
-      key: "Reqdate",
-      header: (
-        <span>
-          Requisition <br /> Date
-        </span>
-      ),
-    },
+    // {
+    //   key: "demandno",
+    //   header: (
+    //     <span>
+    //       Internal <br />
+    //       Demand No.
+    //     </span>
+    //   ),
+    // },
+    // {
+    //   key: "demanddate",
+    //   header: (
+    //     <span>
+    //       Internal <br />
+    //       Demand Date
+    //     </span>
+    //   ),
+    // },
+    // {
+    //   key: "requisition",
+    //   header: (
+    //     <span>
+    //       Requisition <br /> No.
+    //     </span>
+    //   ),
+    // },
+    // {
+    //   key: "Reqdate",
+    //   header: (
+    //     <span>
+    //       Requisition <br /> Date
+    //     </span>
+    //   ),
+    // },
     {
       key: "modemand",
       header: (
         <span>
           {" "}
-          MO <br />
+          MO 
           Demand No.
         </span>
       ),
@@ -99,7 +99,7 @@ const PendingSpecial = () => {
       key: "modate",
       header: (
         <span>
-          MO <br /> Demand Date
+          MO Demand Date
         </span>
       ),
     },
@@ -166,7 +166,7 @@ const PendingSpecial = () => {
       const response = await apiService.get("/specialDemand/logs", {
         params: {
           page,
-          limit: 40,
+          limit: 2000,
           // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),

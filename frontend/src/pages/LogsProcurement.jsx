@@ -113,7 +113,7 @@ const Procurement = () => {
       const response = await apiService.get("/stocks/logsProcure", {
         params: {
           page,
-          limit: 40,
+          limit: 2000,
           // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),

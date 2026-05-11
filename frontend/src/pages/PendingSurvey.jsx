@@ -1979,7 +1979,7 @@ const PendingSurvey = () => {
           page,
           search,
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
           status: "pending",
           cols: cols.length ? cols.join(",") : "",
         },

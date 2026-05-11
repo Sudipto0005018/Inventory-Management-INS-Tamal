@@ -201,7 +201,7 @@ const PermanentPendings = () => {
         params: {
           page,
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
           search: inputs.search || "",
           cols: selectedValues.join(","),
           status: "STOCKED",

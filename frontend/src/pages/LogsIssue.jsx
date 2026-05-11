@@ -149,7 +149,7 @@ const PermanentPendings = () => {
       const res = await apiService.get("/issue/logs", {
         params: {
           page,
-          limit: 40,
+          limit: 2000,
           // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),

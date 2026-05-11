@@ -31,7 +31,7 @@ const PendingSpecial = () => {
   const { config, user } = useContext(Context);
   const navigate = useNavigate();
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
+    { key: "description", header: "Item Description", width: "max-w-[160px]"},
     {
       key: "indian_pattern",
       header: (
@@ -39,7 +39,7 @@ const PendingSpecial = () => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "max-w-[180px]",
+      width: "max-w-[160px]",
     },
     { key: "category", header: "Category", width: "max-w-[50px]" },
     { key: "denos", header: "Denos.", width: "max-w-[50px]" },
@@ -51,7 +51,7 @@ const PendingSpecial = () => {
           <br /> Inc/Dec
         </span>
       ),
-      width: "max-w-[40px]",
+      width: "max-w-[50px]",
     },
     {
       key: "modified_obs",
@@ -60,7 +60,7 @@ const PendingSpecial = () => {
           Modified OBS <br /> Authorised
         </span>
       ),
-      width: "max-w-[50px]",
+      width: "max-w-[70px]",
     },
     {
       key: "demandno",
@@ -203,7 +203,7 @@ const PendingSpecial = () => {
         params: {
           page,
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },

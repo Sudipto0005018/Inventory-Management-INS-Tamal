@@ -245,7 +245,7 @@ const PendingStoredem = () => {
             }
           >
             <FaPlus className="size-3.5" />
-            Add Storedem
+            Add Storedem / Opdem
           </Button>
 
           <SpinnerButton

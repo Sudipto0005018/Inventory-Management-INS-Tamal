@@ -114,8 +114,8 @@ const Spares = ({ type = "" }) => {
     { key: "denos", header: "Denos.", width: "max-w-[60px]" },
 
     {
-      key: "obs_authorised",
-      header: <span>OBS Authorised</span>,
+      key: "obs_maintained",
+      header: <span>OBS Maintained</span>,
       width: "max-w-[20px]",
     },
     {
@@ -699,7 +699,7 @@ const Spares = ({ type = "" }) => {
       const params = {
         page,
         search: searchValue,
-        limit: 40,
+        limit: 5000,
         // limit: config.row_per_page,
       };
       if (fields && fields.length) {
@@ -4846,6 +4846,25 @@ const Spares = ({ type = "" }) => {
                   isLooseSpare={isLooseSpare}
                   action={obsDialog.action}
                 />
+
+                <p className="font-medium text-sm mb-2 mt-2">
+                  Quote Authority<span className="text-red-500"> *</span>
+                </p>
+
+                <div>
+                  <Label className="pb-2">Letter / Fax / Signal Details </Label>
+                  <Input
+                    required
+                    placeholder="Enter reference details"
+                    value={obsDialog.quoteAuthority}
+                    onChange={(e) =>
+                      setObsDialog((prev) => ({
+                        ...prev,
+                        quoteAuthority: e.target.value.toUpperCase(),
+                      }))
+                    }
+                  />
+                </div>
               </div>
             )}
 

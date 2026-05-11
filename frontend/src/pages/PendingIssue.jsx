@@ -276,7 +276,7 @@ const PermanentPendings = () => {
         params: {
           page,
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -576,7 +576,7 @@ const PermanentPendings = () => {
           >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="stocking" />
-              <Label>Stocking in Inventory</Label>
+              <Label>Item MO Issued</Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="nac" />

@@ -506,7 +506,7 @@ const DocumentsCorner = ({ type = "" }) => {
           params: {
             page,
             search: searchValue,
-            limit: 40,
+            limit: 2000,
             // limit: config.row_per_page,
           },
         },

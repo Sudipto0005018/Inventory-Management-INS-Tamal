@@ -3,6 +3,220 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { getSQLTimestamp } = require("../utils/helperFunctions");
 
+// async function createSurvey(req, res) {
+//   const {
+//     spare_id,
+//     tool_id,
+//     withdrawl_qty,
+//     withdrawl_date,
+//     box_no,
+//     service_no,
+//     name,
+//     issue_to,
+//     remarks_survey,
+//   } = req.body;
+
+//   const connection = await pool.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+//     const { id: created_by } = req.user;
+
+//     if (!spare_id && !tool_id) {
+//       return new ApiErrorResponse(
+//         400,
+//         {},
+//         "Please provide either spare_id or tool_id",
+//       ).send(res);
+//     }
+
+//     if (
+//       !withdrawl_qty ||
+//       !withdrawl_date ||
+//       !service_no ||
+//       !name ||
+//       !issue_to
+//     ) {
+//       return new ApiErrorResponse(
+//         400,
+//         {},
+//         "Please provide all required fields",
+//       ).send(res);
+//     }
+
+//     if (!box_no || !Array.isArray(box_no)) {
+//       return new ApiErrorResponse(400, {}, "box_no is required").send(res);
+//     }
+
+//     const transactionId = "PI-" + Date.now();
+//     const tableName = spare_id ? "spares" : "tools";
+//     const itemId = spare_id || tool_id;
+
+//     const [[row]] = await connection.query(
+//       `SELECT category, box_no, obs_held
+//        FROM ${tableName}
+//        WHERE id = ? FOR UPDATE`,
+//       [itemId],
+//     );
+
+//     if (!row) {
+//       return new ApiErrorResponse(404, {}, "Item not found").send(res);
+//     }
+
+//     const category = row.category?.toLowerCase();
+
+//     if (Number(row.obs_held) - Number(withdrawl_qty) < 0) {
+//       return new ApiErrorResponse(400, {}, "Invalid withdrawl quantity").send(
+//         res,
+//       );
+//     }
+
+//     const itemBoxNo = JSON.parse(row.box_no || "[]");
+
+//     /* ===============================
+//        UPDATE BOX QUANTITIES
+//     =============================== */
+//     const updatedBoxes = itemBoxNo.map((box) => {
+//       const match = box_no.find((b) => b.no == box.no);
+//       if (!match) return box;
+
+//       return {
+//         ...box,
+//         qtyHeld: (
+//           Number(box.qtyHeld || 0) - Number(match.withdraw || 0)
+//         ).toString(),
+//       };
+//     });
+
+//     const newOBS = Number(row.obs_held) - Number(withdrawl_qty);
+
+//     /* =====================================================
+//        CATEGORY C / LP → INSERT INTO DEMAND ONLY
+//     ===================================================== */
+//     if (category === "c" || category === "lp") {
+//       await connection.query(
+//         `INSERT INTO demand (
+//           spare_id, tool_id, issue_to, service_no, name, transaction_id,
+//           survey_qty, survey_voucher_no, survey_date,
+//           created_at, created_by, status, remarks_survey
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           spare_id || null,
+//           tool_id || null,
+//           issue_to,
+//           service_no,
+//           name,
+//           transactionId,
+//           withdrawl_qty,
+//           null,
+//           withdrawl_date,
+//           getSQLTimestamp(),
+//           created_by,
+//           "pending",
+//           remarks_survey || null,
+//         ],
+//       );
+//     } else {
+//       /* =====================================================
+//          OTHER CATEGORY → INSERT INTO SURVEY ONLY
+//       ===================================================== */
+//       await connection.query(
+//         `INSERT INTO survey (
+//           spare_id, tool_id, withdrawl_qty, withdrawl_date,
+//           box_no, service_no, name, issue_to,
+//           created_by, transaction_id, created_at, remarks_survey
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           spare_id || null,
+//           tool_id || null,
+//           withdrawl_qty,
+//           withdrawl_date,
+//           JSON.stringify(updatedBoxes),
+//           service_no,
+//           name,
+//           issue_to,
+//           created_by,
+//           transactionId,
+//           getSQLTimestamp(),
+//           remarks_survey || null,
+//         ],
+//       );
+//     }
+
+//     /* =====================================================
+//        UPDATE INVENTORY (BOTH CASES)
+//     ===================================================== */
+//     await connection.query(
+//       `UPDATE ${tableName}
+//        SET box_no = ?, obs_held = ?
+//        WHERE id = ?`,
+//       [JSON.stringify(updatedBoxes), newOBS, itemId],
+//     );
+
+//     /* =====================================================
+//        INSERT BOX TRANSACTION (BOTH CASES)
+//     ===================================================== */
+//     const boxTransactions = [];
+//     const now = new Date();
+
+//     box_no.forEach((box) => {
+//       const originalBox = itemBoxNo.find((b) => b.no === box.no);
+//       if (!originalBox) return;
+
+//       boxTransactions.push([
+//         transactionId,
+//         null,
+//         spare_id || null,
+//         tool_id || null,
+//         box.no,
+//         Number(originalBox.qtyHeld || 0),
+//         -Number(box.withdraw || 0),
+//         now,
+//       ]);
+//     });
+
+//     if (boxTransactions.length) {
+//       await connection.query(
+//         `INSERT INTO box_transaction (
+//           transaction_id,
+//           demand_transaction,
+//           spare_id,
+//           tool_id,
+//           box_no,
+//           prev_qty,
+//           withdrawl_qty,
+//           transaction_date
+//         ) VALUES ?`,
+//         [boxTransactions],
+//       );
+//     }
+
+//     /* =====================================================
+//        INSERT OBS AUDIT (BOTH CASES)
+//     ===================================================== */
+//     await connection.query(
+//       `INSERT INTO obs_audit (
+//         transaction_id,
+//         previous_obs,
+//         new_obs
+//       ) VALUES (?, ?, ?)`,
+//       [transactionId, Number(row.obs_held), newOBS],
+//     );
+
+//     await connection.commit();
+
+//     return new ApiResponse(201, {}, "Transaction created successfully").send(
+//       res,
+//     );
+//   } catch (error) {
+//     await connection.rollback();
+//     console.log("Error while creating transaction:", error);
+//     return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+//   } finally {
+//     connection.release();
+//   }
+// }
+
 async function createSurvey(req, res) {
   const {
     spare_id,
@@ -14,6 +228,11 @@ async function createSurvey(req, res) {
     name,
     issue_to,
     remarks_survey,
+    rate_unit, // Added for procurement
+    validity, // Added for procurement
+    nac_no, // Added for procurement
+    nac_date, // Added for procurement
+    issue_date, // Added for procurement
   } = req.body;
 
   const connection = await pool.getConnection();
@@ -91,9 +310,37 @@ async function createSurvey(req, res) {
     const newOBS = Number(row.obs_held) - Number(withdrawl_qty);
 
     /* =====================================================
-       CATEGORY C / LP → INSERT INTO DEMAND ONLY
+       CATEGORY LP → INSERT INTO PROCUREMENT
     ===================================================== */
-    if (category === "c" || category === "lp") {
+    if (category === "lp") {
+      await connection.query(
+        `INSERT INTO procurement (
+      spare_id, tool_id, box_no, nac_qty, nac_no, nac_date,
+      validity, rate_unit, issue_date, return_date, qty_received,
+      created_by, created_at, status, transaction_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          spare_id || null,
+          tool_id || null,
+          JSON.stringify(updatedBoxes),
+          withdrawl_qty,
+          nac_no || null, // Will be null if not provided
+          nac_date || null, // Will be null if not provided
+          validity || null, // Will be null if not provided
+          rate_unit || null, // Will be null if not provided
+          issue_date || withdrawl_date, // Fallback to withdrawl_date
+          null,
+          0,
+          created_by,
+          getSQLTimestamp(),
+          "pending",
+          transactionId,
+        ],
+      );
+    } else if (category === "c") {
+      /* =====================================================
+       CATEGORY C → INSERT INTO DEMAND
+    ===================================================== */
       await connection.query(
         `INSERT INTO demand (
           spare_id, tool_id, issue_to, service_no, name, transaction_id,
@@ -118,8 +365,8 @@ async function createSurvey(req, res) {
       );
     } else {
       /* =====================================================
-         OTHER CATEGORY → INSERT INTO SURVEY ONLY
-      ===================================================== */
+       OTHER CATEGORIES → INSERT INTO SURVEY
+    ===================================================== */
       await connection.query(
         `INSERT INTO survey (
           spare_id, tool_id, withdrawl_qty, withdrawl_date,
@@ -144,7 +391,7 @@ async function createSurvey(req, res) {
     }
 
     /* =====================================================
-       UPDATE INVENTORY (BOTH CASES)
+       UPDATE INVENTORY (ALL CASES)
     ===================================================== */
     await connection.query(
       `UPDATE ${tableName}
@@ -154,7 +401,7 @@ async function createSurvey(req, res) {
     );
 
     /* =====================================================
-       INSERT BOX TRANSACTION (BOTH CASES)
+       INSERT BOX TRANSACTION (ALL CASES)
     ===================================================== */
     const boxTransactions = [];
     const now = new Date();
@@ -192,7 +439,7 @@ async function createSurvey(req, res) {
     }
 
     /* =====================================================
-       INSERT OBS AUDIT (BOTH CASES)
+       INSERT OBS AUDIT (ALL CASES)
     ===================================================== */
     await connection.query(
       `INSERT INTO obs_audit (

@@ -947,8 +947,186 @@ LIMIT ? OFFSET ?`,
   }
 }
 
+// async function manualAddDemand(req, res) {
+//   const { spare_id, tool_id, survey_qty, survey_date } = req.body;
+//   const { id: created_by } = req.user;
+
+//   try {
+//     if (!survey_qty || survey_qty <= 0) {
+//       return res.status(400).json({
+//         message: "Survey quantity must be greater than 0",
+//       });
+//     }
+
+//     const transactionId = "ADD_DM-" + Date.now();
+
+//     let item;
+
+//     if (spare_id) {
+//       const [[row]] = await pool.query(
+//         `SELECT description, indian_pattern, category
+//          FROM spares WHERE id=?`,
+//         [spare_id],
+//       );
+//       item = row;
+//     }
+
+//     if (tool_id) {
+//       const [[row]] = await pool.query(
+//         `SELECT description, indian_pattern, category
+//          FROM tools WHERE id=?`,
+//         [tool_id],
+//       );
+//       item = row;
+//     }
+
+//     await pool.query(
+//       `INSERT INTO demand (
+//         spare_id,
+//         tool_id,
+//         issue_to,
+//         transaction_id,
+//         survey_qty,
+//         survey_voucher_no,
+//         survey_date,
+//         created_at,
+//         created_by
+//       )
+//       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+//       [
+//         spare_id || null,
+//         tool_id || null,
+//         "---",
+//         transactionId,
+//         survey_qty,
+//         "---",
+//         survey_date,
+//         created_by,
+//       ],
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Demand item added successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       message: "Internal server error",
+//     });
+//   }
+// }
+
+// async function getDemandItems(req, res) {
+//   try {
+//     const { search = "", limit = 200, page = 1 } = req.query;
+//     const offset = (parseInt(page) - 1) * parseInt(limit);
+
+//     let query = `
+//       SELECT
+//         id,
+//         description,
+//         category,
+//         'spare' AS type,
+//         indian_pattern,
+//         item_code,
+//         equipment_system
+//       FROM spares
+//       WHERE category IN ('P', 'R', 'C', 'LP')
+      
+//       UNION ALL
+      
+//       SELECT
+//         id,
+//         description,
+//         category,
+//         'tool' AS type,
+//         indian_pattern,
+//         item_code,
+//         equipment_system
+//       FROM tools
+//       WHERE category IN ('P', 'R', 'C', 'LP')
+//     `;
+
+//     const queryParams = [];
+
+//     // Add search condition if search term provided
+//     if (search && search.trim()) {
+//       const searchTerm = `%${search.trim()}%`;
+//       query = `
+//         SELECT * FROM (
+//           ${query}
+//         ) AS combined
+//         WHERE description LIKE ?
+//            OR indian_pattern LIKE ?
+//            OR item_code LIKE ?
+//            OR equipment_system LIKE ?
+//       `;
+//       queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+
+//       // For search results, return all matches (no limit initially)
+//       const [rows] = await pool.query(query, queryParams);
+
+//       return res.status(200).json(
+//         new ApiResponse(
+//           200,
+//           {
+//             items: rows.slice(0, 500), // Max 500 search results
+//             totalItems: rows.length,
+//             hasMore: rows.length > 500,
+//           },
+//           "Items fetched successfully",
+//         ),
+//       );
+//     }
+
+//     // Without search, return first 200 items
+//     query += ` ORDER BY description ASC LIMIT ? OFFSET ?`;
+//     queryParams.push(parseInt(limit), offset);
+
+//     // Get total count for pagination
+//     const countQuery = `
+//       SELECT COUNT(*) as total FROM (
+//         SELECT id FROM spares WHERE category IN ('P', 'R', 'C', 'LP')
+//         UNION ALL
+//         SELECT id FROM tools WHERE category IN ('P', 'R', 'C', 'LP')
+//       ) AS combined
+//     `;
+//     const [countResult] = await pool.query(countQuery);
+//     const totalItems = countResult[0].total;
+
+//     const [rows] = await pool.query(query, queryParams);
+
+//     res.status(200).json(
+//       new ApiResponse(
+//         200,
+//         {
+//           items: rows,
+//           totalItems,
+//           currentPage: parseInt(page),
+//           totalPages: Math.ceil(totalItems / parseInt(limit)),
+//         },
+//         "Items fetched successfully",
+//       ),
+//     );
+//   } catch (error) {
+//     console.log(error);
+//     res
+//       .status(500)
+//       .json(new ApiErrorResponse(500, {}, "Internal server error"));
+//   }
+// }
+
 async function manualAddDemand(req, res) {
-  const { spare_id, tool_id, survey_qty, survey_date } = req.body;
+  const {
+    spare_id,
+    tool_id,
+    survey_qty,
+    survey_date,
+    service_no = "---", // Default value if not provided
+    name = "---", // Default value if not provided
+    issue_to = "---", // Default value if not provided
+  } = req.body;
   const { id: created_by } = req.user;
 
   try {
@@ -958,26 +1136,50 @@ async function manualAddDemand(req, res) {
       });
     }
 
-    const transactionId = "ADD_DM-" + Date.now();
-
-    let item;
-
-    if (spare_id) {
-      const [[row]] = await pool.query(
-        `SELECT description, indian_pattern, category
-         FROM spares WHERE id=?`,
-        [spare_id],
-      );
-      item = row;
+    if (!survey_date) {
+      return res.status(400).json({
+        message: "Survey date is required",
+      });
     }
 
-    if (tool_id) {
+    const transactionId = "ADD_DM-" + Date.now();
+
+    // Validate that either spare_id or tool_id is provided
+    if (!spare_id && !tool_id) {
+      return res.status(400).json({
+        message: "Either spare_id or tool_id is required",
+      });
+    }
+
+    // Optional: Validate category before inserting
+    let category = null;
+    if (spare_id) {
       const [[row]] = await pool.query(
-        `SELECT description, indian_pattern, category
-         FROM tools WHERE id=?`,
+        `SELECT category FROM spares WHERE id=?`,
+        [spare_id],
+      );
+      category = row?.category?.toUpperCase();
+    } else if (tool_id) {
+      const [[row]] = await pool.query(
+        `SELECT category FROM tools WHERE id=?`,
         [tool_id],
       );
-      item = row;
+      category = row?.category?.toUpperCase();
+    }
+
+    // Updated validation: Only C category items can be demanded
+    if (category === "P" || category === "R") {
+      return res.status(400).json({
+        message: "Initiate Survey Procedure",
+      });
+    } else if (category === "LP") {
+      return res.status(400).json({
+        message: "Demand applicable for P/R/C category items",
+      });
+    } else if (category !== "C") {
+      return res.status(400).json({
+        message: "Invalid category for demand",
+      });
     }
 
     await pool.query(
@@ -985,34 +1187,45 @@ async function manualAddDemand(req, res) {
         spare_id,
         tool_id,
         issue_to,
+        service_no,
+        name,
         transaction_id,
         survey_qty,
         survey_voucher_no,
         survey_date,
         created_at,
-        created_by
+        created_by,
+        status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
       [
         spare_id || null,
         tool_id || null,
-        "---",
+        issue_to,
+        service_no,
+        name,
         transactionId,
         survey_qty,
-        "---",
+        "---", // survey_voucher_no default
         survey_date,
         created_by,
+        "pending", // status
       ],
     );
 
     res.status(201).json({
       success: true,
       message: "Demand item added successfully",
+      data: {
+        transactionId,
+        category,
+      },
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error in manualAddDemand:", error);
     res.status(500).json({
       message: "Internal server error",
+      error: error.message,
     });
   }
 }
@@ -1064,14 +1277,13 @@ async function getDemandItems(req, res) {
       `;
       queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
 
-      // For search results, return all matches (no limit initially)
       const [rows] = await pool.query(query, queryParams);
 
       return res.status(200).json(
         new ApiResponse(
           200,
           {
-            items: rows.slice(0, 500), // Max 500 search results
+            items: rows.slice(0, 500),
             totalItems: rows.length,
             hasMore: rows.length > 500,
           },
@@ -1080,16 +1292,14 @@ async function getDemandItems(req, res) {
       );
     }
 
-    // Without search, return first 200 items
     query += ` ORDER BY description ASC LIMIT ? OFFSET ?`;
     queryParams.push(parseInt(limit), offset);
 
-    // Get total count for pagination
     const countQuery = `
       SELECT COUNT(*) as total FROM (
-        SELECT id FROM spares WHERE category IN ('P', 'R', 'C', 'LP')
+        SELECT id FROM spares WHERE category IN ('P', 'R', 'C')
         UNION ALL
-        SELECT id FROM tools WHERE category IN ('P', 'R', 'C', 'LP')
+        SELECT id FROM tools WHERE category IN ('P', 'R', 'C')
       ) AS combined
     `;
     const [countResult] = await pool.query(countQuery);

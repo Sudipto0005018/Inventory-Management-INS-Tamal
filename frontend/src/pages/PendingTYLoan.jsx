@@ -85,7 +85,7 @@ const PendingTYLoan = () => {
           page: currentPage,
           search: "",
           // limit: config.row_per_page,
-          limit: 40,
+          limit: 2000,
         },
       });
       setFetchedData(response.data);

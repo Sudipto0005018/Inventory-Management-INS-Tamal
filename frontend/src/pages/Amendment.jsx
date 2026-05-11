@@ -113,7 +113,7 @@ const PendingSpecial = () => {
       const response = await apiService.get("/specialDemand/logs", {
         params: {
           page,
-          limit: 40,
+          limit: 2000,
           // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),

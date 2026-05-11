@@ -125,7 +125,7 @@ const PendingSurvey = () => {
           page,
           search,
           cols: selectedValues.join(","),
-          limit: 40,
+          limit: 2000,
           // limit: config.row_per_page,
           status: "pending",
         },
