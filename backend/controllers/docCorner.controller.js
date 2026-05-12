@@ -1143,21 +1143,21 @@ async function generateQRCode(req, res) {
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
 
         /** TEXT */
-        doc.fontSize(8).text(docData.description, 60, 5, {
+        doc.fontSize(4).text(docData.description, 60, 5, {
           width: 100,
         });
 
         doc
-          .fontSize(8)
+          .fontSize(4)
           .text(`${docData.indian_pattern}`, 60, 15, { width: 100 });
 
         doc
-          .fontSize(8)
+          .fontSize(4)
           .text(`${docData.equipment_system}`, 60, 25, { width: 100 });
 
-        doc.fontSize(8).text(`${box_no}`, 60, 35, { width: 100 });
+        doc.fontSize(4).text(`${box_no}`, 60, 35, { width: 100 });
 
-        doc.fontSize(8).text(`${location}`, 60, 45, { width: 100 });
+        doc.fontSize(4).text(`${location}`, 60, 45, { width: 100 });
 
         //  doc
         //    .fontSize(8)
@@ -1764,7 +1764,7 @@ async function generateQRCodeDocCorner(req, res) {
 
       doc.image(qrURL, 5, 5, { width: 50, height: 50 });
 
-      doc.fontSize(8).text(description, 60, 5, { width: 100 });
+      doc.fontSize(4).text(description, 60, 5, { width: 100 });
       doc.text(indian_pattern, 60, 15);
       doc.text(equipment_system, 60, 25);
       doc.text(box_no, 60, 35);

@@ -25,7 +25,12 @@ const PaginationTable = ({
   className = "",
   filters: externalFilters,
   onFiltersChange,
-  filterableColumns = ["equipment_system", "boxNo", "category"],
+  filterableColumns = [
+    "equipment_system",
+    "boxNo",
+    "category",
+    "storage_location",
+  ],
 }) => {
   const [internalPage, setInternalPage] = useState(1);
   const [internalFilters, setInternalFilters] = useState({});
@@ -132,7 +137,6 @@ const PaginationTable = ({
                   )}
                 >
                   <div className="flex items-center justify-center gap-1">
-                    <p className="text-wrap py-2 text-xs">{col.header}</p>
                     {filterableColumns.includes(col.key) && (
                       <FilterPopover
                         columnKey={col.key}
@@ -141,6 +145,7 @@ const PaginationTable = ({
                         activeFilters={filters}
                       />
                     )}
+                    <p className="text-wrap py-2 text-xs">{col.header}</p>
                   </div>
                 </TableHead>
               ))}

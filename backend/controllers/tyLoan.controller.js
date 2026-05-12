@@ -857,11 +857,11 @@ async function generateQRCode(req, res) {
       for (let j = 0; j < Number(copy_count); j++) {
         if (i + j > 0) doc.addPage();
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
-        doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
-        doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-        doc.fontSize(8).text(data.equipment_system, 60, 25, { width: 100 });
-        doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
-        doc.fontSize(8).text(location, 60, 45, { width: 100 });
+        doc.fontSize(4).text(data.description, 60, 5, { width: 100 });
+        doc.fontSize(4).text(data.indian_pattern, 60, 15, { width: 100 });
+        doc.fontSize(4).text(data.equipment_system, 60, 25, { width: 100 });
+        doc.fontSize(4).text(box_no, 60, 35, { width: 100 });
+        doc.fontSize(4).text(location, 60, 45, { width: 100 });
       }
     }
     doc.end();
@@ -1374,15 +1374,15 @@ async function reverseTyLoanIssue(req, res) {
         ? JSON.parse(inventory.box_no || "[]")
         : inventory.box_no || [];
 
-    /** 3️⃣ Get original box withdrawals */
-    const [boxLogs] = await connection.query(
+    /** 3️⃣ Get original box withdrawals (what was taken) */
+    const [originalWithdrawals] = await connection.query(
       `SELECT box_no, withdrawl_qty
        FROM box_transaction
        WHERE transaction_id = ?`,
       [loan.transaction_id],
     );
 
-    if (!boxLogs.length) {
+    if (!originalWithdrawals.length) {
       await connection.rollback();
       return res.status(400).json({
         success: false,
@@ -1390,31 +1390,61 @@ async function reverseTyLoanIssue(req, res) {
       });
     }
 
-    /** 4️⃣ Restore quantity to respective boxes */
-    const updatedBoxes = boxes.map((box) => {
-      const match = boxLogs.find((log) => log.box_no == box.no);
+    /** 4️⃣ Get already returned quantities (if any partial return exists) */
+    const [returnedTransactions] = await connection.query(
+      `SELECT box_no, withdrawl_qty
+       FROM box_transaction
+       WHERE demand_transaction = ?
+         AND withdrawl_qty > 0`,
+      [loan.transaction_id],
+    );
 
-      if (!match) return box;
+    // Create a map of returned quantities by box number
+    const returnedMap = new Map();
+    for (const ret of returnedTransactions) {
+      const currentReturned = returnedMap.get(ret.box_no) || 0;
+      returnedMap.set(
+        ret.box_no,
+        currentReturned + Math.abs(parseInt(ret.withdrawl_qty)),
+      );
+    }
+
+    /** 5️⃣ Calculate remaining quantity to restore (withdrawn - returned) */
+    const remainingToRestoreMap = new Map();
+    for (const withdrawal of originalWithdrawals) {
+      const withdrawnQty = Math.abs(parseInt(withdrawal.withdrawl_qty));
+      const returnedQty = returnedMap.get(withdrawal.box_no) || 0;
+      const remainingQty = withdrawnQty - returnedQty;
+
+      if (remainingQty > 0) {
+        remainingToRestoreMap.set(withdrawal.box_no, remainingQty);
+      }
+    }
+
+    /** 6️⃣ Restore ONLY the remaining quantity to respective boxes */
+    const updatedBoxes = boxes.map((box) => {
+      const remainingToRestore = remainingToRestoreMap.get(box.no);
+
+      if (!remainingToRestore) return box;
 
       const currentQty = parseInt(box.qtyHeld || 0);
-      const withdrawnQty = Math.abs(parseInt(match.withdrawl_qty));
 
       return {
         ...box,
-        qtyHeld: (currentQty + withdrawnQty).toString(),
+        qtyHeld: (currentQty + remainingToRestore).toString(),
       };
     });
 
-    /** 5️⃣ Calculate total restored */
-    const totalRestoreQty = boxLogs.reduce(
-      (sum, log) => sum + Math.abs(parseInt(log.withdrawl_qty)),
-      0,
-    );
+    /** 7️⃣ Calculate total restore quantity */
+    let totalRestoreQty = 0;
+    for (const qty of remainingToRestoreMap.values()) {
+      totalRestoreQty += qty;
+    }
 
     const previousOBS = parseInt(inventory.obs_held || 0);
     const newOBS = previousOBS + totalRestoreQty;
 
-    /** 6️⃣ Update inventory */
+    /** 8️⃣ Update inventory */
     await connection.query(
       `UPDATE ${inventoryTable}
        SET box_no = ?, obs_held = ?
@@ -1422,30 +1452,35 @@ async function reverseTyLoanIssue(req, res) {
       [JSON.stringify(updatedBoxes), newOBS, inventoryId],
     );
 
-    /** 7️⃣ Insert reverse ledger entry (recommended) */
+    /** 9️⃣ Insert reverse ledger entry for ONLY the remaining quantity */
     const reverseTransactionId = "TY-REV-" + Date.now();
     const now = new Date();
 
-    const reverseEntries = boxLogs.map((log) => [
-      reverseTransactionId,
-      loan.transaction_id,
-      isSpare ? loan.spare_id : null,
-      !isSpare ? loan.tool_id : null,
-      log.box_no,
-      0,
-      Math.abs(parseInt(log.withdrawl_qty)), // positive restore
-      now,
-    ]);
+    const reverseEntries = [];
+    for (const [boxNo, remainingQty] of remainingToRestoreMap.entries()) {
+      reverseEntries.push([
+        reverseTransactionId,
+        loan.transaction_id,
+        isSpare ? loan.spare_id : null,
+        !isSpare ? loan.tool_id : null,
+        boxNo,
+        0,
+        remainingQty, // Restore only the remaining balance
+        now,
+      ]);
+    }
 
-    await connection.query(
-      `INSERT INTO box_transaction
-       (transaction_id, demand_transaction, spare_id, tool_id,
-        box_no, prev_qty, withdrawl_qty, transaction_date)
-       VALUES ?`,
-      [reverseEntries],
-    );
+    if (reverseEntries.length) {
+      await connection.query(
+        `INSERT INTO box_transaction
+         (transaction_id, demand_transaction, spare_id, tool_id,
+          box_no, prev_qty, withdrawl_qty, transaction_date)
+         VALUES ?`,
+        [reverseEntries],
+      );
+    }
 
-    /** 8️⃣ Mark loan reversed */
+    /** 🔟 Mark loan reversed */
     await connection.query(
       `UPDATE ty_loan
        SET status = 'reversed',
@@ -1459,7 +1494,7 @@ async function reverseTyLoanIssue(req, res) {
 
     res.json({
       success: true,
-      message: "TY Loan successfully reversed",
+      message: `TY Loan successfully reversed. Restored ${totalRestoreQty} quantity.`,
     });
   } catch (err) {
     await connection.rollback();
@@ -1472,6 +1507,159 @@ async function reverseTyLoanIssue(req, res) {
     connection.release();
   }
 }
+
+// async function reverseTyLoanIssue(req, res) {
+//   const { id: userId } = req.user;
+//   const { loanId } = req.body;
+
+//   const connection = await pool.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     /** 1️⃣ Fetch loan (LOCKED) */
+//     const [[loan]] = await connection.query(
+//       `SELECT * FROM ty_loan WHERE id = ? FOR UPDATE`,
+//       [loanId],
+//     );
+
+//     if (!loan) {
+//       await connection.rollback();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Loan not found",
+//       });
+//     }
+
+//     if (loan.status === "reversed") {
+//       await connection.rollback();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Already reversed",
+//       });
+//     }
+
+//     const isSpare = !!loan.spare_id;
+//     const inventoryTable = isSpare ? "spares" : "tools";
+//     const inventoryId = loan.spare_id || loan.tool_id;
+
+//     /** 2️⃣ Fetch inventory (LOCKED) */
+//     const [[inventory]] = await connection.query(
+//       `SELECT box_no, obs_held FROM ${inventoryTable} WHERE id = ? FOR UPDATE`,
+//       [inventoryId],
+//     );
+
+//     if (!inventory) {
+//       await connection.rollback();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Inventory not found",
+//       });
+//     }
+
+//     let boxes =
+//       typeof inventory.box_no === "string"
+//         ? JSON.parse(inventory.box_no || "[]")
+//         : inventory.box_no || [];
+
+//     /** 3️⃣ Get original box withdrawals */
+//     const [boxLogs] = await connection.query(
+//       `SELECT box_no, withdrawl_qty
+//        FROM box_transaction
+//        WHERE transaction_id = ?`,
+//       [loan.transaction_id],
+//     );
+
+//     if (!boxLogs.length) {
+//       await connection.rollback();
+//       return res.status(400).json({
+//         success: false,
+//         message: "No box transaction records found",
+//       });
+//     }
+
+//     /** 4️⃣ Restore quantity to respective boxes */
+//     const updatedBoxes = boxes.map((box) => {
+//       const match = boxLogs.find((log) => log.box_no == box.no);
+
+//       if (!match) return box;
+
+//       const currentQty = parseInt(box.qtyHeld || 0);
+//       const withdrawnQty = Math.abs(parseInt(match.withdrawl_qty));
+
+//       return {
+//         ...box,
+//         qtyHeld: (currentQty + withdrawnQty).toString(),
+//       };
+//     });
+
+//     /** 5️⃣ Calculate total restored */
+//     const totalRestoreQty = boxLogs.reduce(
+//       (sum, log) => sum + Math.abs(parseInt(log.withdrawl_qty)),
+//       0,
+//     );
+
+//     const previousOBS = parseInt(inventory.obs_held || 0);
+//     const newOBS = previousOBS + totalRestoreQty;
+
+//     /** 6️⃣ Update inventory */
+//     await connection.query(
+//       `UPDATE ${inventoryTable}
+//        SET box_no = ?, obs_held = ?
+//        WHERE id = ?`,
+//       [JSON.stringify(updatedBoxes), newOBS, inventoryId],
+//     );
+
+//     /** 7️⃣ Insert reverse ledger entry (recommended) */
+//     const reverseTransactionId = "TY-REV-" + Date.now();
+//     const now = new Date();
+
+//     const reverseEntries = boxLogs.map((log) => [
+//       reverseTransactionId,
+//       loan.transaction_id,
+//       isSpare ? loan.spare_id : null,
+//       !isSpare ? loan.tool_id : null,
+//       log.box_no,
+//       0,
+//       Math.abs(parseInt(log.withdrawl_qty)), // positive restore
+//       now,
+//     ]);
+
+//     await connection.query(
+//       `INSERT INTO box_transaction
+//        (transaction_id, demand_transaction, spare_id, tool_id,
+//         box_no, prev_qty, withdrawl_qty, transaction_date)
+//        VALUES ?`,
+//       [reverseEntries],
+//     );
+
+//     /** 8️⃣ Mark loan reversed */
+//     await connection.query(
+//       `UPDATE ty_loan
+//        SET status = 'reversed',
+//            approved_by = ?,
+//            approved_at = NOW()
+//        WHERE id = ?`,
+//       [userId, loanId],
+//     );
+
+//     await connection.commit();
+
+//     res.json({
+//       success: true,
+//       message: "TY Loan successfully reversed",
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("REVERSE TY LOAN ERROR =>", err);
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// }
 
 module.exports = {
   getTyLoanList,

@@ -13,10 +13,14 @@ async function createDemand(req, res) {
     transaction_id,
     reason_for_survey,
     remarks,
+    service_no, // Add this to destructuring
   } = req.body;
+
   const connection = await pool.getConnection();
+
   try {
     await connection.beginTransaction();
+
     if (!spare_id && !tool_id) {
       return new ApiErrorResponse(
         400,
@@ -24,6 +28,7 @@ async function createDemand(req, res) {
         "Please provide spare_id or tool_id",
       ).send(res);
     }
+
     if (
       !survey_qty ||
       !survey_voucher_no ||
@@ -37,10 +42,29 @@ async function createDemand(req, res) {
         "Please provide all required fields",
       ).send(res);
     }
+
+    // Fetch the survey record to get service_no if not provided
+    let finalServiceNo = service_no;
+    if (!finalServiceNo) {
+      const [[surveyRecord]] = await connection.query(
+        `SELECT service_no FROM survey WHERE transaction_id = ?`,
+        [transaction_id],
+      );
+      if (surveyRecord && surveyRecord.service_no) {
+        finalServiceNo = surveyRecord.service_no;
+      }
+    }
+
+    if (!finalServiceNo) {
+      await connection.rollback();
+      return new ApiErrorResponse(400, {}, "service_no is required").send(res);
+    }
+
     const [[row]] = await connection.query(
       `SELECT id, withdrawl_qty, survey_quantity FROM survey WHERE transaction_id = ?`,
       [transaction_id],
     );
+
     let status = "pending";
 
     if (row.withdrawl_qty < row.survey_quantity + Number(survey_qty)) {
@@ -61,9 +85,22 @@ async function createDemand(req, res) {
         [status, row.survey_quantity + Number(survey_qty), row.id],
       );
     }
+
+    // Include service_no in the INSERT statement
     await connection.query(
-      `INSERT INTO demand (spare_id, tool_id, transaction_id, survey_qty, survey_voucher_no, survey_date, reason_for_survey, remarks, created_at, created_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO demand (
+        spare_id, 
+        tool_id, 
+        transaction_id, 
+        survey_qty, 
+        survey_voucher_no, 
+        survey_date, 
+        reason_for_survey, 
+        remarks, 
+        service_no,  -- Added service_no
+        created_at, 
+        created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         spare_id || null,
         tool_id || null,
@@ -73,10 +110,12 @@ async function createDemand(req, res) {
         survey_date,
         reason_for_survey,
         remarks || null,
+        finalServiceNo, // Add service_no value
         getSQLTimestamp(),
         req.user.id,
       ],
     );
+
     await connection.commit();
     new ApiResponse(201, {}, "Demand created successfully").send(res);
   } catch (error) {

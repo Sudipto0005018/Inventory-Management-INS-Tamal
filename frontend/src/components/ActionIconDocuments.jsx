@@ -142,9 +142,9 @@ async function handleGenarateQr() {
         <IoQrCodeSharp className="size-5" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="!max-w-[800px] !w-[80vw] unbounded">
           <DialogHeader>
-            <DialogTitle>Genarate QR</DialogTitle>
+            <DialogTitle>Generate QR</DialogTitle>
             <DialogDescription className="hidden" />
           </DialogHeader>
           <div>
@@ -155,9 +155,7 @@ async function handleGenarateQr() {
                   <TableCell>{row.description}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell>
-                    Folder No.
-                  </TableCell>
+                  <TableCell>Folder No.</TableCell>
                   <TableCell>{row.indian_pattern}</TableCell>
                 </TableRow>
                 <TableRow>

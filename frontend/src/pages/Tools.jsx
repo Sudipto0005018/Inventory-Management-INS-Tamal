@@ -144,7 +144,7 @@ const Tools = ({ type = "" }) => {
     {
       key: "location",
       header: "Location of Storage",
-      width: "max-w-[90px]",
+      width: "max-w-[100px]",
     },
     { key: "edit", header: "Actions", width: "max-w-[100px]" },
   ]);
@@ -1641,7 +1641,7 @@ const Tools = ({ type = "" }) => {
               }}
               filters={tableFilters}
               onFiltersChange={setTableFilters}
-              filterableColumns={["equipment_system", "boxNo", "category"]}
+              filterableColumns={["equipment_system", "boxNo", "category", "location"]}
             />
           </div>
         </div>

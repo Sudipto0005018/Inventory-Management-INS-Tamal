@@ -13,10 +13,10 @@ import toaster from "../utils/toaster";
 import { getFormatedDate, getTimeDate } from "../utils/helperFunctions";
 import { MultiSelect } from "../components/ui/multi-select";
 
-const PendingSpecial = () => {
+const PendingSpecialLogs = () => {
   const { config } = useContext(Context);
   const columns = useMemo(() => [
-    { key: "description", header: "Item Description" },
+    { key: "description", header: "Item Description", width: "max-w-[110px]" },
     {
       key: "indian_pattern",
       header: (
@@ -24,15 +24,10 @@ const PendingSpecial = () => {
           <i>IN</i> Part No.
         </span>
       ),
-      width: "min-w-[40px]",
+      width: "max-w-[90px]",
     },
-    // {
-    //   key: "item_type",
-    //   header: "Type",
-    //   width: "min-w-[40px]",
-    // },
-    { key: "denos", header: "Denos." },
-    { key: "category", header: "Category" },
+    { key: "category", header: "Category", width: "max-w-[30px]" },
+    { key: "denos", header: "Denos.", width: "max-w-[30px]" },
     {
       key: "quantity",
       header: (
@@ -41,6 +36,7 @@ const PendingSpecial = () => {
           <br /> Inc/ Dec
         </span>
       ),
+      width: "max-w-[30px]",
     },
     {
       key: "modified_obs",
@@ -49,74 +45,28 @@ const PendingSpecial = () => {
           Modified OBS <br /> Authorised
         </span>
       ),
+      width: "max-w-[40px]",
     },
-    { key: "quote_authority", header: "Authority" },
-    // {
-    //   key: "demandno",
-    //   header: (
-    //     <span>
-    //       Internal <br />
-    //       Demand No.
-    //     </span>
-    //   ),
-    // },
-    // {
-    //   key: "demanddate",
-    //   header: (
-    //     <span>
-    //       Internal <br />
-    //       Demand Date
-    //     </span>
-    //   ),
-    // },
-    // {
-    //   key: "requisition",
-    //   header: (
-    //     <span>
-    //       Requisition <br /> No.
-    //     </span>
-    //   ),
-    // },
-    // {
-    //   key: "Reqdate",
-    //   header: (
-    //     <span>
-    //       Requisition <br /> Date
-    //     </span>
-    //   ),
-    // },
+    { key: "quote_authority", header: "Authority", width: "max-w-[90px]" },
     {
       key: "modemand",
-      header: (
-        <span>
-          {" "}
-          MO 
-          Demand No.
-        </span>
-      ),
+      header: <span> MO Demand No.</span>,
+      width: "max-w-[70px]",
     },
     {
       key: "modate",
-      header: (
-        <span>
-          MO Demand Date
-        </span>
-      ),
+      header: <span>MO Demand Date</span>,
+      width: "max-w-[50px]",
     },
-    { key: "created_at", header: "Date of Return" },
+    { key: "created_at", header: "Date of Return", width: "max-w-[60px]" },
   ]);
 
   const options = [
     { value: "description", label: "Item Description" },
     { value: "indian_pattern", label: "IN Part No." },
-    { value: "denos", label: "Denos." },
     { value: "category", label: "Category" },
-    { value: "obs_authorised", label: "Modified OBS Authorised" },
+    { value: "denos", label: "Denos." },
     { value: "quote_authority", label: "Authority" },
-    { value: "internal_demand_no", label: "Internal Demand No." },
-    { value: "internal_demand_date", label: "Internal Demand Date." },
-    { value: "requisition_no", label: "Requisition No." },
-    { value: "requisition_date", label: "Requisition Date." },
     { value: "mo_demand_no", label: "MO Demand No." },
     { value: "mo_demand_date", label: "MO Demand Date" },
   ];
@@ -161,13 +111,26 @@ const PendingSpecial = () => {
 
   const [boxNo, setBoxNo] = useState([{ qn: "", no: "" }]);
 
+  // Helper function to calculate modified OBS (same as PendingSpecial)
+  const calculateModifiedOBS = (row) => {
+    if (row.obs_authorised === null || row.obs_authorised === undefined)
+      return "--";
+
+    // If there's an increase quantity, add it to show final modified OBS
+    if (row.obs_increase_qty && row.obs_increase_qty !== 0) {
+      return row.obs_authorised + row.obs_increase_qty;
+    }
+
+    // Otherwise just show the authorised quantity
+    return row.obs_authorised;
+  };
+
   const fetchdata = async (page = currentPage) => {
     try {
       const response = await apiService.get("/specialDemand/logs", {
         params: {
           page,
           limit: 2000,
-          // limit: config.row_per_page,
           search: inputs.search || "",
           cols: selectedValues.join(","),
         },
@@ -224,15 +187,30 @@ const PendingSpecial = () => {
 
     return "Completed";
   };
+
   useEffect(() => {
     const t = fetchedData.items.map((row) => ({
       ...row,
       item_type: row.spare_id ? "Spare" : row.tool_id ? "Tool" : "-",
-      // Qty increased from spares
-      quantity: row.obs_increase_qty || "--",
+
+      // Qty increased from spares - show with +/- sign for clarity
+      quantity: row.obs_increase_qty
+        ? row.obs_increase_qty > 0
+          ? `${row.obs_increase_qty}`
+          : `${row.obs_increase_qty}`
+        : "--",
+
       created_at: getTimeDate(row.created_at),
-      // Final expected OBS qty
-      modified_obs: row.obs_authorised || "--",
+
+      // 🔥 FIXED: Use the same calculation as PendingSpecial
+      modified_obs: calculateModifiedOBS(row),
+
+      // Optional: Add tooltip for additional clarity (if your table supports it)
+      modified_obs_tooltip:
+        row.obs_increase_qty && row.obs_increase_qty !== 0
+          ? `Base: ${row.obs_authorised}, Change: ${row.obs_increase_qty > 0 ? "+" : ""}${row.obs_increase_qty}`
+          : `Base quantity: ${row.obs_authorised}`,
+
       quote_authority: row.quote_authority || "--",
 
       demandno: row.internal_demand_no || "--",
@@ -364,4 +342,4 @@ const PendingSpecial = () => {
   );
 };
 
-export default PendingSpecial;
+export default PendingSpecialLogs;

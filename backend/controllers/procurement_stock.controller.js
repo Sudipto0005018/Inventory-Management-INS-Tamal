@@ -1436,13 +1436,13 @@ async function generateQRCode(req, res) {
 
         doc.image(qrURL, 5, 5, { width: 50, height: 50 });
 
-        doc.fontSize(8).text(data.description, 60, 5, { width: 100 });
-        doc.fontSize(8).text(data.indian_pattern, 60, 15, { width: 100 });
-        doc.fontSize(8).text(data.equipment_system, 60, 25, {
+        doc.fontSize(4).text(data.description, 60, 5, { width: 100 });
+        doc.fontSize(4).text(data.indian_pattern, 60, 15, { width: 100 });
+        doc.fontSize(4).text(data.equipment_system, 60, 25, {
           width: 100,
         });
-        doc.fontSize(8).text(box_no, 60, 35, { width: 100 });
-        doc.fontSize(8).text(location, 60, 45, { width: 100 });
+        doc.fontSize(4).text(box_no, 60, 35, { width: 100 });
+        doc.fontSize(4).text(location, 60, 45, { width: 100 });
       }
     }
 
