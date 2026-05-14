@@ -2027,7 +2027,7 @@ const Tools = ({ type = "" }) => {
 
                 {/* Row 3 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
+                  {/* <div>
                     <Label className="ms-2 mb-1">Item Code</Label>
                     <Input
                       type="text"
@@ -2035,8 +2035,23 @@ const Tools = ({ type = "" }) => {
                       value={inputs.item_code}
                       onChange={handleChange}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label className="ms-2 mb-1">Item Code</Label>
+                    <DynamicInputList
+                      id="item_code"
+                      data={inputs.item_code}
+                      placeholder="Item Code"
+                      onChange={(values) => {
+                        updateDynamicInputs(values, "item_code");
+                      }}
+                      editable={editableFields.item_code}
+                      onEdit={() => enableEdit("item_code")}
+                      onBlur={() => disableEdit("item_code")}
+                    />
                   </div>
-                  {/* IN Part No */}
+
                   <div>
                     <Label className="ms-2 mb-1">
                       <i>IN</i> Part No.
@@ -2573,7 +2588,7 @@ const Tools = ({ type = "" }) => {
                     </select> */}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <Label>
                       Item Code<span className="text-red-500">*</span>
                     </Label>
@@ -2585,6 +2600,39 @@ const Tools = ({ type = "" }) => {
                       onEdit={() => enableEdit("item_code")}
                       onBlur={() => disableEdit("item_code")}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label>
+                      Item Code<span className="text-red-500">*</span>
+                    </Label>
+                    {!editableFields.item_code ? (
+                      <InputWithPencil
+                        name="item_code"
+                        value={normalizeToArray(selectedRow.item_code).join(
+                          " , ",
+                        )}
+                        editable={false}
+                        onEdit={() => enableEdit("item_code")}
+                      />
+                    ) : (
+                      <div
+                        onBlur={() => disableEdit("item_code")}
+                        tabIndex={0}
+                        className="outline-none"
+                      >
+                        <DynamicInputList
+                          data={normalizeToArray(selectedRow.item_code)}
+                          placeholder="Item Code"
+                          onChange={(values) =>
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              item_code: values,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -2613,7 +2661,7 @@ const Tools = ({ type = "" }) => {
                         name="substitute_name"
                         value={normalizeToArray(
                           selectedRow.substitute_name,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("substitute_name")}
                       />
@@ -2647,7 +2695,7 @@ const Tools = ({ type = "" }) => {
                         name="local_terminology"
                         value={normalizeToArray(
                           selectedRow.local_terminology,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("local_terminology")}
                       />
