@@ -1067,7 +1067,7 @@ const getAllTools = async (req, res) => {
 
   try {
     const [tools] = await pool.query(
-      `SELECT id, description, indian_pattern, item_code, category, box_no, obs_authorised
+      `SELECT id, description, indian_pattern, equipment_system, item_code, category, box_no, obs_authorised
        FROM tools 
        WHERE department = ?
        ORDER BY description ASC
@@ -1087,7 +1087,6 @@ const getAllTools = async (req, res) => {
       .json(new ApiErrorResponse(500, {}, "Internal server error"));
   }
 };
-
 
 module.exports = {
   createTool,

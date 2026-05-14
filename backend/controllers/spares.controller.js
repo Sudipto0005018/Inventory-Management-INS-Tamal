@@ -2503,7 +2503,7 @@ const getAllSpares = async (req, res) => {
 
   try {
     const [spares] = await pool.query(
-      `SELECT id, description, indian_pattern, item_code, category, box_no, obs_authorised
+      `SELECT id, description, indian_pattern, equipment_system, item_code, category, box_no, obs_authorised
        FROM spares 
        WHERE department = ?
        ORDER BY description ASC
