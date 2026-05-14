@@ -307,6 +307,7 @@ const createTool = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_tool,
+    part_of,
     sub_component,
     price_unit,
     supplier,
@@ -322,6 +323,7 @@ const createTool = async (req, res) => {
     }
 
     const isCriticalTool = critical_tool === "yes" ? 1 : 0;
+    const isPartOfD787 = part_of === "yes" ? "yes" : "no"; 
 
     // ✅ MULTI IMAGE FILENAMES
     const images = req.files?.map((file) => file.filename) || [];
@@ -331,9 +333,9 @@ const createTool = async (req, res) => {
                 (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held,
                  b_d_authorised, category, box_no, item_distribution, storage_location, item_code, indian_pattern,
                  remarks, department, images, uid, oem, oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details,
-                  substitute_name, local_terminology, critical_tool, sub_component, price_unit, supplier)
+                  substitute_name, local_terminology, critical_tool, part_of, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -365,6 +367,7 @@ const createTool = async (req, res) => {
       substitute_name || null,
       local_terminology || null,
       isCriticalTool,
+      isPartOfD787,
       sub_component || null,
       price_unit || null,
       supplier || null,
@@ -565,6 +568,7 @@ async function updateTool(req, res) {
     substitute_name,
     local_terminology,
     critical_tool,
+    part_of,
     sub_component,
     price_unit,
     supplier,
@@ -717,6 +721,9 @@ async function updateTool(req, res) {
       finalImages.pop();
     }
 
+    const isPartOfD787 = part_of === "yes" ? "yes" : "no";
+
+
     console.log("REQ.FILES:", req.files);
     console.log("IMAGE STATUS:", imageStatus);
     console.log("OLD IMAGES:", oldImages);
@@ -749,6 +756,7 @@ async function updateTool(req, res) {
           substitute_name = ?,
           local_terminology = ?,
           critical_tool = ?,
+          part_of = ?,
           sub_component = ?,
           price_unit = ?,
           supplier = ?
@@ -781,6 +789,7 @@ async function updateTool(req, res) {
         substitute_name || null,
         local_terminology || null,
         critical_tool,
+        isPartOfD787,
         sub_component || null,
         price_unit || null,
         supplier || null,

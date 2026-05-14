@@ -1745,7 +1745,7 @@ const Spares = ({ type = "" }) => {
               }}
               filters={tableFilters}
               onFiltersChange={setTableFilters}
-              filterableColumns={["equipment_system", "boxNo", "category"]}
+              filterableColumns={["equipment_system", "boxNo", "category", "location"]}
             />
           </div>
         </div>

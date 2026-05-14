@@ -250,6 +250,7 @@ const Tools = ({ type = "" }) => {
   });
   const [selectedRow, setSelectedRow] = useState({
     critical_tool: "no",
+    part_of: "no",
   });
   const [image, setImage] = useState({
     preview: null,
@@ -596,7 +597,16 @@ const Tools = ({ type = "" }) => {
       [name]: value.toUpperCase(),
     }));
   };
-  
+
+  useEffect(() => {
+    if (selectedRow && selectedRow.part_of !== undefined) {
+      setInputs((prev) => ({
+        ...prev,
+        part_of: selectedRow.part_of || "no",
+      }));
+    }
+  }, [selectedRow]);
+
   // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
   //   try {
   //     const response = await apiService.get(
@@ -669,6 +679,14 @@ const Tools = ({ type = "" }) => {
 
       if (Number(inputs.obs_held) < 0) {
         toaster("error", "OBS Held cannot be negative");
+        return;
+      }
+
+      if (Number(inputs.obs_maintained) < Number(inputs.obs_authorised)) {
+        toaster(
+          "error",
+          `Maintained Qty (${inputs.obs_maintained}) cannot be less than Authorised Qty (${inputs.obs_authorised})`,
+        );
         return;
       }
 
@@ -839,28 +857,29 @@ const Tools = ({ type = "" }) => {
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append("critical_tool", inputs.critical_tool || 0);
+      formData.append("part_of", inputs.part_of || "no");
       formData.append("supplier", inputs.supplier || "");
-       formData.append(
-         "oem_contact_person_id",
-         inputs.oem_contact_person_id || "",
-       );
-       formData.append(
-         "oem_contact_person_details",
-         inputs.oem_contact_person_details
-           ? JSON.stringify(inputs.oem_contact_person_details)
-           : "",
-       );
-       formData.append(
-         "supplier_contact_person_id",
-         inputs.supplier_contact_person_id || "",
-       );
-       formData.append(
-         "supplier_contact_person_details",
-         inputs.supplier_contact_person_details
-           ? JSON.stringify(inputs.supplier_contact_person_details)
-           : "",
+      formData.append(
+        "oem_contact_person_id",
+        inputs.oem_contact_person_id || "",
       );
-      
+      formData.append(
+        "oem_contact_person_details",
+        inputs.oem_contact_person_details
+          ? JSON.stringify(inputs.oem_contact_person_details)
+          : "",
+      );
+      formData.append(
+        "supplier_contact_person_id",
+        inputs.supplier_contact_person_id || "",
+      );
+      formData.append(
+        "supplier_contact_person_details",
+        inputs.supplier_contact_person_details
+          ? JSON.stringify(inputs.supplier_contact_person_details)
+          : "",
+      );
+
       console.log("Sending OEM Contact Person:", {
         id: inputs.oem_contact_person_id,
         details: inputs.oem_contact_person_details,
@@ -964,6 +983,16 @@ const Tools = ({ type = "" }) => {
         s2 = 0;
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
+
+      if (
+        Number(selectedRow.obs_maintained) < Number(selectedRow.obs_authorised)
+      ) {
+        toaster(
+          "error",
+          `Maintained Qty (${selectedRow.obs_maintained}) cannot be less than Authorised Qty (${selectedRow.obs_authorised})`,
+        );
+        return;
+      }
 
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
@@ -1126,6 +1155,7 @@ const Tools = ({ type = "" }) => {
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("critical_tool", selectedRow.critical_tool);
+      formData.append("part_of", selectedRow.part_of || "no");
       formData.append("supplier", selectedRow.supplier || "");
       formData.append(
         "oem_contact_person_id",
@@ -1157,19 +1187,21 @@ const Tools = ({ type = "" }) => {
       );
 
       //new payload
-      const specialPayload = {
-        tool_id: selectedRow.id,
-        obs_authorised: Number(selectedRow.obs_authorised) || 0,
-        obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
-        obs_maintained: Number(selectedRow.obs_maintained) || 0,
-        obs_held: Number(selectedRow.obs_held) || 0,
-        maintained_qty: Number(selectedRow.obs_maintained) || 0,
-        qty_held: Number(selectedRow.obs_held) || 0,
-        box_no: JSON.parse(selectedRow.box_no || "[]"),
-      };
+      // const specialPayload = {
+      //   tool_id: selectedRow.id,
+      //   obs_authorised: Number(selectedRow.obs_authorised) || 0,
+      //   obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
+      //   obs_maintained: Number(selectedRow.obs_maintained) || 0,
+      //   obs_held: Number(selectedRow.obs_held) || 0,
+      //   maintained_qty: Number(selectedRow.obs_maintained) || 0,
+      //   qty_held: Number(selectedRow.obs_held) || 0,
+      //   box_no: JSON.parse(selectedRow.box_no || "[]"),
+      // };
 
-      await apiService.post("/specialDemand/special", specialPayload);
+      // await apiService.post("/specialDemand/special", specialPayload);
+
       // await apiService.post("/specialDemand/special", obsAuthChange);
+
       if (response.success) {
         toaster("success", "Tool updated successfully");
         resetImageState(); // clear image payload
@@ -1641,7 +1673,12 @@ const Tools = ({ type = "" }) => {
               }}
               filters={tableFilters}
               onFiltersChange={setTableFilters}
-              filterableColumns={["equipment_system", "boxNo", "category", "location"]}
+              filterableColumns={[
+                "equipment_system",
+                "boxNo",
+                "category",
+                "location",
+              ]}
             />
           </div>
         </div>
@@ -2675,6 +2712,51 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        onValueChange={(value) =>
+                          setSelectedRow((prev) => ({
+                            ...prev,
+                            part_of: value,
+                          }))
+                        }
+                        className="mt-2"
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="edit_part_of_original"
+                            />
+                            <Label
+                              htmlFor="edit_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="edit_part_of_no" />
+                            <Label
+                              htmlFor="edit_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+
+                  <div>
                     <Label className="ms-2 mb-1">
                       Sub Component<span className="text-red-500">*</span>
                     </Label>
@@ -3142,6 +3224,46 @@ const Tools = ({ type = "" }) => {
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+
+                  <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        className="mt-2"
+                        disabled
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="view_part_of_original"
+                            />
+                            <Label
+                              htmlFor="view_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="view_part_of_no" />
+                            <Label
+                              htmlFor="view_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
 
                   <div>
@@ -4693,6 +4815,32 @@ const Tools = ({ type = "" }) => {
                       : Number(originalObsAuthorised) -
                         Number(obsDialog.quantity);
 
+                  const payload = {
+                    tool_id: selectedRow.id,
+
+                    obs_authorised: finalValue,
+                    obs_increase_qty: obsDialog.quantity,
+                    quoteAuthority: obsDialog.quoteAuthority,
+                    internal_demand_no:
+                      obsDialog.demandGenerated === "yes"
+                        ? obsDialog.internalDemandNo?.trim()
+                        : null,
+                    internal_demand_date:
+                      obsDialog.demandGenerated === "yes"
+                        ? getISTTimestamp(obsDialog.internalDemandDate)
+                        : null,
+                    requisition_no: obsDialog.requisitionNo?.trim() || null,
+                    requisition_date: obsDialog.requisitionDate
+                      ? getISTTimestamp(obsDialog.requisitionDate)
+                      : null,
+                    mo_demand_no: obsDialog.moDemandNo?.trim() || null,
+                    mo_demand_date: obsDialog.moDemandDate
+                      ? getISTTimestamp(obsDialog.moDemandDate)
+                      : null,
+                  };
+
+                  apiService.post("/specialDemand/special", payload);
+
                   console.log("Logs Start");
 
                   console.log("originalObsAuthorised:", originalObsAuthorised);
@@ -4760,7 +4908,7 @@ const Tools = ({ type = "" }) => {
                     parsedBox: updatedBoxes,
                     finalValue,
                   });
-                  return; // 🚨 Stop execution here
+                  return;
                 }}
               >
                 Submit

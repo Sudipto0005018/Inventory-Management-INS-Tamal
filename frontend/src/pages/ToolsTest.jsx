@@ -144,7 +144,7 @@ const Tools = ({ type = "" }) => {
     {
       key: "location",
       header: "Location of Storage",
-      width: "max-w-[90px]",
+      width: "max-w-[100px]",
     },
     { key: "edit", header: "Actions", width: "max-w-[100px]" },
   ]);
@@ -250,6 +250,7 @@ const Tools = ({ type = "" }) => {
   });
   const [selectedRow, setSelectedRow] = useState({
     critical_tool: "no",
+    part_of: "no",
   });
   const [image, setImage] = useState({
     preview: null,
@@ -597,6 +598,15 @@ const Tools = ({ type = "" }) => {
     }));
   };
 
+  useEffect(() => {
+    if (selectedRow && selectedRow.part_of !== undefined) {
+      setInputs((prev) => ({
+        ...prev,
+        part_of: selectedRow.part_of || "no",
+      }));
+    }
+  }, [selectedRow]);
+
   // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
   //   try {
   //     const response = await apiService.get(
@@ -839,6 +849,7 @@ const Tools = ({ type = "" }) => {
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append("critical_tool", inputs.critical_tool || 0);
+      formData.append("part_of", inputs.part_of || "no");
       formData.append("supplier", inputs.supplier || "");
       formData.append(
         "oem_contact_person_id",
@@ -1126,6 +1137,7 @@ const Tools = ({ type = "" }) => {
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("critical_tool", selectedRow.critical_tool);
+      formData.append("part_of", selectedRow.part_of || "no");
       formData.append("supplier", selectedRow.supplier || "");
       formData.append(
         "oem_contact_person_id",
@@ -1641,7 +1653,12 @@ const Tools = ({ type = "" }) => {
               }}
               filters={tableFilters}
               onFiltersChange={setTableFilters}
-              filterableColumns={["equipment_system", "boxNo", "category"]}
+              filterableColumns={[
+                "equipment_system",
+                "boxNo",
+                "category",
+                "location",
+              ]}
             />
           </div>
         </div>
@@ -2675,6 +2692,51 @@ const Tools = ({ type = "" }) => {
                   </div>
 
                   <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        onValueChange={(value) =>
+                          setSelectedRow((prev) => ({
+                            ...prev,
+                            part_of: value,
+                          }))
+                        }
+                        className="mt-2"
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="edit_part_of_original"
+                            />
+                            <Label
+                              htmlFor="edit_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="edit_part_of_no" />
+                            <Label
+                              htmlFor="edit_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+
+                  <div>
                     <Label className="ms-2 mb-1">
                       Sub Component<span className="text-red-500">*</span>
                     </Label>
@@ -3142,6 +3204,46 @@ const Tools = ({ type = "" }) => {
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+
+                  <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        className="mt-2"
+                        disabled
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="view_part_of_original"
+                            />
+                            <Label
+                              htmlFor="view_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="view_part_of_no" />
+                            <Label
+                              htmlFor="view_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
 
                   <div>

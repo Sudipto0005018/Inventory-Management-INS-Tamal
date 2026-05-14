@@ -310,6 +310,7 @@ const createSpare = async (req, res) => {
     substitute_name,
     local_terminology,
     critical_spare,
+    part_of,
     sub_component,
     price_unit,
     supplier,
@@ -330,6 +331,7 @@ const createSpare = async (req, res) => {
     "Received Supplier Contact Person Details:",
     supplier_contact_person_details,
   );
+  console.log("Received Part of D787:", part_of);
 
   try {
     if (!description || !equipment_system) {
@@ -339,6 +341,7 @@ const createSpare = async (req, res) => {
     }
 
     const isCriticalSpare = critical_spare === "yes" ? 1 : 0;
+    const isPartOfD787 = part_of === "yes" ? "yes" : "no";
 
     // ✅ MULTI IMAGE FILENAMES
     const images = req.files?.map((file) => file.filename) || [];
@@ -376,9 +379,9 @@ const createSpare = async (req, res) => {
             INSERT INTO spares
                 (description, equipment_system, denos, obs_authorised, obs_maintained, obs_held, b_d_authorised, category, box_no, item_distribution, storage_location,
                  item_code, indian_pattern, remarks, department, images, uid, oem,
-                   oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details, substitute_name, local_terminology, critical_spare, sub_component, price_unit, supplier)
+                   oem_contact_person_id, oem_contact_person_details, supplier_contact_person_id, supplier_contact_person_details, substitute_name, local_terminology, critical_spare, part_of, sub_component, price_unit, supplier)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
     const [result] = await pool.query(query, [
       description,
@@ -406,6 +409,7 @@ const createSpare = async (req, res) => {
       substitute_name || null,
       local_terminology || null,
       isCriticalSpare,
+      isPartOfD787,
       sub_component || null,
       price_unit || null,
       supplier || null,
@@ -697,11 +701,13 @@ async function updateSpare(req, res) {
     substitute_name,
     local_terminology,
     critical_spare,
+    part_of,
     sub_component,
     price_unit,
     supplier,
   } = req.body;
 
+  console.log("Updating with Part of D787:", part_of);
   // const filename = req.file ? req.file.filename : image || null;
 
   // const newImages = req.files?.map((f) => f.filename) || [];
@@ -884,6 +890,8 @@ async function updateSpare(req, res) {
       finalImages.pop();
     }
 
+    const isPartOfD787 = part_of === "yes" ? "yes" : "no";
+
     console.log(obs_maintained);
     await pool.query(
       `
@@ -910,6 +918,7 @@ async function updateSpare(req, res) {
           substitute_name = ?,
           local_terminology = ?,
           critical_spare = ?,
+          part_of = ?,
           sub_component = ?,
           price_unit = ?,
           supplier = ?
@@ -949,6 +958,7 @@ async function updateSpare(req, res) {
         substitute_name || null,
         local_terminology || null,
         critical_spare,
+        isPartOfD787,
         sub_component || null,
         price_unit || null,
         supplier || null,
