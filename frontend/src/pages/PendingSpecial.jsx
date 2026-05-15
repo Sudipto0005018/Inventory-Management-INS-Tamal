@@ -804,7 +804,8 @@ const PendingSpecial = () => {
       width: "max-w-[50px]",
     },
     {
-      key: "modified_obs",
+      // key: "modified_obs",
+      key: "obs_authorised",
       header: (
         <span>
           Modified OBS <br /> Authorised

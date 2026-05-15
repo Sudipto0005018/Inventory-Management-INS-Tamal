@@ -5132,13 +5132,20 @@ const Spares = ({ type = "" }) => {
                       ? Number(originalObsAuthorised) +
                         Number(obsDialog.quantity)
                       : Number(originalObsAuthorised) -
-                        Number(obsDialog.quantity);
+                      Number(obsDialog.quantity);
+                  
+                  const incDecQty =
+                    obsDialog.action === "increase"
+                      ? Number(obsDialog.quantity)
+                      : -Number(obsDialog.quantity);
+
 
                   const payload = {
                     spare_id: selectedRow.id,
 
                     obs_authorised: finalValue,
-                    obs_increase_qty: obsDialog.quantity,
+                    // obs_increase_qty: obsDialog.quantity,
+                    obs_increase_qty: incDecQty,
                     quoteAuthority: obsDialog.quoteAuthority,
                     internal_demand_no:
                       obsDialog.demandGenerated === "yes"

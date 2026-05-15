@@ -135,8 +135,8 @@ async function moveToPendingIssue(ptsDemandId) {
     `INSERT INTO pending_issue (
       spare_id, tool_id, demand_no, demand_date, demand_quantity,
       requisition_no, requisition_date, mo_no, mo_date,
-      created_by, created_at, status, transaction_id, source_type, is_pts, pts_demand_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'pts', 1, ?)`,
+      created_by, created_at, status, transaction_id, source_type, is_pts, pts_demand_id, remarks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'pts', 1, ?, 'PTS')`,
     [
       pts.spare_id || null,
       pts.tool_id || null,
@@ -532,8 +532,8 @@ async function updatePTSDemand(req, res) {
           `INSERT INTO pending_issue (
             spare_id, tool_id, demand_no, demand_date, demand_quantity,
             requisition_no, requisition_date, mo_no, mo_date,
-            created_by, created_at, status, transaction_id, source_type, is_pts, pts_demand_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'pts', 1, ?)`,
+            created_by, created_at, status, transaction_id, source_type, is_pts, pts_demand_id, remarks
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'pts', 1, ?, 'PTS')`,
           [
             pts.spare_id || null,
             pts.tool_id || null,
