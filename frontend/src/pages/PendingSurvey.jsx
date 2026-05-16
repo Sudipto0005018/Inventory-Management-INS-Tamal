@@ -2072,8 +2072,54 @@ const PendingSurvey = () => {
     fetchdata(currentPage, actualSearch, selectedValues);
   }, [currentPage]);
 
+  // useEffect(() => {
+  //   const t = fetchedData.items.map((row) => {
+  //     return {
+  //       ...row,
+  //       survey_quantity: row.survey_quantity || "0",
+  //       issue_date: getFormatedDate(row.issue_date),
+  //       withdrawl_date_str: row.withdrawl_date
+  //         ? getFormatedDate(row.withdrawl_date)
+  //         : "---",
+  //       created_at: getTimeDate(row.created_at),
+  //       status:
+  //         row.status?.toLowerCase() == "pending" ? (
+  //           <Chip text="Pending" variant="info" />
+  //         ) : (
+  //           <Chip text="Completed" variant="success" />
+  //         ),
+  //       processed: (
+  //         <Button
+  //           size="icon"
+  //           disabled={row.issue_to?.toLowerCase() === "special_demand"}
+  //           className={`bg-white text-black shadow-md border hover:bg-gray-100
+  //             ${row.issue_to?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
+  //           onClick={() => handleProceedClick(row)}
+  //         >
+  //           <FaChevronRight />
+  //         </Button>
+  //       ),
+  //       rollback:
+  //         user.role === "officer" ? (
+  //           <Button
+  //             variant="destructive"
+  //             className="bg-red-600 text-white hover:bg-red-700"
+  //             size="sm"
+  //             onClick={() => handleRollback(row.id, row.description)}
+  //           >
+  //             Rollback
+  //           </Button>
+  //         ) : null,
+  //     };
+  //   });
+  //   setTableData(t);
+  // }, [fetchedData]);
+
   useEffect(() => {
     const t = fetchedData.items.map((row) => {
+      // Check if this is a PTS item (completed status with PTS remarks)
+      const isPTS = row.status === "completed" && row.remarks_survey === "PTS";
+
       return {
         ...row,
         survey_quantity: row.survey_quantity || "0",
@@ -2082,25 +2128,32 @@ const PendingSurvey = () => {
           ? getFormatedDate(row.withdrawl_date)
           : "---",
         created_at: getTimeDate(row.created_at),
-        status:
-          row.status?.toLowerCase() == "pending" ? (
-            <Chip text="Pending" variant="info" />
-          ) : (
-            <Chip text="Completed" variant="success" />
-          ),
+        status: isPTS ? (
+          <Chip text="PTS" variant="info" />
+        ) : row.status?.toLowerCase() == "pending" ? (
+          <Chip text="Pending" variant="info" />
+        ) : (
+          <Chip text="Completed" variant="success" />
+        ),
         processed: (
           <Button
             size="icon"
-            disabled={row.issue_to?.toLowerCase() === "special_demand"}
+            disabled={
+              row.issue_to?.toLowerCase() === "special_demand" || isPTS // Disable for PTS items
+            }
             className={`bg-white text-black shadow-md border hover:bg-gray-100
-              ${row.issue_to?.toLowerCase() === "special_demand" ? "opacity-40 cursor-not-allowed" : ""}`}
+            ${
+              row.issue_to?.toLowerCase() === "special_demand" || isPTS
+                ? "opacity-40 cursor-not-allowed"
+                : ""
+            }`}
             onClick={() => handleProceedClick(row)}
           >
             <FaChevronRight />
           </Button>
         ),
         rollback:
-          user.role === "officer" ? (
+          user.role === "officer" && !isPTS ? ( // Don't allow rollback for PTS items
             <Button
               variant="destructive"
               className="bg-red-600 text-white hover:bg-red-700"
@@ -2114,7 +2167,6 @@ const PendingSurvey = () => {
     });
     setTableData(t);
   }, [fetchedData]);
-
   if (isLoading.table) {
     return <Spinner />;
   }

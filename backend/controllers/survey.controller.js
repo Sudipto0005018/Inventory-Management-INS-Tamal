@@ -672,6 +672,7 @@ async function createSurvey(req, res) {
 //   }
 // }
 
+
 async function getSurveys(req, res) {
   const page = parseInt(req.query?.page) || 1;
   const limit = parseInt(req.query?.limit) || 10;
@@ -696,8 +697,18 @@ async function getSurveys(req, res) {
   const connection = await pool.getConnection();
 
   try {
-    let whereConditions = ["s.status = ?"];
-    let queryParams = [status];
+    let whereConditions = [];
+    let queryParams = [];
+
+    // Modified: Show both pending and PTS completed items
+    if (status === "pending") {
+      whereConditions.push(
+        "(s.status = 'pending' OR (s.status = 'completed' AND s.remarks_survey = 'PTS'))",
+      );
+    } else {
+      whereConditions.push("s.status = ?");
+      queryParams.push(status);
+    }
 
     if (search) {
       let searchConditions = [];
@@ -807,6 +818,143 @@ async function getSurveys(req, res) {
     connection.release();
   }
 }
+
+//correct api
+// async function getSurveys(req, res) {
+//   const page = parseInt(req.query?.page) || 1;
+//   const limit = parseInt(req.query?.limit) || 10;
+//   const offset = (page - 1) * limit;
+//   const search = req.query.search ? req.query.search.trim() : "";
+//   const rawCols = req.query.cols ? req.query.cols.split(",") : [];
+//   const status = req.query.status || "pending";
+
+//   const columnMap = {
+//     description: ["sp.description", "t.description"],
+//     category: ["sp.category", "t.category"],
+//     denos: ["sp.denos", "t.denos"],
+//     withdrawl_date: ["s.withdrawl_date"],
+//     indian_pattern: ["sp.indian_pattern", "t.indian_pattern"],
+//     service_no: ["s.service_no"],
+//     issue_to: ["s.issue_to"],
+//     remarks_survey: ["s.remarks_survey"],
+//     withdrawl_qty: ["s.withdrawl_qty"],
+//     survey_quantity: ["s.survey_quantity"],
+//   };
+
+//   const connection = await pool.getConnection();
+
+//   try {
+//     let whereConditions = ["s.status = ?"];
+//     let queryParams = [status];
+
+//     if (search) {
+//       let searchConditions = [];
+
+//       // Normalize selected columns
+//       const validCols = rawCols
+//         .map((c) => c.trim())
+//         .filter((col) => columnMap[col]);
+
+//       // Split by comma OR space
+//       const searchWords = search
+//         .split(/[,;\s]+/)
+//         .map((word) => word.trim())
+//         .filter(Boolean);
+
+//       if (validCols.length > 0) {
+//         // When specific columns are selected
+//         for (const word of searchWords) {
+//           let wordConditions = [];
+
+//           for (const colName of validCols) {
+//             const dbColumns = columnMap[colName];
+
+//             for (const dbCol of dbColumns) {
+//               wordConditions.push(`${dbCol} LIKE ?`);
+//               queryParams.push(`%${word}%`);
+//             }
+//           }
+
+//           // Each word must match in any selected column
+//           searchConditions.push(`(${wordConditions.join(" OR ")})`);
+//         }
+
+//         // Combine words using AND
+//         whereConditions.push(`(${searchConditions.join(" AND ")})`);
+//       } else {
+//         // Default fallback search (multi-word enabled)
+//         for (const word of searchWords) {
+//           searchConditions.push(`
+//         (
+//           sp.description LIKE ?
+//           OR t.description LIKE ?
+//         )
+//       `);
+
+//           queryParams.push(`%${word}%`, `%${word}%`);
+//         }
+
+//         whereConditions.push(`(${searchConditions.join(" AND ")})`);
+//       }
+//     }
+
+//     const finalWhereClause = "WHERE " + whereConditions.join(" AND ");
+
+//     const [totalCountRows] = await connection.query(
+//       `SELECT COUNT(*) as count 
+//              FROM survey s 
+//              LEFT JOIN spares sp ON s.spare_id = sp.id 
+//              LEFT JOIN tools t ON s.tool_id = t.id 
+//              ${finalWhereClause}`,
+//       queryParams,
+//     );
+
+//     const totalDemand = totalCountRows[0].count;
+
+//     if (totalDemand === 0) {
+//       return new ApiResponse(
+//         200,
+//         { items: [], totalItems: 0, totalPages: 1, currentPage: page },
+//         search ? "No matching demand found" : "No demand found",
+//       ).send(res);
+//     }
+
+//     const [rows] = await connection.query(
+//       `SELECT 
+//                 s.*,
+//                 pi.source_type,
+//                 COALESCE(sp.description, t.description) as description,
+//                 COALESCE(sp.equipment_system, t.equipment_system) as equipment_system,
+//                 COALESCE(sp.category, t.category) as category,
+//                 COALESCE(sp.denos, t.denos) as denos,
+//                 COALESCE(sp.indian_pattern, t.indian_pattern) as indian_pattern
+//              FROM survey s
+//              LEFT JOIN spares sp ON s.spare_id = sp.id
+//              LEFT JOIN tools t ON s.tool_id = t.id
+//              LEFT JOIN pending_issue pi ON s.transaction_id = pi.transaction_id
+//              ${finalWhereClause} 
+//              ORDER BY s.id DESC
+//              LIMIT ? OFFSET ?`,
+//       [...queryParams, limit, offset],
+//     );
+
+//     return new ApiResponse(
+//       200,
+//       {
+//         items: rows,
+//         totalItems: totalDemand,
+//         totalPages: Math.ceil(totalDemand / limit),
+//         currentPage: page,
+//       },
+//       "Survey retrieved successfully",
+//     ).send(res);
+//   } catch (error) {
+//     console.log("Error while getting survey: ", error);
+//     return new ApiErrorResponse(500, {}, "Internal server error").send(res);
+//   } finally {
+//     connection.release();
+//   }
+// }
 
 async function getLogSurveys(req, res) {
   const page = parseInt(req.query?.page) || 1;

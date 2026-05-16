@@ -182,6 +182,50 @@ const PendingPTS = () => {
     fetchData(1);
   };
 
+  const formatDateLocal = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // const handleUpdatePTS = async () => {
+  //   const payload = {
+  //     id: selectedRow.id,
+  //   };
+
+  //   if (inputs.internal_demand_no) {
+  //     payload.internal_demand_no = inputs.internal_demand_no;
+  //     payload.internal_demand_date = inputs.internal_demand_date;
+  //   }
+  //   if (inputs.requisition_no) {
+  //     payload.requisition_no = inputs.requisition_no;
+  //     payload.requisition_date = inputs.requisition_date;
+  //   }
+  //   if (inputs.mo_demand_no) {
+  //     payload.mo_demand_no = inputs.mo_demand_no;
+  //     payload.mo_demand_date = inputs.mo_demand_date;
+  //   }
+
+  //   try {
+  //     setIsLoading((prev) => ({ ...prev, update: true }));
+  //     const response = await apiService.put("/pts/pts-demand", payload);
+  //     if (response.success) {
+  //       toaster("success", response.message);
+  //       setIsOpen((prev) => ({ ...prev, amend: false }));
+  //       fetchData();
+  //     } else {
+  //       toaster("error", response.message);
+  //     }
+  //   } catch (error) {
+  //     toaster("error", error.response?.data?.message || "Update failed");
+  //   } finally {
+  //     setIsLoading((prev) => ({ ...prev, update: false }));
+  //   }
+  // };
+
   const handleUpdatePTS = async () => {
     const payload = {
       id: selectedRow.id,
@@ -189,15 +233,21 @@ const PendingPTS = () => {
 
     if (inputs.internal_demand_no) {
       payload.internal_demand_no = inputs.internal_demand_no;
-      payload.internal_demand_date = inputs.internal_demand_date;
+      payload.internal_demand_date = inputs.internal_demand_date
+        ? formatDateLocal(inputs.internal_demand_date)
+        : null;
     }
     if (inputs.requisition_no) {
       payload.requisition_no = inputs.requisition_no;
-      payload.requisition_date = inputs.requisition_date;
+      payload.requisition_date = inputs.requisition_date
+        ? formatDateLocal(inputs.requisition_date)
+        : null;
     }
     if (inputs.mo_demand_no) {
       payload.mo_demand_no = inputs.mo_demand_no;
-      payload.mo_demand_date = inputs.mo_demand_date;
+      payload.mo_demand_date = inputs.mo_demand_date
+        ? formatDateLocal(inputs.mo_demand_date)
+        : null;
     }
 
     try {

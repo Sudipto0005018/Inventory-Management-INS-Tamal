@@ -2,19 +2,130 @@ const pool = require("../utils/dbConnect");
 const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 
-const formatDateForMySQL = (date) => {
+// const formatDateForMySQL = (date) => {
+//   if (!date) return null;
+//   if (date instanceof Date) {
+//     return date.toISOString().split("T")[0];
+//   }
+//   if (typeof date === "string") {
+//     const parsedDate = new Date(date);
+//     if (!isNaN(parsedDate.getTime())) {
+//       return parsedDate.toISOString().split("T")[0];
+//     }
+//   }
+//   return null;
+// };
+
+function formatDateForMySQL(date) {
   if (!date) return null;
-  if (date instanceof Date) {
-    return date.toISOString().split("T")[0];
-  }
-  if (typeof date === "string") {
-    const parsedDate = new Date(date);
-    if (!isNaN(parsedDate.getTime())) {
-      return parsedDate.toISOString().split("T")[0];
-    }
-  }
-  return null;
-};
+  
+  // If date is a string, convert it to Date object first
+  const d = typeof date === 'string' ? new Date(date) : date;
+  
+  // Check if valid date
+  if (isNaN(d.getTime())) return null;
+  
+  // Format as YYYY-MM-DD using local date components
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+// OLD LOGIC Create-STOREDEM-OPDEM-Demand
+// async function createStoredemDemand(req, res) {
+//   const { id: userId, name } = req.user;
+
+//   try {
+//     const {
+//       spare_id,
+//       tool_id,
+//       quantity,
+//       demand_type,
+//       mo_demand_no,
+//       mo_demand_date,
+//     } = req.body;
+
+//     // Validate demand type
+//     if (!demand_type || !["STOREDEM", "OPDEM"].includes(demand_type)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Valid demand type (STOREDEM or OPDEM) is required",
+//       });
+//     }
+
+//     // Validate category (should be P, R, or C)
+//     let category = null;
+//     if (spare_id) {
+//       const [spare] = await pool.query(
+//         "SELECT category FROM spares WHERE id = ?",
+//         [spare_id],
+//       );
+//       category = spare[0]?.category;
+//     } else if (tool_id) {
+//       const [tool] = await pool.query(
+//         "SELECT category FROM tools WHERE id = ?",
+//         [tool_id],
+//       );
+//       category = tool[0]?.category;
+//     }
+
+//     if (!category || !["P", "R", "C"].includes(category)) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Only P, R, and C category spares/tools can be enrolled under STOREDEM/OPDEM",
+//       });
+//     }
+
+//     if (!quantity || quantity <= 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Valid quantity is required",
+//       });
+//     }
+
+//     const transaction_id = `${demand_type}-${Date.now()}`;
+
+//     const query = `
+//       INSERT INTO storedem_special_demand (
+//         spare_id, tool_id, quantity, demand_type,
+//         mo_demand_no, mo_demand_date,
+//         created_by, created_by_name, transaction_id, status
+//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+//     `;
+
+//     const [result] = await pool.query(query, [
+//       spare_id || null,
+//       tool_id || null,
+//       quantity,
+//       demand_type,
+//       mo_demand_no || null,
+//       mo_demand_date ? formatDateForMySQL(mo_demand_date) : null,
+//       userId,
+//       name,
+//       transaction_id,
+//     ]);
+
+//     // If MO Demand No is filled, move to pending_issue immediately
+//     if (mo_demand_no) {
+//       await moveToPendingIssue(result.insertId);
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: `${demand_type} Demand added successfully`,
+//       data: { id: result.insertId },
+//     });
+//   } catch (error) {
+//     console.error("CREATE STOREDEM DEMAND ERROR:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error",
+//     });
+//   }
+// }
 
 // Create STOREDEM/OPDEM Demand
 async function createStoredemDemand(req, res) {
@@ -91,10 +202,9 @@ async function createStoredemDemand(req, res) {
       transaction_id,
     ]);
 
-    // If MO Demand No is filled, move to pending_issue immediately
-    if (mo_demand_no) {
-      await moveToPendingIssue(result.insertId);
-    }
+    // REMOVED: Do NOT move to pending_issue here anymore
+    // The move to pending_issue should only happen in updateStoredemDemand
+    // when MO Demand Details are added
 
     res.status(201).json({
       success: true,
@@ -110,7 +220,42 @@ async function createStoredemDemand(req, res) {
   }
 }
 
-// Move to Pending Issue when MO Demand No is added
+// OLD LOGIC MOVE-TO-PENDING-ISSUE
+// async function moveToPendingIssue(storedemDemandId) {
+//   const [demand] = await pool.query(
+//     `SELECT * FROM storedem_special_demand WHERE id = ?`,
+//     [storedemDemandId],
+//   );
+
+//   if (!demand[0]) return;
+
+//   const sd = demand[0];
+
+//   await pool.query(
+//     `INSERT INTO pending_issue (
+//       spare_id, tool_id, demand_no, demand_date, demand_quantity,
+//       requisition_no, requisition_date, mo_no, mo_date,
+//       created_by, created_at, status, transaction_id, source_type,
+//       storedem_demand_id, demand_type
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?)`,
+//     [
+//       sd.spare_id || null,
+//       sd.tool_id || null,
+//       sd.transaction_id,
+//       sd.created_at,
+//       sd.quantity,
+//       null,
+//       null,
+//       sd.mo_demand_no,
+//       sd.mo_demand_date,
+//       sd.created_by,
+//       sd.transaction_id,
+//       sd.id,
+//       sd.demand_type,
+//     ],
+//   );
+// }
+
 async function moveToPendingIssue(storedemDemandId) {
   const [demand] = await pool.query(
     `SELECT * FROM storedem_special_demand WHERE id = ?`,
@@ -121,27 +266,36 @@ async function moveToPendingIssue(storedemDemandId) {
 
   const sd = demand[0];
 
+  // Determine the remarks value based on demand_type
+  const remarksValue =
+    sd.demand_type === "STOREDEM"
+      ? "STOREDEM"
+      : sd.demand_type === "OPDEM"
+        ? "OPDEM"
+        : sd.demand_type || null;
+
   await pool.query(
     `INSERT INTO pending_issue (
       spare_id, tool_id, demand_no, demand_date, demand_quantity,
       requisition_no, requisition_date, mo_no, mo_date,
       created_by, created_at, status, transaction_id, source_type, 
-      storedem_demand_id, demand_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?)`,
+      storedem_demand_id, demand_type, remarks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?, ?)`,
     [
       sd.spare_id || null,
       sd.tool_id || null,
-      sd.transaction_id,
-      sd.created_at,
+      sd.mo_demand_no, // Changed: Store mo_demand_no as demand_no instead of transaction_id
+      sd.mo_demand_date, // Changed: Use mo_demand_date as demand_date
       sd.quantity,
       null,
       null,
-      sd.mo_demand_no,
-      sd.mo_demand_date,
+      sd.mo_demand_no, // mo_no remains the same
+      sd.mo_demand_date, // mo_date remains the same
       sd.created_by,
-      sd.transaction_id,
+      sd.transaction_id, // transaction_id still stored separately
       sd.id,
       sd.demand_type,
+      remarksValue,
     ],
   );
 }
@@ -320,7 +474,104 @@ async function getStoredemDemandList(req, res) {
     ),
   );
 }
+
 // Update STOREDEM/OPDEM Demand (add MO Demand No and move to pending_issue)
+// async function updateStoredemDemand(req, res) {
+//   const { id, mo_demand_no, mo_demand_date } = req.body;
+//   const { id: userId } = req.user;
+
+//   if (!id) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "STOREDEM/OPDEM Demand item ID is required for an update.",
+//     });
+//   }
+
+//   if (!mo_demand_no) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "MO Demand No is required",
+//     });
+//   }
+
+//   const connection = await pool.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     // Get the demand details first
+//     const [storedemDemand] = await connection.query(
+//       "SELECT * FROM storedem_special_demand WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!storedemDemand[0]) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Demand not found",
+//       });
+//     }
+
+//     const sd = storedemDemand[0];
+
+//     // Update the demand with MO Demand No and change status to 'issued' (or 'completed')
+//     const updateQuery = `
+//       UPDATE storedem_special_demand SET
+//         mo_demand_no = ?,
+//         mo_demand_date = ?,
+//         status = 'issued'
+//       WHERE id = ?
+//     `;
+
+//     await connection.query(updateQuery, [
+//       mo_demand_no,
+//       formatDateForMySQL(mo_demand_date),
+//       id,
+//     ]);
+
+//     // Move to pending_issue
+//     await connection.query(
+//       `INSERT INTO pending_issue (
+//         spare_id, tool_id, demand_no, demand_date, demand_quantity,
+//         requisition_no, requisition_date, mo_no, mo_date,
+//         created_by, created_at, status, transaction_id, source_type,
+//         storedem_demand_id, demand_type
+//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?)`,
+//       [
+//         sd.spare_id || null,
+//         sd.tool_id || null,
+//         sd.transaction_id,
+//         sd.created_at,
+//         sd.quantity,
+//         null,
+//         null,
+//         mo_demand_no,
+//         formatDateForMySQL(mo_demand_date),
+//         userId,
+//         sd.transaction_id,
+//         id,
+//         sd.demand_type,
+//       ],
+//     );
+
+//     await connection.commit();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Demand moved to Pending Issue successfully",
+//     });
+//   } catch (error) {
+//     await connection.rollback();
+//     console.error("UPDATE STOREDEM DEMAND ERROR:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error",
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// }
+
 async function updateStoredemDemand(req, res) {
   const { id, mo_demand_no, mo_demand_date } = req.body;
   const { id: userId } = req.user;
@@ -359,7 +610,15 @@ async function updateStoredemDemand(req, res) {
 
     const sd = storedemDemand[0];
 
-    // Update the demand with MO Demand No and change status to 'issued' (or 'completed')
+    // Determine the remarks value based on demand_type
+    const remarksValue =
+      sd.demand_type === "STOREDEM"
+        ? "STOREDEM"
+        : sd.demand_type === "OPDEM"
+          ? "OPDEM"
+          : sd.demand_type || null;
+
+    // Update the demand with MO Demand No and change status to 'issued'
     const updateQuery = `
       UPDATE storedem_special_demand SET
         mo_demand_no = ?,
@@ -380,22 +639,23 @@ async function updateStoredemDemand(req, res) {
         spare_id, tool_id, demand_no, demand_date, demand_quantity,
         requisition_no, requisition_date, mo_no, mo_date,
         created_by, created_at, status, transaction_id, source_type, 
-        storedem_demand_id, demand_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?)`,
+        storedem_demand_id, demand_type, remarks
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending', ?, 'storedem', ?, ?, ?)`,
       [
         sd.spare_id || null,
         sd.tool_id || null,
-        sd.transaction_id,
-        sd.created_at,
+        mo_demand_no, // Changed: Store the new mo_demand_no as demand_no
+        formatDateForMySQL(mo_demand_date), // Changed: Use mo_demand_date as demand_date
         sd.quantity,
         null,
         null,
-        mo_demand_no,
-        formatDateForMySQL(mo_demand_date),
+        mo_demand_no, // mo_no also gets the same mo_demand_no
+        formatDateForMySQL(mo_demand_date), // mo_date gets the same mo_demand_date
         userId,
-        sd.transaction_id,
+        sd.transaction_id, // transaction_id still stored separately
         id,
         sd.demand_type,
+        remarksValue,
       ],
     );
 

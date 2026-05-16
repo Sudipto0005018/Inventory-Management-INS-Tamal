@@ -682,6 +682,14 @@ const Tools = ({ type = "" }) => {
         return;
       }
 
+      if (Number(inputs.obs_maintained) < Number(inputs.obs_authorised)) {
+        toaster(
+          "error",
+          `Maintained Qty (${inputs.obs_maintained}) cannot be less than Authorised Qty (${inputs.obs_authorised})`,
+        );
+        return;
+      }
+
       const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
       const hasBoxes = boxes.length > 0;
       let s = 0,
@@ -976,6 +984,16 @@ const Tools = ({ type = "" }) => {
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
 
+      if (
+        Number(selectedRow.obs_maintained) < Number(selectedRow.obs_authorised)
+      ) {
+        toaster(
+          "error",
+          `Maintained Qty (${selectedRow.obs_maintained}) cannot be less than Authorised Qty (${selectedRow.obs_authorised})`,
+        );
+        return;
+      }
+
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
         return;
@@ -1169,19 +1187,21 @@ const Tools = ({ type = "" }) => {
       );
 
       //new payload
-      const specialPayload = {
-        tool_id: selectedRow.id,
-        obs_authorised: Number(selectedRow.obs_authorised) || 0,
-        obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
-        obs_maintained: Number(selectedRow.obs_maintained) || 0,
-        obs_held: Number(selectedRow.obs_held) || 0,
-        maintained_qty: Number(selectedRow.obs_maintained) || 0,
-        qty_held: Number(selectedRow.obs_held) || 0,
-        box_no: JSON.parse(selectedRow.box_no || "[]"),
-      };
+      // const specialPayload = {
+      //   tool_id: selectedRow.id,
+      //   obs_authorised: Number(selectedRow.obs_authorised) || 0,
+      //   obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
+      //   obs_maintained: Number(selectedRow.obs_maintained) || 0,
+      //   obs_held: Number(selectedRow.obs_held) || 0,
+      //   maintained_qty: Number(selectedRow.obs_maintained) || 0,
+      //   qty_held: Number(selectedRow.obs_held) || 0,
+      //   box_no: JSON.parse(selectedRow.box_no || "[]"),
+      // };
 
-      await apiService.post("/specialDemand/special", specialPayload);
+      // await apiService.post("/specialDemand/special", specialPayload);
+
       // await apiService.post("/specialDemand/special", obsAuthChange);
+
       if (response.success) {
         toaster("success", "Tool updated successfully");
         resetImageState(); // clear image payload
@@ -2007,7 +2027,7 @@ const Tools = ({ type = "" }) => {
 
                 {/* Row 3 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
+                  {/* <div>
                     <Label className="ms-2 mb-1">Item Code</Label>
                     <Input
                       type="text"
@@ -2015,8 +2035,23 @@ const Tools = ({ type = "" }) => {
                       value={inputs.item_code}
                       onChange={handleChange}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label className="ms-2 mb-1">Item Code</Label>
+                    <DynamicInputList
+                      id="item_code"
+                      data={inputs.item_code}
+                      placeholder="Item Code"
+                      onChange={(values) => {
+                        updateDynamicInputs(values, "item_code");
+                      }}
+                      editable={editableFields.item_code}
+                      onEdit={() => enableEdit("item_code")}
+                      onBlur={() => disableEdit("item_code")}
+                    />
                   </div>
-                  {/* IN Part No */}
+
                   <div>
                     <Label className="ms-2 mb-1">
                       <i>IN</i> Part No.
@@ -2553,7 +2588,7 @@ const Tools = ({ type = "" }) => {
                     </select> */}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <Label>
                       Item Code<span className="text-red-500">*</span>
                     </Label>
@@ -2565,6 +2600,39 @@ const Tools = ({ type = "" }) => {
                       onEdit={() => enableEdit("item_code")}
                       onBlur={() => disableEdit("item_code")}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label>
+                      Item Code<span className="text-red-500">*</span>
+                    </Label>
+                    {!editableFields.item_code ? (
+                      <InputWithPencil
+                        name="item_code"
+                        value={normalizeToArray(selectedRow.item_code).join(
+                          " , ",
+                        )}
+                        editable={false}
+                        onEdit={() => enableEdit("item_code")}
+                      />
+                    ) : (
+                      <div
+                        onBlur={() => disableEdit("item_code")}
+                        tabIndex={0}
+                        className="outline-none"
+                      >
+                        <DynamicInputList
+                          data={normalizeToArray(selectedRow.item_code)}
+                          placeholder="Item Code"
+                          onChange={(values) =>
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              item_code: values,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -2593,7 +2661,7 @@ const Tools = ({ type = "" }) => {
                         name="substitute_name"
                         value={normalizeToArray(
                           selectedRow.substitute_name,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("substitute_name")}
                       />
@@ -2627,7 +2695,7 @@ const Tools = ({ type = "" }) => {
                         name="local_terminology"
                         value={normalizeToArray(
                           selectedRow.local_terminology,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("local_terminology")}
                       />
@@ -4795,6 +4863,38 @@ const Tools = ({ type = "" }) => {
                       : Number(originalObsAuthorised) -
                         Number(obsDialog.quantity);
 
+                  const incDecQty =
+                    obsDialog.action === "increase"
+                      ? Number(obsDialog.quantity)
+                      : -Number(obsDialog.quantity);
+
+                  const payload = {
+                    tool_id: selectedRow.id,
+
+                    obs_authorised: finalValue,
+                    obs_increase_qty: incDecQty,
+                    // obs_increase_qty: obsDialog.quantity,
+                    quoteAuthority: obsDialog.quoteAuthority,
+                    internal_demand_no:
+                      obsDialog.demandGenerated === "yes"
+                        ? obsDialog.internalDemandNo?.trim()
+                        : null,
+                    internal_demand_date:
+                      obsDialog.demandGenerated === "yes"
+                        ? getISTTimestamp(obsDialog.internalDemandDate)
+                        : null,
+                    requisition_no: obsDialog.requisitionNo?.trim() || null,
+                    requisition_date: obsDialog.requisitionDate
+                      ? getISTTimestamp(obsDialog.requisitionDate)
+                      : null,
+                    mo_demand_no: obsDialog.moDemandNo?.trim() || null,
+                    mo_demand_date: obsDialog.moDemandDate
+                      ? getISTTimestamp(obsDialog.moDemandDate)
+                      : null,
+                  };
+
+                  apiService.post("/specialDemand/special", payload);
+
                   console.log("Logs Start");
 
                   console.log("originalObsAuthorised:", originalObsAuthorised);
@@ -4862,7 +4962,7 @@ const Tools = ({ type = "" }) => {
                     parsedBox: updatedBoxes,
                     finalValue,
                   });
-                  return; // 🚨 Stop execution here
+                  return;
                 }}
               >
                 Submit

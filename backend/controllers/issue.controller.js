@@ -3,6 +3,136 @@ const ApiErrorResponse = require("../utils/ApiErrorResponse");
 const ApiResponse = require("../utils/ApiResponse");
 const { getSQLTimestamp } = require("../utils/helperFunctions");
 
+//correct api
+// async function updatePendingIssue(req, res) {
+//   const { id } = req.params;
+//   const {
+//     nac_no,
+//     nac_date,
+//     validity,
+//     nac_qty,
+//     rate_unit,
+//     stocked_in_qty,
+//     mo_no,
+//     mo_date,
+//     qty_received,
+//   } = req.body;
+//   const connection = await pool.getConnection();
+
+//   const qty = Number(nac_qty || stocked_in_qty || 0);
+//   if (qty <= 0) {
+//     return new ApiErrorResponse(400, {}, "invalid qty").send(res);
+//   }
+//   try {
+//     await connection.beginTransaction();
+//     /* =====================================================
+//        GET ISSUE
+//     =====================================================*/
+//     const [rows] = await connection.query(
+//       `SELECT * FROM pending_issue WHERE id = ?`,
+//       [id],
+//     );
+//     if (!rows.length) {
+//       await connection.rollback();
+//       return new ApiResponse(404, {}, "Pending issue not found").send(res);
+//     }
+//     const issue = rows[0];
+//     const stocked_nac_qty = issue.stocked_nac_qty || 0;
+//     let status = "pending";
+//     if (qty + stocked_nac_qty > issue.demand_quantity) {
+//       return new ApiErrorResponse(400, {}, "Wrong qty").send(res);
+//     } else if (qty + stocked_nac_qty == issue.demand_quantity) {
+//       status = "complete";
+//     } else {
+//       status = "partial";
+//     }
+//     await connection.query(
+//       `
+//       UPDATE pending_issue
+//       SET status = ?, stocked_nac_qty = ?
+//       WHERE id = ?
+//     `,
+//       [status, qty + stocked_nac_qty, id],
+//     );
+//     if (nac_no && nac_date && validity && rate_unit) {
+//       /* =====================================================
+//        INSERT PROCUREMENT (NAC)
+//     =====================================================*/
+//       await connection.query(
+//         `
+//         INSERT INTO procurement (
+//           spare_id, tool_id, box_no,
+//           nac_qty,
+//           nac_no, nac_date, validity, rate_unit, issue_date,
+//           qty_received,
+//           created_by, approved_by, approved_at,
+//           status, issue_id, transaction_id
+//         )
+//         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending',?,?)
+//         `,
+//         [
+//           issue.spare_id,
+//           issue.tool_id,
+//           issue.box_no,
+//           qty,
+//           nac_no || null,
+//           nac_date || null,
+//           validity || null,
+//           rate_unit ? parseFloat(rate_unit).toFixed(2) : null,
+//           issue.demand_date,
+//           0,
+//           issue.created_by,
+//           issue.approved_by,
+//           issue.approved_at,
+//           id,
+//           issue.transaction_id
+//         ],
+//       );
+//     }
+//     /* =====================================================
+//        INSERT STOCK UPDATE (MO)
+//     =====================================================*/
+//     if (mo_no || mo_date) {
+//       await connection.query(
+//         `
+//         INSERT INTO stock_update (
+//           spare_id, tool_id, box_no,
+//           stocked_in_qty,
+//           mo_no, mo_date, issue_date,
+//           qty_received,
+//           created_by, approved_by, approved_at,
+//           status, issued_id, transaction_id
+//         )
+//         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'pending',?, ?)
+//         `,
+//         [
+//           issue.spare_id,
+//           issue.tool_id,
+//           issue.box_no,
+//           qty,
+//           mo_no || null,
+//           mo_date || null,
+//           issue.demand_date,
+//           0,
+//           issue.created_by,
+//           issue.approved_by,
+//           issue.approved_at,
+//           id,
+//           issue.transaction_id,
+//         ],
+//       );
+//     }
+//     await connection.commit();
+//     new ApiResponse(200, { status }, "Processed successfully").send(res);
+//   } catch (error) {
+//     await connection.rollback();
+//     console.error(error);
+//     new ApiErrorResponse(500, {}, error.message).send(res);
+//   } finally {
+//     connection.release();
+//   }
+// }
+
 async function updatePendingIssue(req, res) {
   const { id } = req.params;
   const {
@@ -53,11 +183,15 @@ async function updatePendingIssue(req, res) {
     `,
       [status, qty + stocked_nac_qty, id],
     );
+
+    let procurementId = null;
+    let stockUpdateId = null;
+
     if (nac_no && nac_date && validity && rate_unit) {
       /* =====================================================
        INSERT PROCUREMENT (NAC)
     =====================================================*/
-      await connection.query(
+      const [procurementResult] = await connection.query(
         `
         INSERT INTO procurement (
           spare_id, tool_id, box_no,
@@ -84,15 +218,17 @@ async function updatePendingIssue(req, res) {
           issue.approved_by,
           issue.approved_at,
           id,
-          issue.transaction_id 
+          issue.transaction_id,
         ],
       );
+      procurementId = procurementResult.insertId;
     }
+
     /* =====================================================
        INSERT STOCK UPDATE (MO)
     =====================================================*/
     if (mo_no || mo_date) {
-      await connection.query(
+      const [stockUpdateResult] = await connection.query(
         `
         INSERT INTO stock_update (
           spare_id, tool_id, box_no,
@@ -120,7 +256,57 @@ async function updatePendingIssue(req, res) {
           issue.transaction_id,
         ],
       );
+      stockUpdateId = stockUpdateResult.insertId;
     }
+
+    /* =====================================================
+       CREATE SURVEY ENTRY FOR PTS ROUTE
+    =====================================================*/
+    // Check if this is a PTS route (either procurement or stock update was created)
+    if (procurementId || stockUpdateId) {
+      // Generate a service number based on transaction_id and timestamp
+      const service_no = `PTS-${issue.transaction_id || Date.now()}`;
+
+      // Insert into survey table with remarks "PTS"
+      await connection.query(
+        `
+        INSERT INTO survey (
+          transaction_id,
+          spare_id,
+          tool_id,
+          issue_to,
+          withdrawl_qty,
+          survey_quantity,
+          withdrawl_date,
+          box_no,
+          service_no,
+          name,
+          status,
+          created_by,
+          remarks_survey,
+          demand_type,
+          storedem_demand_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, 'PTS', ?, ?)
+        `,
+        [
+          issue.transaction_id,
+          issue.spare_id,
+          issue.tool_id,
+          "---", // issue_to marked as PTS
+          qty, // withdrawl_qty
+          0, // survey_quantity
+          new Date(), // withdrawl_date (current date)
+          issue.box_no || "[]", // box_no as JSON
+          "---", // service_no - now providing a value
+          null, // name
+          issue.created_by, // created_by
+          issue.demand_type || null, // demand_type
+          issue.storedem_demand_id || null, // storedem_demand_id
+        ],
+      );
+    }
+
     await connection.commit();
     new ApiResponse(200, { status }, "Processed successfully").send(res);
   } catch (error) {

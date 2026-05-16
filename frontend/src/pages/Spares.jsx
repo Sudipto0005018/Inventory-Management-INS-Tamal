@@ -246,6 +246,10 @@ const Spares = ({ type = "" }) => {
     part_of: "no",
   });
 
+  //table and right panel filter states
+  const [filteredTableData, setFilteredTableData] = useState([]);
+  const [appliedFilters, setAppliedFilters] = useState({});
+
   const [isOpen, setIsOpen] = useState({
     addSpare: false,
     editSpare: false,
@@ -493,6 +497,38 @@ const Spares = ({ type = "" }) => {
       ...prev,
       [fieldName]: upperValues,
     }));
+  };
+
+  //right panel filters
+  // Function to apply filters to table data
+  const applyFiltersToData = (data, filters) => {
+    if (!filters || Object.keys(filters).length === 0) {
+      return data;
+    }
+
+    return data.filter((row) => {
+      for (const [columnKey, filterValues] of Object.entries(filters)) {
+        if (filterValues && filterValues.length > 0) {
+          let cellValue = row[columnKey];
+
+          // Handle special cases
+          if (cellValue && typeof cellValue === "object" && !cellValue.props) {
+            cellValue = JSON.stringify(cellValue);
+          }
+
+          if (
+            cellValue === undefined ||
+            cellValue === null ||
+            cellValue === "--"
+          ) {
+            if (!filterValues.includes("--")) return false;
+          } else if (!filterValues.includes(String(cellValue))) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
   };
 
   //Service NO.
@@ -1351,12 +1387,12 @@ const Spares = ({ type = "" }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!tableData?.length) return;
+      if (!filteredTableData?.length) return;
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedRowIndex((prev) =>
-          prev === null ? 0 : Math.min(prev + 1, tableData.length - 1),
+          prev === null ? 0 : Math.min(prev + 1, filteredTableData.length - 1),
         );
       }
 
@@ -1370,13 +1406,19 @@ const Spares = ({ type = "" }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tableData]);
+  }, [filteredTableData]);
 
+  // Update panelProduct when selectedRowIndex changes
   useEffect(() => {
-    if (selectedRowIndex !== null && tableData[selectedRowIndex]) {
-      setPanelProduct(tableData[selectedRowIndex]);
+    if (selectedRowIndex !== null && filteredTableData[selectedRowIndex]) {
+      setPanelProduct(filteredTableData[selectedRowIndex]);
+    } else if (selectedRowIndex === null && filteredTableData.length > 0) {
+      setSelectedRowIndex(0);
+      setPanelProduct(filteredTableData[0]);
+    } else if (filteredTableData.length === 0) {
+      setPanelProduct({ critical_spare: "no" });
     }
-  }, [selectedRowIndex, tableData]);
+  }, [selectedRowIndex, filteredTableData]);
 
   useEffect(() => {
     fetchdata();
@@ -1486,21 +1528,15 @@ const Spares = ({ type = "" }) => {
       )
         ?.map((box) => box.qtyHeld)
         ?.join(", "),
-      // Updated location logic: Show unique locations only
       location: (() => {
         const boxes = row.box_no ? JSON.parse(row.box_no) : [];
         if (!boxes.length) return "";
-
-        // Extract unique locations
         const uniqueLocations = [
           ...new Set(boxes.map((box) => box.location).filter(Boolean)),
         ];
-
-        // If all locations are the same (only 1 unique location), return just that location
         if (uniqueLocations.length === 1) {
           return uniqueLocations[0];
         }
-        // Otherwise return all unique locations joined by commas
         return uniqueLocations.join(", ");
       })(),
       edit: (
@@ -1538,17 +1574,74 @@ const Spares = ({ type = "" }) => {
       ),
     }));
 
-    console.log("Transformed table data:", t);
     setTableData(t);
-    // ✅ Always select first row if available
-    if (t.length > 0) {
-      setSelectedRowIndex(0);
-      setPanelProduct(t[0]); // also update right-side panel immediately
-    } else {
-      setSelectedRowIndex(null);
-      setPanelProduct({ critical_spare: "no" });
-    }
   }, [fetchedData]);
+
+  // Update filteredTableData whenever filters or tableData changes
+  useEffect(() => {
+    const applyFilters = () => {
+      if (!tableData || tableData.length === 0) {
+        setFilteredTableData([]);
+        setSelectedRowIndex(null);
+        setPanelProduct({ critical_spare: "no" });
+        return;
+      }
+
+      if (!tableFilters || Object.keys(tableFilters).length === 0) {
+        setFilteredTableData(tableData);
+        // Only reset selection if we have data and no selection
+        if (tableData.length > 0 && selectedRowIndex === null) {
+          setSelectedRowIndex(0);
+          setPanelProduct(tableData[0]);
+        } else if (selectedRowIndex !== null && tableData[selectedRowIndex]) {
+          setPanelProduct(tableData[selectedRowIndex]);
+        }
+        return;
+      }
+
+      // Apply filters
+      const filtered = tableData.filter((row) => {
+        for (const [columnKey, filterValues] of Object.entries(tableFilters)) {
+          if (filterValues && filterValues.length > 0) {
+            let cellValue = row[columnKey];
+
+            if (
+              cellValue &&
+              typeof cellValue === "object" &&
+              !cellValue.props
+            ) {
+              cellValue = JSON.stringify(cellValue);
+            }
+
+            if (
+              cellValue === undefined ||
+              cellValue === null ||
+              cellValue === "--"
+            ) {
+              if (!filterValues.includes("--")) return false;
+            } else if (!filterValues.includes(String(cellValue))) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+
+      console.log("Filtered data:", filtered);
+      setFilteredTableData(filtered);
+
+      // Reset selection when filters change
+      if (filtered.length > 0) {
+        setSelectedRowIndex(0);
+        setPanelProduct(filtered[0]);
+      } else {
+        setSelectedRowIndex(null);
+        setPanelProduct({ critical_spare: "no" });
+      }
+    };
+
+    applyFilters();
+  }, [tableFilters, tableData]);
 
   useEffect(() => {
     if (obsDialog.open) {
@@ -1772,11 +1865,15 @@ const Spares = ({ type = "" }) => {
               bodyClassName="spares-table"
               selectedRowIndex={selectedRowIndex}
               onClickRow={(row, index) => {
+                console.log("Row clicked - index:", index, "row:", row);
                 setSelectedRowIndex(index);
                 setPanelProduct(row);
               }}
               filters={tableFilters}
-              onFiltersChange={setTableFilters}
+              onFiltersChange={(newFilters) => {
+                console.log("Filters changed:", newFilters);
+                setTableFilters(newFilters);
+              }}
               filterableColumns={[
                 "equipment_system",
                 "boxNo",
@@ -5132,13 +5229,12 @@ const Spares = ({ type = "" }) => {
                       ? Number(originalObsAuthorised) +
                         Number(obsDialog.quantity)
                       : Number(originalObsAuthorised) -
-                      Number(obsDialog.quantity);
-                  
+                        Number(obsDialog.quantity);
+
                   const incDecQty =
                     obsDialog.action === "increase"
                       ? Number(obsDialog.quantity)
                       : -Number(obsDialog.quantity);
-
 
                   const payload = {
                     spare_id: selectedRow.id,

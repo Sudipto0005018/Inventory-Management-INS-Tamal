@@ -254,6 +254,7 @@ const Spares = ({ type = "" }) => {
   });
   const [selectedRow, setSelectedRow] = useState({
     critical_spare: "no",
+    part_of: "no",
   });
   const [image, setImage] = useState({
     preview: null,
@@ -629,6 +630,16 @@ const Spares = ({ type = "" }) => {
     }
   }, [location.state]);
 
+  // Sync part_of value from selectedRow to inputs when editing
+  useEffect(() => {
+    if (selectedRow && selectedRow.part_of !== undefined) {
+      setInputs((prev) => ({
+        ...prev,
+        part_of: selectedRow.part_of || "no",
+      }));
+    }
+  }, [selectedRow]);
+
   // const handleSearch = async (e) => {
   //   const searchTerm = inputs.search.trim();
   //   if (searchTerm === actualSearch) {
@@ -660,16 +671,15 @@ const Spares = ({ type = "" }) => {
       [name]: value.toUpperCase(),
     }));
   };
- const handleEditChange = (e) => {
-   const { name, value } = e.target;
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
 
-   setSelectedRow((prev) => ({
-     ...prev,
-     [name]: value.toUpperCase(),
-   }));
+    setSelectedRow((prev) => ({
+      ...prev,
+      [name]: value.toUpperCase(),
+    }));
   };
-  
-  
+
   // const fetchdata = async (searchValue = inputs.search, page = currentPage) => {
   //   try {
   //     const response = await apiService.get(
@@ -744,6 +754,15 @@ const Spares = ({ type = "" }) => {
         toaster("error", "OBS Held cannot be negative");
         return;
       }
+
+      if (Number(inputs.obs_maintained) < Number(inputs.obs_authorised)) {
+        toaster(
+          "error",
+          `Maintained Qty (${inputs.obs_maintained}) cannot be less than Authorised Qty (${inputs.obs_authorised})`,
+        );
+        return;
+      }
+
       const boxes = Array.isArray(boxNo) ? boxNo : JSON.parse(boxNo || "[]");
       const hasBoxes = boxes.length > 0;
       let s = 0,
@@ -863,6 +882,7 @@ const Spares = ({ type = "" }) => {
       formData.append("substitute_name", inputs.substitute_name || "");
       formData.append("local_terminology", inputs.local_terminology || "");
       formData.append("critical_spare", inputs.critical_spare || 0);
+      formData.append("part_of", inputs.part_of || "no");
       formData.append("supplier", inputs.supplier || "");
       formData.append(
         "oem_contact_person_id",
@@ -987,6 +1007,16 @@ const Spares = ({ type = "" }) => {
         s2 = 0;
 
       const boxes = JSON.parse(selectedRow.box_no || "[]");
+
+      if (
+        Number(selectedRow.obs_maintained) < Number(selectedRow.obs_authorised)
+      ) {
+        toaster(
+          "error",
+          `Maintained Qty (${selectedRow.obs_maintained}) cannot be less than Authorised Qty (${selectedRow.obs_authorised})`,
+        );
+        return;
+      }
 
       if (!boxes.length) {
         toaster("error", "Item Storage Distribution is required");
@@ -1149,6 +1179,7 @@ const Spares = ({ type = "" }) => {
       formData.append("substitute_name", selectedRow.substitute_name || "");
       formData.append("local_terminology", selectedRow.local_terminology || "");
       formData.append("critical_spare", selectedRow.critical_spare);
+      formData.append("part_of", selectedRow.part_of || "no");
       formData.append("supplier", selectedRow.supplier || "");
       // console.log(inputs);
 
@@ -1182,18 +1213,19 @@ const Spares = ({ type = "" }) => {
       );
 
       //new payload
-      const specialPayload = {
-        spare_id: selectedRow.id,
-        obs_authorised: Number(selectedRow.obs_authorised) || 0,
-        obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
-        obs_maintained: Number(selectedRow.obs_maintained) || 0,
-        obs_held: Number(selectedRow.obs_held) || 0,
-        maintained_qty: Number(selectedRow.obs_maintained) || 0,
-        qty_held: Number(selectedRow.obs_held) || 0,
-        box_no: JSON.parse(selectedRow.box_no || "[]"),
-      };
+      // const specialPayload = {
+      //   spare_id: selectedRow.id,
+      //   obs_authorised: Number(selectedRow.obs_authorised) || 0,
+      //   obs_increase_qty: Number(selectedRow.obs_authorised) || 0,
+      //   obs_maintained: Number(selectedRow.obs_maintained) || 0,
+      //   obs_held: Number(selectedRow.obs_held) || 0,
+      //   maintained_qty: Number(selectedRow.obs_maintained) || 0,
+      //   qty_held: Number(selectedRow.obs_held) || 0,
+      //   box_no: JSON.parse(selectedRow.box_no || "[]"),
+      // };
 
-      await apiService.post("/specialDemand/special", specialPayload);
+      // await apiService.post("/specialDemand/special", specialPayload);
+
       // await apiService.post("/specialDemand/special", obsAuthChange);
       if (response.success) {
         toaster("success", "Spare updated successfully");
@@ -1517,7 +1549,7 @@ const Spares = ({ type = "" }) => {
       setPanelProduct({ critical_spare: "no" });
     }
   }, [fetchedData]);
-  
+
   useEffect(() => {
     if (obsDialog.open) {
       const box = JSON.parse(selectedRow.box_no || "[]");
@@ -1745,7 +1777,12 @@ const Spares = ({ type = "" }) => {
               }}
               filters={tableFilters}
               onFiltersChange={setTableFilters}
-              filterableColumns={["equipment_system", "boxNo", "category", "location"]}
+              filterableColumns={[
+                "equipment_system",
+                "boxNo",
+                "category",
+                "location",
+              ]}
             />
           </div>
         </div>
@@ -2093,7 +2130,7 @@ const Spares = ({ type = "" }) => {
 
                 {/* Row 3 */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
+                  {/* <div>
                     <Label className="ms-2 mb-1">Item Code</Label>
                     <Input
                       type="text"
@@ -2101,8 +2138,23 @@ const Spares = ({ type = "" }) => {
                       value={inputs.item_code}
                       onChange={handleChange}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label className="ms-2 mb-1">Item Code</Label>
+                    <DynamicInputList
+                      id="item_code"
+                      data={inputs.item_code}
+                      placeholder="Item Code"
+                      onChange={(values) => {
+                        updateDynamicInputs(values, "item_code");
+                      }}
+                      editable={editableFields.item_code}
+                      onEdit={() => enableEdit("item_code")}
+                      onBlur={() => disableEdit("item_code")}
+                    />
                   </div>
-                  {/* IN Part No */}
+
                   <div>
                     <Label className="ms-2 mb-1">
                       <i>IN</i> Part No.
@@ -2711,7 +2763,7 @@ const Spares = ({ type = "" }) => {
                     </select> */}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <Label>
                       Item Code<span className="text-red-500">*</span>
                     </Label>
@@ -2723,6 +2775,39 @@ const Spares = ({ type = "" }) => {
                       onEdit={() => enableEdit("item_code")}
                       onBlur={() => disableEdit("item_code")}
                     />
+                  </div> */}
+
+                  <div>
+                    <Label>
+                      Item Code<span className="text-red-500">*</span>
+                    </Label>
+                    {!editableFields.item_code ? (
+                      <InputWithPencil
+                        name="item_code"
+                        value={normalizeToArray(selectedRow.item_code).join(
+                          " , ",
+                        )}
+                        editable={false}
+                        onEdit={() => enableEdit("item_code")}
+                      />
+                    ) : (
+                      <div
+                        onBlur={() => disableEdit("item_code")}
+                        tabIndex={0}
+                        className="outline-none"
+                      >
+                        <DynamicInputList
+                          data={normalizeToArray(selectedRow.item_code)}
+                          placeholder="Item Code"
+                          onChange={(values) =>
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              item_code: values,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -2752,7 +2837,7 @@ const Spares = ({ type = "" }) => {
                         name="substitute_name"
                         value={normalizeToArray(
                           selectedRow.substitute_name,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("substitute_name")}
                       />
@@ -2786,7 +2871,7 @@ const Spares = ({ type = "" }) => {
                         name="local_terminology"
                         value={normalizeToArray(
                           selectedRow.local_terminology,
-                        ).join(", ")}
+                        ).join(" , ")}
                         editable={false}
                         onEdit={() => enableEdit("local_terminology")}
                       />
@@ -2847,6 +2932,51 @@ const Spares = ({ type = "" }) => {
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+
+                  <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        onValueChange={(value) =>
+                          setSelectedRow((prev) => ({
+                            ...prev,
+                            part_of: value,
+                          }))
+                        }
+                        className="mt-2"
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="edit_part_of_original"
+                            />
+                            <Label
+                              htmlFor="edit_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="edit_part_of_no" />
+                            <Label
+                              htmlFor="edit_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
 
                   <div>
@@ -3412,6 +3542,46 @@ const Spares = ({ type = "" }) => {
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+
+                  <div>
+                    <div>
+                      <Label className="ms-2 mb-1">
+                        Part of original D787
+                        <span className="text-red-500">*</span>
+                      </Label>
+
+                      <RadioGroup
+                        value={selectedRow.part_of || "no"}
+                        className="mt-2"
+                        disabled
+                      >
+                        <div className="flex gap-6">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value="yes"
+                              id="view_part_of_original"
+                            />
+                            <Label
+                              htmlFor="view_part_of_original"
+                              className="cursor-pointer"
+                            >
+                              Yes
+                            </Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="view_part_of_no" />
+                            <Label
+                              htmlFor="view_part_of_no"
+                              className="cursor-pointer"
+                            >
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
                   </div>
 
                   <div>
@@ -4962,7 +5132,40 @@ const Spares = ({ type = "" }) => {
                       ? Number(originalObsAuthorised) +
                         Number(obsDialog.quantity)
                       : Number(originalObsAuthorised) -
-                        Number(obsDialog.quantity);
+                      Number(obsDialog.quantity);
+                  
+                  const incDecQty =
+                    obsDialog.action === "increase"
+                      ? Number(obsDialog.quantity)
+                      : -Number(obsDialog.quantity);
+
+
+                  const payload = {
+                    spare_id: selectedRow.id,
+
+                    obs_authorised: finalValue,
+                    // obs_increase_qty: obsDialog.quantity,
+                    obs_increase_qty: incDecQty,
+                    quoteAuthority: obsDialog.quoteAuthority,
+                    internal_demand_no:
+                      obsDialog.demandGenerated === "yes"
+                        ? obsDialog.internalDemandNo?.trim()
+                        : null,
+                    internal_demand_date:
+                      obsDialog.demandGenerated === "yes"
+                        ? getISTTimestamp(obsDialog.internalDemandDate)
+                        : null,
+                    requisition_no: obsDialog.requisitionNo?.trim() || null,
+                    requisition_date: obsDialog.requisitionDate
+                      ? getISTTimestamp(obsDialog.requisitionDate)
+                      : null,
+                    mo_demand_no: obsDialog.moDemandNo?.trim() || null,
+                    mo_demand_date: obsDialog.moDemandDate
+                      ? getISTTimestamp(obsDialog.moDemandDate)
+                      : null,
+                  };
+
+                  apiService.post("/specialDemand/special", payload);
 
                   console.log("Logs Start");
 
